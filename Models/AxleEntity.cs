@@ -1,0 +1,21 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace VehicleWeightMeasurementSystemDemo.Models
+{
+    public class AxleEntity
+    {
+        public int Id { get; set; }
+
+        public int VehicleId { get; set; }
+        public VehicleEntity Vehicle { get; set; }
+
+        public int AxleIndex { get; set; }
+        public double? Weight { get; set; }
+        public double? TimeMs { get; set; }
+        public double? Distance { get; set; }
+    }
+}
