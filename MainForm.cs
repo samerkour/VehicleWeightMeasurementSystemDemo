@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 using System.ComponentModel;
 using VehicleWeightMeasurementSystemDemo.Camera;
 using VehicleWeightMeasurementSystemDemo.Data;
@@ -199,59 +200,73 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private async void HandleSerialData(string raw)
         {
-            var vehicle = VehicleParser.Parse(raw);
-            CalculationService.CalculateDistances(vehicle);
-
-
-            _currentVehicle = vehicle; // 🔴 store latest vehicle
-
-
-            this.Invoke(() =>
+            try
             {
-                lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
-                lblLine.Text = $"Line: {vehicle.Line}";
-                lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
-                lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
-                lblADC1.Text = $"ADC1: {vehicle.ADC1}";
-                lblADC2.Text = $"ADC2: {vehicle.ADC2}";
-                lblADC3.Text = $"ADC3: {vehicle.ADC3}";
-                lblADC4.Text = $"ADC4: {vehicle.ADC4}";
-
-                dgvAxles.DataSource = null;
-                dgvAxles.DataSource = vehicle.Axles;
-            });
+                var vehicle = VehicleParser.Parse(raw);
+                CalculationService.CalculateDistances(vehicle);
 
 
-            await Task.Delay(500);
+                _currentVehicle = vehicle; // 🔴 store latest vehicle
 
-            // 🔴 SAVE to DB
-            await _repo.SaveAsync(_currentVehicle);
 
-            // 🔴 REFRESH GRID
-            await LoadGrid();
+                this.Invoke(() =>
+                {
+                    lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
+                    lblLine.Text = $"Line: {vehicle.Line}";
+                    lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
+                    lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
+                    lblADC1.Text = $"ADC1: {vehicle.ADC1}";
+                    lblADC2.Text = $"ADC2: {vehicle.ADC2}";
+                    lblADC3.Text = $"ADC3: {vehicle.ADC3}";
+                    lblADC4.Text = $"ADC4: {vehicle.ADC4}";
+
+                    dgvAxles.DataSource = null;
+                    dgvAxles.DataSource = vehicle.Axles;
+                });
+
+
+                await Task.Delay(500);
+
+                // 🔴 SAVE to DB
+                await _repo.SaveAsync(_currentVehicle);
+
+                // 🔴 REFRESH GRID
+                await LoadGrid();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error processing serial data: {Raw}", raw);
+            }
 
         }
 
         private async void HandleImage(string path)
         {
-            //if (_currentVehicle == null)
-            //    return; // no serial data yet
-
-            PlateResultDto plate = _plateService.Extract(path);
-
-            _currentVehicle.PlateNumber = plate.PlateNumber;
-
-            this.Invoke(() =>
+            try
             {
-                pictureBoxVehicle.Image = Image.FromFile(path);
-                lblDetectedPlate.Text = $"Plate Number: {plate.PlateNumber}";
-            });
+                //if (_currentVehicle == null)
+                //    return; // no serial data yet
 
-            //// 🔴 SAVE to DB
-            //await _repo.SaveAsync(_currentVehicle);
+                PlateResultDto plate = _plateService.Extract(path);
 
-            //// 🔴 REFRESH GRID
-            //await LoadGrid();
+                _currentVehicle.PlateNumber = plate.PlateNumber;
+
+                this.Invoke(() =>
+                {
+                    pictureBoxVehicle.Image = Image.FromFile(path);
+                    lblDetectedPlate.Text = $"Plate Number: {plate.PlateNumber}";
+                });
+
+                //// 🔴 SAVE to DB
+                //await _repo.SaveAsync(_currentVehicle);
+
+                //// 🔴 REFRESH GRID
+                //await LoadGrid();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error processing image: {Path}", path);
+            }
         }
 
         private async Task LoadGrid()
