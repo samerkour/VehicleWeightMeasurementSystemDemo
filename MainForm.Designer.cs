@@ -48,17 +48,34 @@
             pictureBoxVehicle = new PictureBox();
             dgvRecords = new DataGridView();
             lblRecordsTitle = new Label();
+            menuStrip1 = new MenuStrip();
+            fileToolStripMenuItem = new ToolStripMenuItem();
+            exitToolStripMenuItem = new ToolStripMenuItem();
+            monitoringToolStripMenuItem = new ToolStripMenuItem();
+            startSystemToolStripMenuItem = new ToolStripMenuItem();
+            stopSystemToolStripMenuItem = new ToolStripMenuItem();
+            reportsToolStripMenuItem = new ToolStripMenuItem();
+            dailyReportToolStripMenuItem = new ToolStripMenuItem();
+            monthlyReportToolStripMenuItem = new ToolStripMenuItem();
+            overweightVehiclesToolStripMenuItem = new ToolStripMenuItem();
+            settingsToolStripMenuItem = new ToolStripMenuItem();
+            serialPortSettingsToolStripMenuItem = new ToolStripMenuItem();
+            cameraSettingsToolStripMenuItem = new ToolStripMenuItem();
+            databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
+            helpToolStripMenuItem = new ToolStripMenuItem();
+            aboutToolStripMenuItem = new ToolStripMenuItem();
             grpVehicleInfo.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvAxles).BeginInit();
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
+            menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // lblSerialStatus
             // 
             lblSerialStatus.AutoSize = true;
-            lblSerialStatus.Location = new Point(11, 17);
+            lblSerialStatus.Location = new Point(13, 36);
             lblSerialStatus.Name = "lblSerialStatus";
             lblSerialStatus.Size = new Size(167, 20);
             lblSerialStatus.TabIndex = 1;
@@ -67,7 +84,7 @@
             // lblCameraStatus
             // 
             lblCameraStatus.AutoSize = true;
-            lblCameraStatus.Location = new Point(343, 17);
+            lblCameraStatus.Location = new Point(343, 36);
             lblCameraStatus.Name = "lblCameraStatus";
             lblCameraStatus.Size = new Size(200, 20);
             lblCameraStatus.TabIndex = 2;
@@ -87,7 +104,7 @@
             grpVehicleInfo.Controls.Add(dgvAxles);
             grpVehicleInfo.Controls.Add(lblSpeed);
             grpVehicleInfo.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpVehicleInfo.Location = new Point(588, 59);
+            grpVehicleInfo.Location = new Point(588, 71);
             grpVehicleInfo.Margin = new Padding(3, 4, 3, 4);
             grpVehicleInfo.Name = "grpVehicleInfo";
             grpVehicleInfo.Padding = new Padding(3, 4, 3, 4);
@@ -99,7 +116,7 @@
             // lblADC4
             // 
             lblADC4.AutoSize = true;
-            lblADC4.Location = new Point(11, 242);
+            lblADC4.Location = new Point(11, 247);
             lblADC4.Name = "lblADC4";
             lblADC4.Size = new Size(84, 23);
             lblADC4.TabIndex = 11;
@@ -110,7 +127,7 @@
             lblAxleTitle.AutoSize = true;
             lblAxleTitle.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblAxleTitle.ForeColor = Color.RoyalBlue;
-            lblAxleTitle.Location = new Point(9, 267);
+            lblAxleTitle.Location = new Point(9, 272);
             lblAxleTitle.Name = "lblAxleTitle";
             lblAxleTitle.Size = new Size(165, 28);
             lblAxleTitle.TabIndex = 7;
@@ -119,7 +136,7 @@
             // lblADC3
             // 
             lblADC3.AutoSize = true;
-            lblADC3.Location = new Point(11, 209);
+            lblADC3.Location = new Point(11, 214);
             lblADC3.Name = "lblADC3";
             lblADC3.Size = new Size(83, 23);
             lblADC3.TabIndex = 10;
@@ -128,7 +145,7 @@
             // lblADC2
             // 
             lblADC2.AutoSize = true;
-            lblADC2.Location = new Point(11, 175);
+            lblADC2.Location = new Point(11, 180);
             lblADC2.Name = "lblADC2";
             lblADC2.Size = new Size(83, 23);
             lblADC2.TabIndex = 9;
@@ -137,7 +154,7 @@
             // lblADC1
             // 
             lblADC1.AutoSize = true;
-            lblADC1.Location = new Point(11, 142);
+            lblADC1.Location = new Point(11, 147);
             lblADC1.Name = "lblADC1";
             lblADC1.Size = new Size(81, 23);
             lblADC1.TabIndex = 8;
@@ -146,7 +163,7 @@
             // lblTotalWeight
             // 
             lblTotalWeight.AutoSize = true;
-            lblTotalWeight.Location = new Point(11, 109);
+            lblTotalWeight.Location = new Point(11, 114);
             lblTotalWeight.Name = "lblTotalWeight";
             lblTotalWeight.Size = new Size(131, 23);
             lblTotalWeight.TabIndex = 7;
@@ -155,7 +172,7 @@
             // lblAxles
             // 
             lblAxles.AutoSize = true;
-            lblAxles.Location = new Point(11, 75);
+            lblAxles.Location = new Point(11, 80);
             lblAxles.Name = "lblAxles";
             lblAxles.Size = new Size(108, 23);
             lblAxles.TabIndex = 6;
@@ -164,7 +181,7 @@
             // lblLine
             // 
             lblLine.AutoSize = true;
-            lblLine.Location = new Point(11, 42);
+            lblLine.Location = new Point(11, 52);
             lblLine.Name = "lblLine";
             lblLine.Size = new Size(71, 23);
             lblLine.TabIndex = 5;
@@ -175,7 +192,7 @@
             dgvAxles.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             dgvAxles.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvAxles.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvAxles.Location = new Point(6, 296);
+            dgvAxles.Location = new Point(6, 301);
             dgvAxles.Margin = new Padding(3, 4, 3, 4);
             dgvAxles.Name = "dgvAxles";
             dgvAxles.RowHeadersWidth = 51;
@@ -185,7 +202,7 @@
             // lblSpeed
             // 
             lblSpeed.AutoSize = true;
-            lblSpeed.Location = new Point(11, -21);
+            lblSpeed.Location = new Point(11, 27);
             lblSpeed.Name = "lblSpeed";
             lblSpeed.Size = new Size(87, 23);
             lblSpeed.TabIndex = 4;
@@ -197,7 +214,7 @@
             grpImage.Controls.Add(lblDetectedPlate);
             grpImage.Controls.Add(pictureBoxVehicle);
             grpImage.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpImage.Location = new Point(10, 59);
+            grpImage.Location = new Point(10, 71);
             grpImage.Margin = new Padding(3, 4, 3, 4);
             grpImage.Name = "grpImage";
             grpImage.Padding = new Padding(3, 4, 3, 4);
@@ -210,7 +227,7 @@
             // 
             lblDetectedPlate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblDetectedPlate.AutoSize = true;
-            lblDetectedPlate.Location = new Point(11, 464);
+            lblDetectedPlate.Location = new Point(11, 469);
             lblDetectedPlate.Name = "lblDetectedPlate";
             lblDetectedPlate.Size = new Size(180, 23);
             lblDetectedPlate.TabIndex = 1;
@@ -233,7 +250,7 @@
             dgvRecords.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvRecords.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvRecords.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvRecords.Location = new Point(10, 601);
+            dgvRecords.Location = new Point(10, 606);
             dgvRecords.Margin = new Padding(3, 4, 3, 4);
             dgvRecords.Name = "dgvRecords";
             dgvRecords.RowHeadersWidth = 51;
@@ -245,11 +262,126 @@
             // 
             lblRecordsTitle.AutoSize = true;
             lblRecordsTitle.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblRecordsTitle.Location = new Point(13, 570);
+            lblRecordsTitle.Location = new Point(13, 575);
             lblRecordsTitle.Name = "lblRecordsTitle";
             lblRecordsTitle.Size = new Size(221, 28);
             lblRecordsTitle.TabIndex = 8;
             lblRecordsTitle.Text = "Database Records Log";
+            // 
+            // menuStrip1
+            // 
+            menuStrip1.BackColor = Color.FromArgb(33, 150, 243);
+            menuStrip1.ForeColor = Color.White;
+            menuStrip1.ImageScalingSize = new Size(20, 20);
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, monitoringToolStripMenuItem, reportsToolStripMenuItem, settingsToolStripMenuItem, helpToolStripMenuItem });
+            menuStrip1.Location = new Point(0, 0);
+            menuStrip1.Name = "menuStrip1";
+            menuStrip1.RenderMode = ToolStripRenderMode.System;
+            menuStrip1.Size = new Size(1160, 28);
+            menuStrip1.TabIndex = 9;
+            menuStrip1.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { exitToolStripMenuItem });
+            fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            fileToolStripMenuItem.Size = new Size(46, 24);
+            fileToolStripMenuItem.Text = "File";
+            // 
+            // exitToolStripMenuItem
+            // 
+            exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            exitToolStripMenuItem.Size = new Size(116, 26);
+            exitToolStripMenuItem.Text = "Exit";
+            exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
+            // 
+            // monitoringToolStripMenuItem
+            // 
+            monitoringToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { startSystemToolStripMenuItem, stopSystemToolStripMenuItem });
+            monitoringToolStripMenuItem.Name = "monitoringToolStripMenuItem";
+            monitoringToolStripMenuItem.Size = new Size(97, 24);
+            monitoringToolStripMenuItem.Text = "Monitoring";
+            // 
+            // startSystemToolStripMenuItem
+            // 
+            startSystemToolStripMenuItem.Name = "startSystemToolStripMenuItem";
+            startSystemToolStripMenuItem.Size = new Size(174, 26);
+            startSystemToolStripMenuItem.Text = "Start System";
+            startSystemToolStripMenuItem.Click += startSystemToolStripMenuItem_Click;
+            // 
+            // stopSystemToolStripMenuItem
+            // 
+            stopSystemToolStripMenuItem.Name = "stopSystemToolStripMenuItem";
+            stopSystemToolStripMenuItem.Size = new Size(174, 26);
+            stopSystemToolStripMenuItem.Text = "Stop System";
+            stopSystemToolStripMenuItem.Click += stopSystemToolStripMenuItem_Click;
+            // 
+            // reportsToolStripMenuItem
+            // 
+            reportsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { dailyReportToolStripMenuItem, monthlyReportToolStripMenuItem, overweightVehiclesToolStripMenuItem });
+            reportsToolStripMenuItem.Name = "reportsToolStripMenuItem";
+            reportsToolStripMenuItem.Size = new Size(74, 24);
+            reportsToolStripMenuItem.Text = "Reports";
+            // 
+            // dailyReportToolStripMenuItem
+            // 
+            dailyReportToolStripMenuItem.Name = "dailyReportToolStripMenuItem";
+            dailyReportToolStripMenuItem.Size = new Size(225, 26);
+            dailyReportToolStripMenuItem.Text = "Daily Report";
+            dailyReportToolStripMenuItem.Click += dailyReportToolStripMenuItem_Click;
+            // 
+            // monthlyReportToolStripMenuItem
+            // 
+            monthlyReportToolStripMenuItem.Name = "monthlyReportToolStripMenuItem";
+            monthlyReportToolStripMenuItem.Size = new Size(225, 26);
+            monthlyReportToolStripMenuItem.Text = "Monthly Report";
+            monthlyReportToolStripMenuItem.Click += monthlyReportToolStripMenuItem_Click;
+            // 
+            // overweightVehiclesToolStripMenuItem
+            // 
+            overweightVehiclesToolStripMenuItem.Name = "overweightVehiclesToolStripMenuItem";
+            overweightVehiclesToolStripMenuItem.Size = new Size(225, 26);
+            overweightVehiclesToolStripMenuItem.Text = "Overweight Vehicles";
+            overweightVehiclesToolStripMenuItem.Click += overweightVehiclesToolStripMenuItem_Click;
+            // 
+            // settingsToolStripMenuItem
+            // 
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
+            settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+            settingsToolStripMenuItem.Size = new Size(76, 24);
+            settingsToolStripMenuItem.Text = "Settings";
+            // 
+            // serialPortSettingsToolStripMenuItem
+            // 
+            serialPortSettingsToolStripMenuItem.Name = "serialPortSettingsToolStripMenuItem";
+            serialPortSettingsToolStripMenuItem.Size = new Size(216, 26);
+            serialPortSettingsToolStripMenuItem.Text = "Serial Port Settings";
+            // 
+            // cameraSettingsToolStripMenuItem
+            // 
+            cameraSettingsToolStripMenuItem.Name = "cameraSettingsToolStripMenuItem";
+            cameraSettingsToolStripMenuItem.Size = new Size(216, 26);
+            cameraSettingsToolStripMenuItem.Text = "Camera Settings";
+            // 
+            // databaseSettingsToolStripMenuItem
+            // 
+            databaseSettingsToolStripMenuItem.Name = "databaseSettingsToolStripMenuItem";
+            databaseSettingsToolStripMenuItem.Size = new Size(216, 26);
+            databaseSettingsToolStripMenuItem.Text = "Database Settings";
+            // 
+            // helpToolStripMenuItem
+            // 
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { aboutToolStripMenuItem });
+            helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            helpToolStripMenuItem.Size = new Size(55, 24);
+            helpToolStripMenuItem.Text = "Help";
+            // 
+            // aboutToolStripMenuItem
+            // 
+            aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            aboutToolStripMenuItem.Size = new Size(224, 26);
+            aboutToolStripMenuItem.Text = "About";
+            aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
             // 
             // MainForm
             // 
@@ -262,7 +394,9 @@
             Controls.Add(grpVehicleInfo);
             Controls.Add(lblCameraStatus);
             Controls.Add(lblSerialStatus);
+            Controls.Add(menuStrip1);
             Icon = (Icon)resources.GetObject("$this.Icon");
+            MainMenuStrip = menuStrip1;
             Margin = new Padding(3, 4, 3, 4);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
@@ -275,6 +409,8 @@
             grpImage.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
+            menuStrip1.ResumeLayout(false);
+            menuStrip1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -299,5 +435,21 @@
         private DataGridView dgvRecords;
         private Label lblAxleTitle;
         private Label lblRecordsTitle;
+        private MenuStrip menuStrip1;
+        private ToolStripMenuItem fileToolStripMenuItem;
+        private ToolStripMenuItem monitoringToolStripMenuItem;
+        private ToolStripMenuItem reportsToolStripMenuItem;
+        private ToolStripMenuItem settingsToolStripMenuItem;
+        private ToolStripMenuItem helpToolStripMenuItem;
+        private ToolStripMenuItem exitToolStripMenuItem;
+        private ToolStripMenuItem startSystemToolStripMenuItem;
+        private ToolStripMenuItem stopSystemToolStripMenuItem;
+        private ToolStripMenuItem dailyReportToolStripMenuItem;
+        private ToolStripMenuItem monthlyReportToolStripMenuItem;
+        private ToolStripMenuItem overweightVehiclesToolStripMenuItem;
+        private ToolStripMenuItem serialPortSettingsToolStripMenuItem;
+        private ToolStripMenuItem cameraSettingsToolStripMenuItem;
+        private ToolStripMenuItem databaseSettingsToolStripMenuItem;
+        private ToolStripMenuItem aboutToolStripMenuItem;
     }
 }

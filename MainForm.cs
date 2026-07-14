@@ -18,8 +18,8 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private SerialPortService _serialService;
         private CameraWatcherService _cameraService;
-        private  PlateRecognitionService _plateService;
-        private  SqlRepository _repo;
+        private PlateRecognitionService _plateService;
+        private SqlRepository _repo;
 
         private void ConfigureGrids()
         {
@@ -361,6 +361,54 @@ namespace VehicleWeightMeasurementSystemDemo
                 // optional:
                 // lblCameraStatus.BackColor = Color.LightPink;
             }
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void startSystemToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _serialService?.Start();
+            _cameraService?.Start();
+        }
+
+        private void stopSystemToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _serialService?.Stop();
+            _cameraService?.Stop();
+        }
+
+        private void dailyReportToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowDailyReport();
+        }
+
+        private void monthlyReportToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowMonthlyReport();
+        }
+
+        private void ShowMonthlyReport()
+        {
+            MessageBox.Show("Monthly Report Coming Soon...");
+        }
+
+        private void overweightVehiclesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Overweight Vehicles Report Coming Soon...");
+        }
+
+        private void ShowDailyReport()
+        {
+            MessageBox.Show("Daily Report Coming Soon...");
+        }
+
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Vehicle Weight System v1.0");
         }
     }
 }
