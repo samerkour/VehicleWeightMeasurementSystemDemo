@@ -14,16 +14,22 @@ namespace VehicleWeightMeasurementSystemDemo.Services
         {
             var parts = raw.Split(',');
 
+            var axles = ParseAxles(parts); // ✅ parse ONCE
+
             return new VehicleDto
             {
                 ADC1 = parts[0],
                 ADC2 = parts[1],
                 Speed = double.Parse(parts[3]) / 10,
-                Line = int.Parse(parts[4]),
+                LineId = int.Parse(parts[4]),
                 AxleCount = int.Parse(parts[5]),
                 ADC3 = parts[18],
                 ADC4 = parts[19],
-                Axles = ParseAxles(parts)
+
+                Axles = axles,
+
+                // ✅ Correct TotalWeight
+                TotalWeight = axles.Sum(a => a.Weight)
             };
         }
 

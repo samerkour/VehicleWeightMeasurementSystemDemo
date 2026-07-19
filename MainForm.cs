@@ -14,7 +14,8 @@ namespace VehicleWeightMeasurementSystemDemo
         private bool IsDesignMode =>
         LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 
-        private VehicleDto _currentVehicle;
+
+        private Dictionary<int, VehicleDto> _lastVehicleByLine = new();
 
         private SerialPortService _serialService;
         private CameraWatcherService _cameraService;
@@ -136,12 +137,15 @@ namespace VehicleWeightMeasurementSystemDemo
             _serialService.OnConnectionChanged += HandleSerialStatus;
             _serialService.OnDataReceived += HandleSerialData;
 
+
+            var lineIds = await _repo.GetActiveLineIdsAsync();
+
             _cameraService.OnStatusChanged += HandleCameraStatus;
             _cameraService.OnImageCaptured += HandleImage;
 
             // 🔹 4. Start services
             _serialService.Start();
-            _cameraService.Start(); // no need to pass path anymore
+            _cameraService.Start(lineIds); // no need to pass path anymore
 
 
             await LoadGrid(); // 🔴 load existing data
@@ -205,14 +209,15 @@ namespace VehicleWeightMeasurementSystemDemo
                 var vehicle = VehicleParser.Parse(raw);
                 CalculationService.CalculateDistances(vehicle);
 
+                //_currentVehicle = vehicle; // 🔴 store latest vehicle
 
-                _currentVehicle = vehicle; // 🔴 store latest vehicle
+                _lastVehicleByLine[vehicle.LineId] = vehicle;
 
 
                 this.Invoke(() =>
                 {
                     lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
-                    lblLine.Text = $"Line: {vehicle.Line}";
+                    lblLine.Text = $"Line: {vehicle.LineId}";
                     lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
                     lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
                     lblADC1.Text = $"ADC1: {vehicle.ADC1}";
@@ -224,14 +229,6 @@ namespace VehicleWeightMeasurementSystemDemo
                     dgvAxles.DataSource = vehicle.Axles;
                 });
 
-
-                await Task.Delay(500);
-
-                // 🔴 SAVE to DB
-                await _repo.SaveAsync(_currentVehicle);
-
-                // 🔴 REFRESH GRID
-                await LoadGrid();
             }
             catch (Exception ex)
             {
@@ -240,28 +237,31 @@ namespace VehicleWeightMeasurementSystemDemo
 
         }
 
-        private async void HandleImage(string path)
+        private void HandleImage(int lineId, string path)
         {
             try
             {
                 //if (_currentVehicle == null)
                 //    return; // no serial data yet
 
-                PlateResultDto plate = _plateService.Extract(path);
+                var plate = _plateService.Extract(path);
 
-                _currentVehicle.PlateNumber = plate.PlateNumber;
-
-                this.Invoke(() =>
+                this.Invoke(async () =>
                 {
                     pictureBoxVehicle.Image = Image.FromFile(path);
-                    lblDetectedPlate.Text = $"Plate Number: {plate.PlateNumber}";
+                    lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+
+                    // 🔥 Get last vehicle from same line
+                    var vehicle = _lastVehicleByLine.ContainsKey(lineId)
+                        ? _lastVehicleByLine[lineId]
+                        : null;
+
+                    if (vehicle != null)
+                    {
+                        await _repo.SaveAsync(vehicle, path, plate);
+                        await LoadGrid();
+                    }
                 });
-
-                //// 🔴 SAVE to DB
-                //await _repo.SaveAsync(_currentVehicle);
-
-                //// 🔴 REFRESH GRID
-                //await LoadGrid();
             }
             catch (Exception ex)
             {
@@ -371,7 +371,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private void startSystemToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _serialService?.Start();
-            _cameraService?.Start();
+            //_cameraService?.Start();
         }
 
         private void stopSystemToolStripMenuItem_Click(object sender, EventArgs e)

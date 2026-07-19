@@ -11,93 +11,96 @@ namespace VehicleWeightMeasurementSystemDemo.Services
     public class CameraWatcherService
     {
         private readonly CameraSettings _settings;
-        private FileSystemWatcher _watcher;
 
-        public event Action<string> OnImageCaptured;
-        public event Action<bool> OnStatusChanged; // 🔥 for UI
+        private readonly List<LineWatcher> _lines = new();
 
-        public CameraWatcherService(CameraSettings? options)
+        public event Action<int, string> OnImageCaptured;
+        public event Action<bool> OnStatusChanged;
+
+        public CameraWatcherService(CameraSettings settings)
         {
-            _settings = options;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
-        public void Start()
+        public void Start(List<int> lineIds)
         {
+            Stop(); // 🔥 prevent duplicate watchers
+
             try
             {
-                if (!Directory.Exists(_settings.FolderPath))
+                foreach (var lineId in lineIds)
                 {
-                    OnStatusChanged?.Invoke(false);
-                    return;
+                    var folder = Path.Combine(_settings.WatchRootPath, $"Line{lineId}");
+
+                    if (!Directory.Exists(folder))
+                        continue;
+
+                    var watcher = new FileSystemWatcher(folder, _settings.Filter)
+                    {
+                        EnableRaisingEvents = true,
+                        IncludeSubdirectories = _settings.IncludeSubfolders,
+                        NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.LastWrite,
+                        InternalBufferSize = 64 * 1024
+                    };
+
+                    int currentLineId = lineId;
+
+                    watcher.Created += async (s, e) =>
+                    {
+                        if (await WaitForFileReady(e.FullPath))
+                        {
+                            OnImageCaptured?.Invoke(currentLineId, e.FullPath);
+                        }
+                    };
+
+                    _lines.Add(new LineWatcher
+                    {
+                        LineId = lineId,
+                        FolderPath = folder,
+                        Watcher = watcher
+                    });
                 }
 
-                _watcher = new FileSystemWatcher(_settings.FolderPath, _settings.Filter)
-                {
-                    IncludeSubdirectories = _settings.IncludeSubfolders,
-                    EnableRaisingEvents = true,
-                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.LastWrite,
-                    InternalBufferSize = 64 * 1024
-                };
-
-                _watcher.Created += async (s, e) =>
-                {
-                    if (await WaitForFileReady(e.FullPath))
-                    {
-                        OnImageCaptured?.Invoke(e.FullPath);
-                    }
-                };
-
-                OnStatusChanged?.Invoke(true);
+                OnStatusChanged?.Invoke(_lines.Any());
             }
             catch
             {
                 OnStatusChanged?.Invoke(false);
             }
         }
-
 
         public void Stop()
         {
-            try
+            foreach (var line in _lines)
             {
-                if (_watcher != null)
+                try
                 {
-                    _watcher.EnableRaisingEvents = false;
-                    _watcher.Dispose();
-                    OnStatusChanged?.Invoke(false);
+                    line.Watcher.EnableRaisingEvents = false;
+                    line.Watcher.Dispose();
                 }
+                catch { }
             }
-            catch
-            {
-                OnStatusChanged?.Invoke(false);
-            }
+
+            _lines.Clear();
+            OnStatusChanged?.Invoke(false);
         }
 
         private async Task<bool> WaitForFileReady(string path)
         {
-            const int maxRetries = 10;
-            const int delayMs = 200;
-
-            for (int i = 0; i < maxRetries; i++)
+            for (int i = 0; i < 10; i++)
             {
                 try
                 {
-                    using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    {
-                        if (stream.Length > 0)
-                            return true;
-                    }
+                    using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    if (stream.Length > 0)
+                        return true;
                 }
-                catch
-                {
-                    // file still locked
-                }
+                catch { }
 
-                await Task.Delay(delayMs);
+                await Task.Delay(200);
             }
 
             return false;
         }
     }
-
 }

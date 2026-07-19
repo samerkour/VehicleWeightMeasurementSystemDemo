@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace VehicleWeightMeasurementSystemDemo
 {
-    public class CameraSettings
+    public class LineWatcher
     {
-        public string WatchRootPath { get; set; }
-        public string Filter { get; set; }
-        public bool IncludeSubfolders { get; set; }
+        public int LineId { get; set; }
+        public string FolderPath { get; set; }
+        public FileSystemWatcher Watcher { get; set; }
     }
 }

@@ -11,7 +11,7 @@ namespace VehicleWeightMeasurementSystemDemo.Services
     {
         public static void CalculateDistances(VehicleDto vehicle)
         {
-            double speedMs = vehicle.Speed / 3.6;
+            var speedMs = vehicle.Speed / 3.6;
 
             foreach (var axle in vehicle.Axles)
             {

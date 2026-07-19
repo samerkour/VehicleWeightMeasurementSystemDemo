@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VehicleWeightMeasurementSystemDemo.Camera;
 using VehicleWeightMeasurementSystemDemo.Models;
 
 namespace VehicleWeightMeasurementSystemDemo.Data
@@ -28,51 +29,117 @@ namespace VehicleWeightMeasurementSystemDemo.Data
                         PlateNumber = v.PlateNumber,
                         Speed = v.Speed,
                         AxleCount = v.AxleCount,
-                        TotalWeight = v.TotalWeight,
-                        Line = v.Line,
+                        TotalWeight = v.Axles.Sum(a => a.Weight),
+
+                        LineId = v.LineId ?? 0,
+                        LineName = v.Line.LineName,
+
                         ADC1 = v.ADC1,
                         ADC2 = v.ADC2,
                         ADC3 = v.ADC3,
                         ADC4 = v.ADC4,
 
                         // 🔥 ADD THIS
-                        Axles = v.Axles.Select(a => new AxleDto
-                        {
-                            Index = a.AxleIndex,
-                            Weight = a.Weight,
-                            TimeMs = a.TimeMs,
-                            Distance = a.Distance
-                        }).ToList()
-                    })
-                    .ToListAsync();
+                        Axles = v.Axles
+                            .OrderBy(a => a.AxleIndex)
+                            .Select(a => new AxleDto
+                                {
+                                    Index = a.AxleIndex,
+                                    Weight = a.Weight,
+                                    TimeMs = a.TimeMs ?? 0,
+                                    Distance = a.Distance ?? 0
+                                }).ToList()
+                        })
+                        .ToListAsync();
         }
 
-        public async Task SaveAsync(VehicleDto v)
+        public async Task<List<int>> GetActiveLineIdsAsync()
         {
-            var entity = new VehicleEntity
-            {
-                
-                PlateNumber = v.PlateNumber,
-                Speed = v.Speed,
-                Line = v.Line,
-                AxleCount = v.AxleCount,
-                TotalWeight = v.TotalWeight,
-                ADC1 = v.ADC1,
-                ADC2 = v.ADC2,
-                ADC3 = v.ADC3,
-                ADC4 = v.ADC4,
-                Timestamp = v.Timestamp,
-                Axles = v.Axles.Select(a => new AxleEntity
-                {
-                    AxleIndex = a.Index,
-                    Weight = a.Weight,
-                    TimeMs = a.TimeMs == 0 ? null : a.TimeMs,
-                    Distance = a.Distance == 0 ? null : a.Distance
-                }).ToList()
-            };
+            return await _context.Lines
+                .Where(l => l.IsActive)
+                .Select(l => l.Id)
+                .ToListAsync();
+        }
 
-            _context.Vehicles.Add(entity);
-            await _context.SaveChangesAsync();
+        public async Task SaveAsync(
+            VehicleDto v,
+            string imagePath,
+            PlateResultDto plate)
+        {
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var file = new FileInfo(imagePath);
+
+                string plateNo = plate?.PlateNumber ?? "";
+
+                var vehicle = new VehicleEntity
+                {
+                    Timestamp = v.Timestamp == default ? DateTime.Now : v.Timestamp,
+
+                    PlateNumber = plateNo,
+                    Speed = v.Speed,
+                    LineId = v.LineId,
+
+                    AxleCount = v.AxleCount,
+                    TotalWeight = v.TotalWeight,
+                    AverageSpeed = v.Speed,
+
+                    ADC1 = v.ADC1,
+                    ADC2 = v.ADC2,
+                    ADC3 = v.ADC3,
+                    ADC4 = v.ADC4,
+
+                    Axles = v.Axles.Select(a => new AxleEntity
+                    {
+                        AxleIndex = a.Index,
+                        Weight = a.Weight,
+                        TimeMs = a.TimeMs == 0 ? null : a.TimeMs,
+                        Distance = a.Distance == 0 ? null : a.Distance,
+                        LengthToNext = a.Distance == 0 ? null : a.Distance
+                    }).ToList()
+                };
+
+                // 🔥 Add CameraPhoto correctly (1-to-many)
+                var photo = new CameraPhotoEntity
+                {
+                    FileName = file.Name,
+                    FullPath = file.FullName,
+                    RelativePath = file.Name,
+                    FileSizeBytes = file.Length,
+
+                    CapturedAt = file.CreationTime,
+                    ImportedAt = DateTime.Now,
+
+                    //// 🔥 Plate split SAFE
+                    //PlateP1 = plateNo.Length >= 2 ? plateNo[..2] : null,
+                    //PlateP2 = plateNo.Length >= 4 ? plateNo.Substring(2, 2) : null,
+                    //PlateP3 = plateNo.Length >= 6 ? plateNo.Substring(4, 2) : null,
+                    //PlateP4 = plateNo.Length > 6 ? Safe(plateNo.Substring(6), 10) : null,
+
+                    PlateConfidence = plate?.Confidence,
+                    PlateReadStatus = plate != null ? 1 : 0,
+                    PlateReadAt = DateTime.Now
+                };
+
+                // 🔥 Link properly
+                vehicle.Photos.Add(photo);
+
+                _context.Vehicles.Add(vehicle);
+
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await trx.RollbackAsync();
+
+                //var msg = ex.InnerException?.Message ?? ex.Message;
+                //MessageBox.Show(msg, "DB ERROR");
+
+                throw;
+            }
         }
     }
 }

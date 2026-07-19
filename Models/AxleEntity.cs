@@ -14,8 +14,14 @@ namespace VehicleWeightMeasurementSystemDemo.Models
         public VehicleEntity Vehicle { get; set; }
 
         public int AxleIndex { get; set; }
+
         public double? Weight { get; set; }
+
         public double? TimeMs { get; set; }
         public double? Distance { get; set; }
+
+        public double? LengthToNext { get; set; }
+
+        public bool? IsOverweight { get; set; }
     }
 }
