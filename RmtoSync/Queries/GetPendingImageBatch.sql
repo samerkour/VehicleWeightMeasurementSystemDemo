@@ -63,8 +63,8 @@ SELECT TOP (@BatchSize)
     p.TerminalTtoRegisteredAt,
     p.TerminalImageDeadlineAt,
     ISNULL(p.TerminalImageExpired, 0) AS TerminalImageExpired
-FROM dbo.CameraPhotos p
-INNER JOIN dbo.Lines cl ON cl.LineId = p.LineId
+FROM dbo.vw_CameraFullData p
+INNER JOIN dbo.Lines cl ON cl.Id = p.LineId
 WHERE p.TerminalSent = 0
   AND ISNULL(p.TerminalTtoRegistered, 0) = 1
   AND ISNULL(p.TerminalImageExpired, 0) = 0

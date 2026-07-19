@@ -7,12 +7,12 @@ public sealed class SqlQueryLoader
 
     public SqlQueryLoader(IHostEnvironment environment)
     {
-        _queriesRoot = Path.Combine(AppContext.BaseDirectory, "Sql", "Queries");
+        _queriesRoot = Path.Combine(AppContext.BaseDirectory, "Queries");
         if (!Directory.Exists(_queriesRoot))
         {
             var devRoot = Path.GetFullPath(Path.Combine(
                 environment.ContentRootPath,
-                "..", "..", "sql", "RmtoSync", "Queries"));
+                "..", "..", "RmtoSync", "Queries"));
 
             if (Directory.Exists(devRoot))
                 _queriesRoot = devRoot;

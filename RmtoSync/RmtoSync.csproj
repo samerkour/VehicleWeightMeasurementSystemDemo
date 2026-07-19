@@ -14,7 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Farasoo.AppGuard\Farasoo.AppGuard.csproj" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
@@ -34,6 +33,40 @@
     <Content Include="..\..\sql\RmtoSync\Queries\**\*.sql" Link="Sql\Queries\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Queries\AbandonExpiredImageSend.sql" />
+    <None Remove="Queries\GetPendingBatch.sql" />
+    <None Remove="Queries\GetPendingImageBatch.sql" />
+    <None Remove="Queries\MarkExpiredImageWindow.sql" />
+    <None Remove="Queries\MarkTtoRegistered.sql" />
+    <None Remove="Queries\RecordTerminalError.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Queries\AbandonExpiredImageSend.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Queries\GetPendingBatch.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Queries\GetPendingImageBatch.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Queries\MarkExpiredImageWindow.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Queries\MarkTtoRegistered.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Queries\RecordTerminalError.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Farasoo.AppGuard\Farasoo.AppGuard.csproj" />
   </ItemGroup>
 
 </Project>

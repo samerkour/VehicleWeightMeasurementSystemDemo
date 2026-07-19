@@ -34,7 +34,7 @@ public static class DatabaseSchemaMigrator
               AND object_id = OBJECT_ID(N'dbo.CameraPhotos')
         )
             CREATE NONCLUSTERED INDEX IX_CameraPhotos_TerminalImagePending
-                ON dbo.CameraPhotos (TerminalImageDeadlineAt, PhotoId)
+                ON dbo.CameraPhotos (TerminalImageDeadlineAt, Id)
                 WHERE TerminalSent = 0 AND TerminalTtoRegistered = 1
         """,
         """
@@ -44,7 +44,7 @@ public static class DatabaseSchemaMigrator
               AND object_id = OBJECT_ID(N'dbo.CameraPhotos')
         )
             CREATE NONCLUSTERED INDEX IX_CameraPhotos_TerminalTtoPending
-                ON dbo.CameraPhotos (PlateReadStatus, PhotoId)
+                ON dbo.CameraPhotos (PlateReadStatus, Id)
                 WHERE TerminalSent = 0 AND TerminalTtoRegistered = 0
         """
     ];
