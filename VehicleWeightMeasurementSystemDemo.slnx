@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="VehicleWeightMeasurementSystemDemo.csproj" />
+  <Project Path="Farasoo.AppGuard/Farasoo.AppGuard.csproj" />
+  <Project Path="RmtoSync/RmtoSync.csproj" />
+  <Project Path="VehicleWeightMeasurementSystemDemo/VehicleWeightMeasurementSystemDemo.csproj" />
 </Solution>
