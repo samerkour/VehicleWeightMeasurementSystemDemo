@@ -198,6 +198,40 @@
             dgvAxles.RowHeadersWidth = 51;
             dgvAxles.Size = new Size(548, 191);
             dgvAxles.TabIndex = 5;
+            dgvAxles.AutoGenerateColumns = false;
+            dgvAxles.Columns.Clear();
+
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle",
+                HeaderText = "Axle",
+                DataPropertyName = "AxleIndex",
+                Width = 30
+            });
+
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Weight",
+                HeaderText = "Weight (kg)",
+                DataPropertyName = "Weight",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "N0" }
+            });
+
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Time",
+                HeaderText = "Time (ms)",
+                DataPropertyName = "TimeMs",
+                Width= 30
+            });
+
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Distance",
+                HeaderText = "Distance (m)",
+                DataPropertyName = "Distance",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" }
+            });
             // 
             // lblSpeed
             // 

@@ -38,14 +38,18 @@ namespace VehicleWeightMeasurementSystemDemo.Models
         public int? PlateBoxHeight { get; set; }
 
 
-        public bool? TerminalSent { get; set; }
+        public bool TerminalSent { get; set; }
         public DateTime? TerminalSentAt { get; set; }
+
+        public bool TerminalTtoRegistered { get; internal set; }
+        public bool TerminalImageExpired { get; internal set; }
+
         public string TerminalLastError { get; set; }
         public int? SpeedType { get; set; }
 
         public bool? Allowed { get; set; }
         public bool? WrongDirection { get; set; }
         public double? FirstToLastAxlesLen { get; set; }
-       
+   
     }
 }

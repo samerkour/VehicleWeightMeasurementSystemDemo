@@ -14,50 +14,15 @@ namespace VehicleWeightMeasurementSystemDemo
         private bool IsDesignMode =>
         LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 
-
-        private Dictionary<int, VehicleDto> _lastVehicleByLine = new();
+        private readonly Dictionary<int, Queue<VehicleDto>> _vehiclesByLine = new();
+        private readonly object _lock = new();
 
         private SerialPortService _serialService;
         private CameraWatcherService _cameraService;
         private PlateRecognitionService _plateService;
         private SqlRepository _repo;
 
-        private void ConfigureGrids()
-        {
-            dgvAxles.AutoGenerateColumns = false;
-            dgvAxles.Columns.Clear();
-
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Axle",
-                HeaderText = "Axle",
-                DataPropertyName = "Index",
-                Width = 60
-            });
-
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Weight",
-                HeaderText = "Weight (kg)",
-                DataPropertyName = "Weight",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N0" }
-            });
-
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Time",
-                HeaderText = "Time (ms)",
-                DataPropertyName = "DisplayTime"
-            });
-
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Distance",
-                HeaderText = "Distance (m)",
-                DataPropertyName = "DisplayDistance"
-            });
-        }
-
+ 
         private void ConfigureRTL(DataGridView grid)
         {
             grid.DefaultCellStyle.Font = new Font("B Nazanin", 10);
@@ -211,7 +176,15 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 //_currentVehicle = vehicle; // 🔴 store latest vehicle
 
-                _lastVehicleByLine[vehicle.LineId] = vehicle;
+
+                lock (_lock)
+                {
+                    if (!_vehiclesByLine.ContainsKey(vehicle.LineId))
+                        _vehiclesByLine[vehicle.LineId] = new Queue<VehicleDto>();
+
+                    _vehiclesByLine[vehicle.LineId].Enqueue(vehicle);
+                }
+
 
 
                 this.Invoke(() =>
@@ -241,9 +214,6 @@ namespace VehicleWeightMeasurementSystemDemo
         {
             try
             {
-                //if (_currentVehicle == null)
-                //    return; // no serial data yet
-
                 var plate = _plateService.Extract(path);
 
                 this.Invoke(async () =>
@@ -251,15 +221,17 @@ namespace VehicleWeightMeasurementSystemDemo
                     pictureBoxVehicle.Image = Image.FromFile(path);
                     lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
 
-                    // 🔥 Get last vehicle from same line
-                    var vehicle = _lastVehicleByLine.ContainsKey(lineId)
-                        ? _lastVehicleByLine[lineId]
-                        : null;
+                    // 🔥 WAIT for serial data
+                    var vehicle = await WaitForVehicleAsync(lineId);
 
                     if (vehicle != null)
                     {
                         await _repo.SaveAsync(vehicle, path, plate);
                         await LoadGrid();
+                    }
+                    else
+                    {
+                        Log.Warning("❌ No vehicle found after wait for Line {LineId}", lineId);
                     }
                 });
             }
@@ -267,6 +239,27 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 Log.Error(ex, "Error processing image: {Path}", path);
             }
+        }
+
+        private async Task<VehicleDto?> WaitForVehicleAsync(int lineId, int timeoutMs = 3000)
+        {
+            var start = DateTime.Now;
+
+            while ((DateTime.Now - start).TotalMilliseconds < timeoutMs)
+            {
+                lock (_lock)
+                {
+                    if (_vehiclesByLine.ContainsKey(lineId) &&
+                        _vehiclesByLine[lineId].Count > 0)
+                    {
+                        return _vehiclesByLine[lineId].Dequeue();
+                    }
+                }
+
+                await Task.Delay(50); // 🔥 retry every 50ms
+            }
+
+            return null; // ⛔ timeout
         }
 
         private async Task LoadGrid()
@@ -313,8 +306,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 }
             }
         }
-
-
 
         private void HandleSerialStatus(bool connected)
         {
@@ -404,7 +395,6 @@ namespace VehicleWeightMeasurementSystemDemo
         {
             MessageBox.Show("Daily Report Coming Soon...");
         }
-
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {

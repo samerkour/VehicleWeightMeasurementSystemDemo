@@ -44,7 +44,7 @@ namespace VehicleWeightMeasurementSystemDemo.Data
                             .OrderBy(a => a.AxleIndex)
                             .Select(a => new AxleDto
                                 {
-                                    Index = a.AxleIndex,
+                                    AxleIndex = a.AxleIndex,
                                     Weight = a.Weight,
                                     TimeMs = a.TimeMs ?? 0,
                                     Distance = a.Distance ?? 0
@@ -93,7 +93,7 @@ namespace VehicleWeightMeasurementSystemDemo.Data
 
                     Axles = v.Axles.Select(a => new AxleEntity
                     {
-                        AxleIndex = a.Index,
+                        AxleIndex = a.AxleIndex,
                         Weight = a.Weight,
                         TimeMs = a.TimeMs == 0 ? null : a.TimeMs,
                         Distance = a.Distance == 0 ? null : a.Distance,
@@ -112,15 +112,20 @@ namespace VehicleWeightMeasurementSystemDemo.Data
                     CapturedAt = file.CreationTime,
                     ImportedAt = DateTime.Now,
 
-                    //// 🔥 Plate split SAFE
-                    //PlateP1 = plateNo.Length >= 2 ? plateNo[..2] : null,
-                    //PlateP2 = plateNo.Length >= 4 ? plateNo.Substring(2, 2) : null,
-                    //PlateP3 = plateNo.Length >= 6 ? plateNo.Substring(4, 2) : null,
-                    //PlateP4 = plateNo.Length > 6 ? Safe(plateNo.Substring(6), 10) : null,
+                    // 🔥 Plate split SAFE
+                    PlateP1 = plateNo.Length >= 2 ? plateNo.Substring(1,2) : null,
+                    PlateP2 = plateNo.Length >= 4 ? plateNo.Substring(4, 1) : null,
+                    PlateP3 = plateNo.Length >= 6 ? plateNo.Substring(6, 3) : null,
+                    PlateP4 = plateNo.Length > 6 ? plateNo.Substring(15, 2) : null,
 
                     PlateConfidence = plate?.Confidence,
                     PlateReadStatus = plate != null ? 1 : 0,
-                    PlateReadAt = DateTime.Now
+                    PlateReadAt = DateTime.Now,
+
+
+                    TerminalSent = false,
+                    TerminalTtoRegistered = false,
+                    TerminalImageExpired = false,
                 };
 
                 // 🔥 Link properly

@@ -3,5 +3,5 @@ UPDATE dbo.CameraPhotos
 SET TerminalSent = 1,
     TerminalSentAt = @SentAt,
     TerminalLastError = NULL
-WHERE PhotoId = @PhotoId
+WHERE Id = @PhotoId
   AND TerminalSent = 0;

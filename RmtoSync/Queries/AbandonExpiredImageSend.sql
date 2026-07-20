@@ -5,6 +5,6 @@ SET TerminalImageExpired = 1,
     TerminalLastError = @ErrorMessage,
     TerminalSent = 1,
     TerminalSentAt = SYSDATETIME()
-WHERE PhotoId = @PhotoId
+WHERE Id = @PhotoId
   AND TerminalSent = 0
   AND ISNULL(TerminalImageExpired, 0) = 0;

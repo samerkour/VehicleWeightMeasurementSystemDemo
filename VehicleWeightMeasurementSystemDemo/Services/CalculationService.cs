@@ -15,7 +15,7 @@ namespace VehicleWeightMeasurementSystemDemo.Services
 
             foreach (var axle in vehicle.Axles)
             {
-                axle.Distance = speedMs * (axle.TimeMs / 1000);
+                axle.Distance =  speedMs * (axle.TimeMs / 1000);
             }
         }
     }

@@ -39,6 +39,7 @@
     <None Remove="Queries\AbandonExpiredImageSend.sql" />
     <None Remove="Queries\GetPendingBatch.sql" />
     <None Remove="Queries\GetPendingImageBatch.sql" />
+    <None Remove="Queries\MarkDataSent.sql" />
     <None Remove="Queries\MarkExpiredImageWindow.sql" />
     <None Remove="Queries\MarkTtoRegistered.sql" />
     <None Remove="Queries\RecordTerminalError.sql" />
@@ -52,6 +53,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Queries\GetPendingImageBatch.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Queries\MarkDataSent.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Queries\MarkExpiredImageWindow.sql">

@@ -45,7 +45,7 @@ namespace VehicleWeightMeasurementSystemDemo.Services
 
                 list.Add(new AxleDto
                 {
-                    Index = i + 1,
+                    AxleIndex = i + 1,
                     Weight = weight,
                     TimeMs = time
                 });

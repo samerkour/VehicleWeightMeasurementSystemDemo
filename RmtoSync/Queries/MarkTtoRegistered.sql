@@ -7,5 +7,5 @@ SET TerminalTtoRegistered = 1,
     TerminalPackId = @PackId,
     PassInfoId = COALESCE(@PassInfoId, PassInfoId),
     TerminalLastError = NULL
-WHERE PhotoId = @PhotoId
+WHERE Id = @PhotoId
   AND TerminalSent = 0;

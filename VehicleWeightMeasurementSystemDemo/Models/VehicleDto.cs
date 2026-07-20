@@ -38,7 +38,7 @@ namespace VehicleWeightMeasurementSystemDemo.Models
                     return "---";
 
                 return string.Join(" | ", Axles.Select(a =>
-                    $"Axle {a.Index}: {a.Weight:N0} kg, {a.TimeMs:F1} ms, {a.Distance:F2} m"));
+                    $"Axle {a.AxleIndex}: {a.Weight:N0} kg, {a.TimeMs:F1} ms, {a.Distance:F2} m"));
             }
         }
     }
