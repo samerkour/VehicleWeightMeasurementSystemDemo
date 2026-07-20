@@ -15,6 +15,7 @@ namespace VehicleWeightMeasurementSystemDemo
         LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 
         private readonly Dictionary<int, Queue<VehicleDto>> _vehiclesByLine = new();
+        private readonly Dictionary<int, Queue<string>> _imagesByLine = new();
         private readonly object _lock = new();
 
         private SerialPortService _serialService;
@@ -167,6 +168,49 @@ namespace VehicleWeightMeasurementSystemDemo
 
         }
 
+        //private async void HandleSerialData(string raw)
+        //{
+        //    try
+        //    {
+        //        var vehicle = VehicleParser.Parse(raw);
+        //        CalculationService.CalculateDistances(vehicle);
+
+        //        //_currentVehicle = vehicle; // 🔴 store latest vehicle
+
+
+        //        lock (_lock)
+        //        {
+        //            if (!_vehiclesByLine.ContainsKey(vehicle.LineId))
+        //                _vehiclesByLine[vehicle.LineId] = new Queue<VehicleDto>();
+
+        //            _vehiclesByLine[vehicle.LineId].Enqueue(vehicle);
+        //        }
+
+
+
+        //        this.Invoke(() =>
+        //        {
+        //            lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
+        //            lblLine.Text = $"Line: {vehicle.LineId}";
+        //            lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
+        //            lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
+        //            lblADC1.Text = $"ADC1: {vehicle.ADC1}";
+        //            lblADC2.Text = $"ADC2: {vehicle.ADC2}";
+        //            lblADC3.Text = $"ADC3: {vehicle.ADC3}";
+        //            lblADC4.Text = $"ADC4: {vehicle.ADC4}";
+
+        //            dgvAxles.DataSource = null;
+        //            dgvAxles.DataSource = vehicle.Axles;
+        //        });
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Error(ex, "Error processing serial data: {Raw}", raw);
+        //    }
+
+        //}
+
         private async void HandleSerialData(string raw)
         {
             try
@@ -174,74 +218,105 @@ namespace VehicleWeightMeasurementSystemDemo
                 var vehicle = VehicleParser.Parse(raw);
                 CalculationService.CalculateDistances(vehicle);
 
-                //_currentVehicle = vehicle; // 🔴 store latest vehicle
+                string imagePath = null;
 
+                // 🔥 WAIT for IMAGE instead of VEHICLE
+                imagePath = await WaitForImageAsync(vehicle.LineId);
 
-                lock (_lock)
+                if (imagePath == null)
                 {
-                    if (!_vehiclesByLine.ContainsKey(vehicle.LineId))
-                        _vehiclesByLine[vehicle.LineId] = new Queue<VehicleDto>();
-
-                    _vehiclesByLine[vehicle.LineId].Enqueue(vehicle);
+                    Log.Warning("❌ No image found for Line {LineId}", vehicle.LineId);
+                    return;
                 }
 
+                var plate = _plateService.Extract(imagePath);
 
+                await _repo.SaveAsync(vehicle, imagePath, plate);
+                await LoadGrid();
 
                 this.Invoke(() =>
                 {
-                    lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
-                    lblLine.Text = $"Line: {vehicle.LineId}";
-                    lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
-                    lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
-                    lblADC1.Text = $"ADC1: {vehicle.ADC1}";
-                    lblADC2.Text = $"ADC2: {vehicle.ADC2}";
-                    lblADC3.Text = $"ADC3: {vehicle.ADC3}";
-                    lblADC4.Text = $"ADC4: {vehicle.ADC4}";
-
-                    dgvAxles.DataSource = null;
-                    dgvAxles.DataSource = vehicle.Axles;
+                    pictureBoxVehicle.Image = Image.FromFile(imagePath);
+                    lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
                 });
-
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error processing serial data: {Raw}", raw);
             }
-
         }
 
         private void HandleImage(int lineId, string path)
         {
             try
             {
-                var plate = _plateService.Extract(path);
-
-                this.Invoke(async () =>
+                lock (_lock)
                 {
-                    pictureBoxVehicle.Image = Image.FromFile(path);
-                    lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+                    if (!_imagesByLine.ContainsKey(lineId))
+                        _imagesByLine[lineId] = new Queue<string>();
 
-                    // 🔥 WAIT for serial data
-                    var vehicle = await WaitForVehicleAsync(lineId);
-
-                    if (vehicle != null)
-                    {
-                        await _repo.SaveAsync(vehicle, path, plate);
-                        await LoadGrid();
-                    }
-                    else
-                    {
-                        Log.Warning("❌ No vehicle found after wait for Line {LineId}", lineId);
-                    }
-                });
+                    _imagesByLine[lineId].Enqueue(path);
+                }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error processing image: {Path}", path);
+                Log.Error(ex, "Error queueing image: {Path}", path);
             }
         }
 
-        private async Task<VehicleDto?> WaitForVehicleAsync(int lineId, int timeoutMs = 3000)
+        //private void HandleImage(int lineId, string path)
+        //{
+        //    try
+        //    {
+        //        var plate = _plateService.Extract(path);
+
+        //        this.Invoke(async () =>
+        //        {
+        //            pictureBoxVehicle.Image = Image.FromFile(path);
+        //            lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+
+        //            // 🔥 WAIT for serial data
+        //            var vehicle = await WaitForVehicleAsync(lineId);
+
+        //            if (vehicle != null)
+        //            {
+        //                await _repo.SaveAsync(vehicle, path, plate);
+        //                await LoadGrid();
+        //            }
+        //            else
+        //            {
+        //                Log.Warning("❌ No vehicle found after wait for Line {LineId}", lineId);
+        //            }
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Error(ex, "Error processing image: {Path}", path);
+        //    }
+        //}
+
+        //private async Task<VehicleDto?> WaitForVehicleAsync(int lineId, int timeoutMs = 3000)
+        //{
+        //    var start = DateTime.Now;
+
+        //    while ((DateTime.Now - start).TotalMilliseconds < timeoutMs)
+        //    {
+        //        lock (_lock)
+        //        {
+        //            if (_vehiclesByLine.ContainsKey(lineId) &&
+        //                _vehiclesByLine[lineId].Count > 0)
+        //            {
+        //                return _vehiclesByLine[lineId].Dequeue();
+        //            }
+        //        }
+
+        //        await Task.Delay(50); // 🔥 retry every 50ms
+        //    }
+
+        //    return null; // ⛔ timeout
+        //}
+
+        private async Task<string?> WaitForImageAsync(int lineId, int timeoutMs = 2000)
         {
             var start = DateTime.Now;
 
@@ -249,17 +324,17 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 lock (_lock)
                 {
-                    if (_vehiclesByLine.ContainsKey(lineId) &&
-                        _vehiclesByLine[lineId].Count > 0)
+                    if (_imagesByLine.ContainsKey(lineId) &&
+                        _imagesByLine[lineId].Count > 0)
                     {
-                        return _vehiclesByLine[lineId].Dequeue();
+                        return _imagesByLine[lineId].Dequeue();
                     }
                 }
 
-                await Task.Delay(50); // 🔥 retry every 50ms
+                await Task.Delay(50);
             }
 
-            return null; // ⛔ timeout
+            return null;
         }
 
         private async Task LoadGrid()
