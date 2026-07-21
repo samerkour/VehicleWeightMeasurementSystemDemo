@@ -17,5 +17,10 @@ namespace VehicleWeightMeasurementSystemDemo.Models
         // 🔹 Optional: for UI formatting
         //public string DisplayTime => TimeMs > 0 ? TimeMs?.ToString("F1") : "--";
         //public string DisplayDistance => Distance > 0 ? Distance?.ToString("F2") : "--";
+
+        public string DistanceDisplay =>
+            Distance.HasValue ? $"{Distance:F2}" : "-";
+
+        public string ADCDisplay { get; set; } // فقط برای UI
     }
 }

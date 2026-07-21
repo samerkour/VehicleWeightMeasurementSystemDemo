@@ -70,7 +70,10 @@ namespace VehicleWeightMeasurementSystemDemo.Data
 
             try
             {
-                var file = new FileInfo(imagePath);
+                FileInfo file = null;
+
+                if (!string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath))
+                    file = new FileInfo(imagePath);
 
                 string plateNo = plate?.PlateNumber ?? "";
 
@@ -104,16 +107,16 @@ namespace VehicleWeightMeasurementSystemDemo.Data
                 // 🔥 Add CameraPhoto correctly (1-to-many)
                 var photo = new CameraPhotoEntity
                 {
-                    FileName = file.Name,
-                    FullPath = file.FullName,
-                    RelativePath = file.Name,
-                    FileSizeBytes = file.Length,
+                    FileName = file?.Name ?? "-",
+                    FullPath = file?.FullName ?? "-",
+                    RelativePath = file?.Name ?? "-",
+                    FileSizeBytes = file?.Length ?? 0,
 
-                    CapturedAt = file.CreationTime,
+                    CapturedAt = file?.CreationTime ?? DateTime.Now,
                     ImportedAt = DateTime.Now,
 
                     // 🔥 Plate split SAFE
-                    PlateP1 = plateNo.Length >= 2 ? plateNo.Substring(1,2) : null,
+                    PlateP1 = plateNo.Length >= 2 ? plateNo.Substring(1, 2) : null,
                     PlateP2 = plateNo.Length >= 4 ? plateNo.Substring(4, 1) : null,
                     PlateP3 = plateNo.Length >= 6 ? plateNo.Substring(6, 3) : null,
                     PlateP4 = plateNo.Length > 6 ? plateNo.Substring(15, 2) : null,

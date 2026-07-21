@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.ComponentModel;
+using System.Net;
 using VehicleWeightMeasurementSystemDemo.Camera;
 using VehicleWeightMeasurementSystemDemo.Data;
 using VehicleWeightMeasurementSystemDemo.Models;
@@ -11,6 +12,7 @@ namespace VehicleWeightMeasurementSystemDemo
 {
     public partial class MainForm : Form
     {
+        private System.Windows.Forms.Timer _camTimer;
         private bool IsDesignMode =>
         LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 
@@ -23,26 +25,78 @@ namespace VehicleWeightMeasurementSystemDemo
         private PlateRecognitionService _plateService;
         private SqlRepository _repo;
 
- 
-        private void ConfigureRTL(DataGridView grid)
+
+        private void ConfigureGrid()
         {
-            grid.DefaultCellStyle.Font = new Font("B Nazanin", 10);
-            grid.ColumnHeadersDefaultCellStyle.Font = new Font("B Nazanin", 10, FontStyle.Bold);
-            grid.DefaultCellStyle.Font = new Font("B Nazanin", 10);
+            dgvRecords.AutoGenerateColumns = false;
+            dgvRecords.Columns.Clear();
 
-            grid.RightToLeft = RightToLeft.Yes;
+            // PlateNumber
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "PlateNumber",
+                HeaderText = "Plate",
+                DataPropertyName = "PlateNumber",
+                FillWeight = 15
+            });
 
-            // Align headers
-            grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            // Speed
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Speed",
+                HeaderText = "Speed",
+                DataPropertyName = "Speed",
+                FillWeight = 10
+            });
 
-            // Align cell content
-            grid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            // LineName (NOT LineId)
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "LineName",
+                HeaderText = "Line",
+                DataPropertyName = "LineId",
+                FillWeight = 10
+            });
 
-            // Optional: better readability
-            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            // AxleCount
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "AxleCount",
+                HeaderText = "AxleCount",
+                DataPropertyName = "AxleCount",
+                FillWeight = 10
+            });
 
-            // Prevent weird selection visuals in RTL
-            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            // AxlesSummary 🔥 (25%)
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "AxlesSummary",
+                HeaderText = "Axles Detail",
+                DataPropertyName = "AxlesSummary",
+                FillWeight = 25
+            });
+
+            // TotalWeight
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "TotalWeight",
+                HeaderText = "TotalWeight",
+                DataPropertyName = "TotalWeight",
+                FillWeight = 15
+            });
+
+            // Timestamp
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Timestamp",
+                HeaderText = "Time",
+                DataPropertyName = "Timestamp",
+                FillWeight = 15,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Format = "yyyy-MM-dd HH:mm:ss"
+                }
+            });
         }
 
         public MainForm()
@@ -70,7 +124,11 @@ namespace VehicleWeightMeasurementSystemDemo
             if (IsDesignMode)
                 return;
 
+          
+
+            ConfigureGrid();
             Style();
+
 
             _plateService.AddCamera(pictureBoxVehicle);
 
@@ -112,6 +170,27 @@ namespace VehicleWeightMeasurementSystemDemo
             // 🔹 4. Start services
             _serialService.Start();
             _cameraService.Start(lineIds); // no need to pass path anymore
+
+
+
+            //_camTimer = new System.Windows.Forms.Timer();
+            //_camTimer.Interval = 700; // 🔥 سرعت مناسب
+            //_camTimer.Tick += async (s, e) =>
+            //{
+            //    await LoadHikvisionImage(picCam1,
+            //        "http://192.168.1.64/ISAPI/Streaming/channels/101/picture",
+            //        "admin",
+            //        "Mehrdad@");
+
+            //    await LoadHikvisionImage(picCam2,
+            //        "http://192.168.1.65/ISAPI/Streaming/channels/101/picture",
+            //        "admin",
+            //        "Mehrdad@@");
+            //};
+
+            //_camTimer.Start();
+
+
 
 
             await LoadGrid(); // 🔴 load existing data
@@ -168,6 +247,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         }
 
+
         //private async void HandleSerialData(string raw)
         //{
         //    try
@@ -211,12 +291,78 @@ namespace VehicleWeightMeasurementSystemDemo
 
         //}
 
+        private async Task LoadHikvisionImage(PictureBox pic, string url, string user, string pass)
+        {
+            try
+            {
+                var handler = new HttpClientHandler
+                {
+                    Credentials = new NetworkCredential(user, pass)
+                };
+
+                using var client = new HttpClient(handler);
+
+                var bytes = await client.GetByteArrayAsync(url);
+
+                using var ms = new MemoryStream(bytes);
+                var img = Image.FromStream(ms);
+
+                pic.Invoke(() =>
+                {
+                    pic.Image?.Dispose(); // 🔥 مهم
+                    pic.Image = new Bitmap(img);
+                });
+            }
+            catch (Exception ex)
+            {
+                // اگر قطع شد، تصویر سیاه کن
+                pic.Invoke(() =>
+                {
+                    pic.BackColor = Color.DarkRed;
+                });
+
+                Log.Warning("Camera error: {Message}", ex.Message);
+            }
+        }
+
         private async void HandleSerialData(string raw)
         {
             try
             {
                 var vehicle = VehicleParser.Parse(raw);
                 CalculationService.CalculateDistances(vehicle);
+
+
+                // 🔥 👉 اینجا ADC رو به Axles وصل کن
+                var adcList = new List<string?>
+                    {
+                        vehicle.ADC1,
+                        vehicle.ADC2,
+                        vehicle.ADC3,
+                        vehicle.ADC4
+                    };
+
+                for (int i = 0; i < vehicle.Axles.Count; i++)
+                {
+                    var axle = vehicle.Axles[i];
+
+                    axle.ADCDisplay =
+                        i < adcList.Count && !string.IsNullOrWhiteSpace(adcList[i])
+                        ? adcList[i]
+                        : "-";
+                }
+
+
+                this.Invoke(() =>
+                {
+                    lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
+                    lblLine.Text = $"Line: {vehicle.LineId}";
+                    lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
+                    lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
+
+                    dgvAxles.DataSource = null;
+                    dgvAxles.DataSource = vehicle.Axles;
+                });
 
                 string imagePath = null;
 
@@ -226,7 +372,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 if (imagePath == null)
                 {
                     Log.Warning("❌ No image found for Line {LineId}", vehicle.LineId);
-                    return;
+                    //return;
                 }
 
                 var plate = _plateService.Extract(imagePath);
@@ -234,17 +380,34 @@ namespace VehicleWeightMeasurementSystemDemo
                 await _repo.SaveAsync(vehicle, imagePath, plate);
                 await LoadGrid();
 
-                this.Invoke(() =>
+                if (!string.IsNullOrEmpty(imagePath))
                 {
-                    pictureBoxVehicle.Image = Image.FromFile(imagePath);
-                    lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
-                });
+                    this.Invoke(() =>
+                    {
+                        using (var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                            using (var ms = new MemoryStream())
+                            {
+                                fs.CopyTo(ms);
+                                ms.Position = 0;
+
+                                var img = Image.FromStream(ms);
+
+                                pictureBoxVehicle.Image?.Dispose();
+                                pictureBoxVehicle.Image = new Bitmap(img);
+                            }
+                        }
+
+                        lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+                    });
+                }
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error processing serial data: {Raw}", raw);
             }
         }
+
 
         private void HandleImage(int lineId, string path)
         {

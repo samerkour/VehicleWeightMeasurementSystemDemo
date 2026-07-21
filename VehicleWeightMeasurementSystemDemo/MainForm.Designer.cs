@@ -1,4 +1,6 @@
-﻿namespace VehicleWeightMeasurementSystemDemo 
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
+namespace VehicleWeightMeasurementSystemDemo 
 {
     partial class MainForm
     {
@@ -32,20 +34,20 @@
             lblSerialStatus = new Label();
             lblCameraStatus = new Label();
             grpVehicleInfo = new GroupBox();
-            lblADC4 = new Label();
             lblAxleTitle = new Label();
-            lblADC3 = new Label();
-            lblADC2 = new Label();
-            lblADC1 = new Label();
             lblTotalWeight = new Label();
             lblAxles = new Label();
             lblLine = new Label();
             dgvAxles = new DataGridView();
             lblSpeed = new Label();
-            backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            grpImage = new GroupBox();
             lblDetectedPlate = new Label();
             pictureBoxVehicle = new PictureBox();
+            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
+            backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            grpImage = new GroupBox();
+            tableLayoutPanel = new TableLayoutPanel();
             dgvRecords = new DataGridView();
             lblRecordsTitle = new Label();
             menuStrip1 = new MenuStrip();
@@ -64,12 +66,17 @@
             databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
+            picCam1 = new PictureBox();
+            picCam2 = new PictureBox();
             grpVehicleInfo.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvAxles).BeginInit();
-            grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
+            grpImage.SuspendLayout();
+            tableLayoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
             menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picCam2).BeginInit();
             SuspendLayout();
             // 
             // lblSerialStatus
@@ -93,16 +100,14 @@
             // grpVehicleInfo
             // 
             grpVehicleInfo.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            grpVehicleInfo.Controls.Add(lblADC4);
             grpVehicleInfo.Controls.Add(lblAxleTitle);
-            grpVehicleInfo.Controls.Add(lblADC3);
-            grpVehicleInfo.Controls.Add(lblADC2);
-            grpVehicleInfo.Controls.Add(lblADC1);
             grpVehicleInfo.Controls.Add(lblTotalWeight);
             grpVehicleInfo.Controls.Add(lblAxles);
             grpVehicleInfo.Controls.Add(lblLine);
             grpVehicleInfo.Controls.Add(dgvAxles);
             grpVehicleInfo.Controls.Add(lblSpeed);
+            grpVehicleInfo.Controls.Add(lblDetectedPlate);
+            grpVehicleInfo.Controls.Add(pictureBoxVehicle);
             grpVehicleInfo.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             grpVehicleInfo.Location = new Point(588, 71);
             grpVehicleInfo.Margin = new Padding(3, 4, 3, 4);
@@ -113,57 +118,21 @@
             grpVehicleInfo.TabStop = false;
             grpVehicleInfo.Text = "Vehicle Information";
             // 
-            // lblADC4
-            // 
-            lblADC4.AutoSize = true;
-            lblADC4.Location = new Point(11, 247);
-            lblADC4.Name = "lblADC4";
-            lblADC4.Size = new Size(84, 23);
-            lblADC4.TabIndex = 11;
-            lblADC4.Text = "ADC4: ---";
-            // 
             // lblAxleTitle
             // 
             lblAxleTitle.AutoSize = true;
             lblAxleTitle.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblAxleTitle.ForeColor = Color.RoyalBlue;
-            lblAxleTitle.Location = new Point(9, 272);
+            lblAxleTitle.Location = new Point(14, 243);
             lblAxleTitle.Name = "lblAxleTitle";
-            lblAxleTitle.Size = new Size(165, 28);
+            lblAxleTitle.Size = new Size(120, 28);
             lblAxleTitle.TabIndex = 7;
-            lblAxleTitle.Text = "Axle Information";
-            // 
-            // lblADC3
-            // 
-            lblADC3.AutoSize = true;
-            lblADC3.Location = new Point(11, 214);
-            lblADC3.Name = "lblADC3";
-            lblADC3.Size = new Size(83, 23);
-            lblADC3.TabIndex = 10;
-            lblADC3.Text = "ADC3: ---";
-            // 
-            // lblADC2
-            // 
-            lblADC2.AutoSize = true;
-            lblADC2.Location = new Point(11, 180);
-            lblADC2.Name = "lblADC2";
-            lblADC2.Size = new Size(83, 23);
-            lblADC2.TabIndex = 9;
-            lblADC2.Text = "ADC2: ---";
-            // 
-            // lblADC1
-            // 
-            lblADC1.AutoSize = true;
-            lblADC1.Location = new Point(11, 147);
-            lblADC1.Name = "lblADC1";
-            lblADC1.Size = new Size(81, 23);
-            lblADC1.TabIndex = 8;
-            lblADC1.Text = "ADC1: ---";
+            lblAxleTitle.Text = "Information";
             // 
             // lblTotalWeight
             // 
             lblTotalWeight.AutoSize = true;
-            lblTotalWeight.Location = new Point(11, 114);
+            lblTotalWeight.Location = new Point(11, 158);
             lblTotalWeight.Name = "lblTotalWeight";
             lblTotalWeight.Size = new Size(131, 23);
             lblTotalWeight.TabIndex = 7;
@@ -172,7 +141,7 @@
             // lblAxles
             // 
             lblAxles.AutoSize = true;
-            lblAxles.Location = new Point(11, 80);
+            lblAxles.Location = new Point(14, 117);
             lblAxles.Name = "lblAxles";
             lblAxles.Size = new Size(108, 23);
             lblAxles.TabIndex = 6;
@@ -181,7 +150,7 @@
             // lblLine
             // 
             lblLine.AutoSize = true;
-            lblLine.Location = new Point(11, 52);
+            lblLine.Location = new Point(14, 76);
             lblLine.Name = "lblLine";
             lblLine.Size = new Size(71, 23);
             lblLine.TabIndex = 5;
@@ -192,12 +161,14 @@
             dgvAxles.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             dgvAxles.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvAxles.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvAxles.Location = new Point(6, 301);
+            dgvAxles.Location = new Point(11, 274);
             dgvAxles.Margin = new Padding(3, 4, 3, 4);
             dgvAxles.Name = "dgvAxles";
             dgvAxles.RowHeadersWidth = 51;
-            dgvAxles.Size = new Size(548, 191);
+            dgvAxles.Size = new Size(543, 217);
             dgvAxles.TabIndex = 5;
+
+
             dgvAxles.AutoGenerateColumns = false;
             dgvAxles.Columns.Clear();
 
@@ -209,59 +180,40 @@
                 Width = 30
             });
 
+
+            // 🔹 ADC Column
             dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "Weight",
-                HeaderText = "Weight (kg)",
-                DataPropertyName = "Weight",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N0" }
+                Name = "ADC",
+                HeaderText = "ADC",
+                DataPropertyName = "ADCDisplay",
+                Width = 120
             });
 
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Time",
-                HeaderText = "Time (ms)",
-                DataPropertyName = "TimeMs",
-                Width= 30
-            });
-
+            // 🔹 Distance Column
             dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Distance",
                 HeaderText = "Distance (m)",
-                DataPropertyName = "Distance",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" }
+                DataPropertyName = "DistanceDisplay",
+                Width = 120
             });
+
             // 
             // lblSpeed
             // 
             lblSpeed.AutoSize = true;
-            lblSpeed.Location = new Point(11, 27);
+            lblSpeed.Location = new Point(11, 35);
             lblSpeed.Name = "lblSpeed";
             lblSpeed.Size = new Size(87, 23);
             lblSpeed.TabIndex = 4;
             lblSpeed.Text = "Speed: ---";
             // 
-            // grpImage
-            // 
-            grpImage.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpImage.Controls.Add(lblDetectedPlate);
-            grpImage.Controls.Add(pictureBoxVehicle);
-            grpImage.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpImage.Location = new Point(10, 71);
-            grpImage.Margin = new Padding(3, 4, 3, 4);
-            grpImage.Name = "grpImage";
-            grpImage.Padding = new Padding(3, 4, 3, 4);
-            grpImage.Size = new Size(560, 500);
-            grpImage.TabIndex = 4;
-            grpImage.TabStop = false;
-            grpImage.Text = "Captured Vehicle Image";
-            // 
             // lblDetectedPlate
             // 
             lblDetectedPlate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblDetectedPlate.AutoSize = true;
-            lblDetectedPlate.Location = new Point(11, 469);
+            lblDetectedPlate.Location = new Point(209, 215);
             lblDetectedPlate.Name = "lblDetectedPlate";
             lblDetectedPlate.Size = new Size(180, 23);
             lblDetectedPlate.TabIndex = 1;
@@ -270,14 +222,62 @@
             // pictureBoxVehicle
             // 
             pictureBoxVehicle.BorderStyle = BorderStyle.FixedSingle;
-            pictureBoxVehicle.Dock = DockStyle.Fill;
-            pictureBoxVehicle.Location = new Point(3, 27);
+            pictureBoxVehicle.Location = new Point(204, 15);
             pictureBoxVehicle.Margin = new Padding(3, 4, 3, 4);
             pictureBoxVehicle.Name = "pictureBoxVehicle";
-            pictureBoxVehicle.Size = new Size(554, 469);
+            pictureBoxVehicle.Size = new Size(350, 227);
             pictureBoxVehicle.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxVehicle.TabIndex = 0;
             pictureBoxVehicle.TabStop = false;
+            // 
+            // dataGridViewTextBoxColumn1
+            // 
+            dataGridViewTextBoxColumn1.MinimumWidth = 6;
+            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
+            dataGridViewTextBoxColumn1.Width = 125;
+            // 
+            // dataGridViewTextBoxColumn2
+            // 
+            dataGridViewTextBoxColumn2.MinimumWidth = 6;
+            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
+            dataGridViewTextBoxColumn2.Width = 125;
+            // 
+            // dataGridViewTextBoxColumn3
+            // 
+            dataGridViewTextBoxColumn3.MinimumWidth = 6;
+            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
+            dataGridViewTextBoxColumn3.Width = 125;
+            // 
+            // grpImage
+            // 
+            grpImage.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpImage.Controls.Add(tableLayoutPanel);
+            grpImage.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            grpImage.Location = new Point(10, 71);
+            grpImage.Margin = new Padding(3, 4, 3, 4);
+            grpImage.Name = "grpImage";
+            grpImage.Padding = new Padding(3, 4, 3, 4);
+            grpImage.Size = new Size(560, 500);
+            grpImage.TabIndex = 4;
+            grpImage.TabStop = false;
+            grpImage.Text = "Vehicle Camera OverView";
+            // 
+            // tableLayoutPanel
+            // 
+            tableLayoutPanel.ColumnCount = 2;
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel.Controls.Add(picCam1, 0, 0);
+            tableLayoutPanel.Controls.Add(picCam2, 1, 0);
+            tableLayoutPanel.Dock = DockStyle.Fill;
+            tableLayoutPanel.Location = new Point(3, 27);
+            tableLayoutPanel.Name = "tableLayoutPanel";
+            tableLayoutPanel.RowCount = 1;
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel.Size = new Size(554, 469);
+            tableLayoutPanel.TabIndex = 4;
+          
             // 
             // dgvRecords
             // 
@@ -417,6 +417,28 @@
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
             // 
+            // picCam1
+            // 
+            picCam1.BorderStyle = BorderStyle.FixedSingle;
+            picCam1.Dock = DockStyle.Fill;
+            picCam1.Location = new Point(3, 3);
+            picCam1.Name = "picCam1";
+            picCam1.Size = new Size(271, 463);
+            picCam1.SizeMode = PictureBoxSizeMode.StretchImage;
+            picCam1.TabIndex = 0;
+            picCam1.TabStop = false;
+            // 
+            // picCam2
+            // 
+            picCam2.BorderStyle = BorderStyle.FixedSingle;
+            picCam2.Dock = DockStyle.Fill;
+            picCam2.Location = new Point(280, 3);
+            picCam2.Name = "picCam2";
+            picCam2.Size = new Size(271, 463);
+            picCam2.SizeMode = PictureBoxSizeMode.StretchImage;
+            picCam2.TabIndex = 1;
+            picCam2.TabStop = false;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -439,12 +461,14 @@
             grpVehicleInfo.ResumeLayout(false);
             grpVehicleInfo.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)dgvAxles).EndInit();
-            grpImage.ResumeLayout(false);
-            grpImage.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
+            grpImage.ResumeLayout(false);
+            tableLayoutPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picCam2).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -457,10 +481,6 @@
         private Label lblLine;
         private Label lblAxles;
         private Label lblTotalWeight;
-        private Label lblADC4;
-        private Label lblADC3;
-        private Label lblADC2;
-        private Label lblADC1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private GroupBox grpImage;
         private PictureBox pictureBoxVehicle;
@@ -485,5 +505,11 @@
         private ToolStripMenuItem cameraSettingsToolStripMenuItem;
         private ToolStripMenuItem databaseSettingsToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
+        private TableLayoutPanel tableLayoutPanel;
+        private PictureBox picCam1;
+        private PictureBox picCam2;
     }
 }

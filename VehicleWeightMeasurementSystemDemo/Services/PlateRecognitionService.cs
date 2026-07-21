@@ -60,6 +60,10 @@ namespace VehicleWeightMeasurementSystemDemo.Services
 
         public PlateResultDto Extract(string imagePath, byte camIndex = 0)
         {
+            if (string.IsNullOrEmpty(imagePath))
+                return new PlateResultDto() ;
+
+
             var camera = _cameras[camIndex];
             //camera.save_setting();
 
@@ -122,7 +126,7 @@ namespace VehicleWeightMeasurementSystemDemo.Services
             // RTL-safe formatting
             string rtlMark = "\u200F"; // Right-to-left mark
 
-            return rtlMark + $"{part1} {letter} {part2} ایران{part3}";
+            return rtlMark + $"{part3} ایران {part2} {letter} {part1}";
         }
 
       

@@ -13,12 +13,12 @@ namespace VehicleWeightMeasurementSystemDemo.Models
         public int? VehicleId { get; set; }
         public VehicleEntity? Vehicle { get; set; }
 
-        public string FileName { get; set; }
-        public string RelativePath { get; set; }
-        public string FullPath { get; set; }
+        public string? FileName { get; set; }
+        public string? RelativePath { get; set; }
+        public string? FullPath { get; set; }
 
         public long? FileSizeBytes { get; set; }
-        public string FileHash { get; set; }
+        public string? FileHash { get; set; }
 
         public DateTime? CapturedAt { get; set; }
         public DateTime? ImportedAt { get; set; }
