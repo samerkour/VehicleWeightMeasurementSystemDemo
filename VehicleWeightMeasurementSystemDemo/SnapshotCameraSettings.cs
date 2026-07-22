@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace VehicleWeightMeasurementSystemDemo
 {
-    public class CameraSettings
+    public class SnapshotCameraSettings
     {
         public string WatchRootPath { get; set; }
         public string Filter { get; set; }

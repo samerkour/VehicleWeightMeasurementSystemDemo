@@ -142,7 +142,8 @@ namespace VehicleWeightMeasurementSystemDemo
                 .Build();
 
             var serialSettings = config.GetSection("SerialPort").Get<SerialPortSettings>();
-            var cameraSettings = config.GetSection("Camera").Get<CameraSettings>();
+            var cameraSettings = config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
+            var ovarviewCamera = config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
 
             //var connectionString = config.GetConnectionString("DefaultConnection");
             //var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -172,23 +173,22 @@ namespace VehicleWeightMeasurementSystemDemo
             _cameraService.Start(lineIds); // no need to pass path anymore
 
 
+            if (ovarviewCamera.Enabled)
+            {
 
-            //_camTimer = new System.Windows.Forms.Timer();
-            //_camTimer.Interval = 700; // 🔥 سرعت مناسب
-            //_camTimer.Tick += async (s, e) =>
-            //{
-            //    await LoadHikvisionImage(picCam1,
-            //        "http://192.168.1.64/ISAPI/Streaming/channels/101/picture",
-            //        "admin",
-            //        "Mehrdad@");
-
-            //    await LoadHikvisionImage(picCam2,
-            //        "http://192.168.1.65/ISAPI/Streaming/channels/101/picture",
-            //        "admin",
-            //        "Mehrdad@@");
-            //};
-
-            //_camTimer.Start();
+                _camTimer = new System.Windows.Forms.Timer();
+                _camTimer.Interval = ovarviewCamera.RefreshIntervalMs;
+                _camTimer.Tick += async (s, e) =>
+                {
+                    await LoadHikvisionImage(
+                     picCam1,
+                     $"http://{ovarviewCamera.Host}{ovarviewCamera.PictureUrl}",
+                     ovarviewCamera.Username,
+                     ovarviewCamera.Password
+                 );
+                };
+                _camTimer.Start();
+            }
 
 
 

@@ -10,14 +10,14 @@ namespace VehicleWeightMeasurementSystemDemo.Services
 
     public class CameraWatcherService
     {
-        private readonly CameraSettings _settings;
+        private readonly SnapshotCameraSettings _settings;
 
         private readonly List<LineWatcher> _lines = new();
 
         public event Action<int, string> OnImageCaptured;
         public event Action<bool> OnStatusChanged;
 
-        public CameraWatcherService(CameraSettings settings)
+        public CameraWatcherService(SnapshotCameraSettings settings)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
