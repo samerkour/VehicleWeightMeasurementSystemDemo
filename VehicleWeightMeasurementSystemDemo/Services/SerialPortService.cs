@@ -6,6 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Options;
+using System.IO.Ports;
+
 namespace VehicleWeightMeasurementSystemDemo.Services
 {
     public class SerialPortService
@@ -16,9 +19,10 @@ namespace VehicleWeightMeasurementSystemDemo.Services
         public event Action<string> OnDataReceived;
         public event Action<bool> OnConnectionChanged;
 
-        public SerialPortService(SerialPortSettings? options)
+        // ✅ Inject via IOptions
+        public SerialPortService(IOptions<SerialPortSettings> options)
         {
-            _settings = options;
+            _settings = options.Value;
         }
 
         public void Start()
@@ -26,11 +30,11 @@ namespace VehicleWeightMeasurementSystemDemo.Services
             try
             {
                 _port = new SerialPort(
-                     _settings.PortName,
-                     _settings.BaudRate,
-                     Enum.Parse<Parity>(_settings.Parity),
-                     _settings.DataBits,
-                     Enum.Parse<StopBits>(_settings.StopBits)
+                    _settings.PortName,
+                    _settings.BaudRate,
+                    Enum.Parse<Parity>(_settings.Parity),
+                    _settings.DataBits,
+                    Enum.Parse<StopBits>(_settings.StopBits)
                 );
 
                 _port.DataReceived += (s, e) =>
@@ -47,12 +51,11 @@ namespace VehicleWeightMeasurementSystemDemo.Services
                 };
 
                 _port.Open();
-
-                OnConnectionChanged?.Invoke(true); // ✅ Connected
+                OnConnectionChanged?.Invoke(true);
             }
             catch
             {
-                OnConnectionChanged?.Invoke(false); // ❌ Failed
+                OnConnectionChanged?.Invoke(false);
             }
         }
 

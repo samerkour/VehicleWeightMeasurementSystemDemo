@@ -3,28 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace VehicleWeightMeasurementSystemDemo.Services
 {
+
     using Microsoft.Extensions.Options;
 
     public class CameraWatcherService
     {
         private readonly SnapshotCameraSettings _settings;
-
         private readonly List<LineWatcher> _lines = new();
 
         public event Action<int, string> OnImageCaptured;
         public event Action<bool> OnStatusChanged;
 
-        public CameraWatcherService(SnapshotCameraSettings settings)
+        // ✅ DI-friendly constructor
+        public CameraWatcherService(IOptions<SnapshotCameraSettings> options)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _settings = options.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
         public void Start(List<int> lineIds)
         {
-            Stop(); // 🔥 prevent duplicate watchers
+            Stop(); // prevent duplicates
 
             try
             {
@@ -103,4 +105,5 @@ namespace VehicleWeightMeasurementSystemDemo.Services
             return false;
         }
     }
+
 }

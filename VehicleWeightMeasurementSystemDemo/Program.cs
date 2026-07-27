@@ -92,6 +92,25 @@ namespace VehicleWeightMeasurementSystemDemo
             builder.Services.AddSingleton<IPlateRecognitionEngine, SatpaRecognitionEngine>();
             builder.Services.AddSingleton<PlateRecognitionService>();
 
+
+            // 🔹 Bind config
+            builder.Services.Configure<SerialPortSettings>(
+                builder.Configuration.GetSection("SerialPort"));
+
+            // 🔹 Register service
+            builder.Services.AddSingleton<SerialPortService>();
+
+
+
+            // 🔹 Bind config
+            builder.Services.Configure<SnapshotCameraSettings>(
+                builder.Configuration.GetSection("SnapshotCamera"));
+
+            // 🔹 Register service (Singleton = correct for watchers)
+            builder.Services.AddSingleton<CameraWatcherService>();
+
+
+
             builder.Services.AddTransient<MainForm>();
 
             var app = builder.Build();

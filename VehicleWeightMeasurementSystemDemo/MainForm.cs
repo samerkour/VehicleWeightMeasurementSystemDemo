@@ -7,6 +7,7 @@ using VehicleWeightMeasurementSystemDemo.Camera;
 using VehicleWeightMeasurementSystemDemo.Data;
 using VehicleWeightMeasurementSystemDemo.Models;
 using VehicleWeightMeasurementSystemDemo.Services;
+using static VehicleWeightMeasurementSystemDemo.Services.SATPA_API;
 
 namespace VehicleWeightMeasurementSystemDemo
 {
@@ -16,13 +17,17 @@ namespace VehicleWeightMeasurementSystemDemo
         private bool IsDesignMode =>
         LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 
+
+        private List<int> lineIds;
+
         private readonly Dictionary<int, Queue<VehicleDto>> _vehiclesByLine = new();
         private readonly Dictionary<int, Queue<string>> _imagesByLine = new();
         private readonly object _lock = new();
 
         private SerialPortService _serialService;
-        private CameraWatcherService _cameraService;
+        private CameraWatcherService _cameraWatcher;
         private PlateRecognitionService _plateService;
+        private IConfiguration _config;
         private SqlRepository _repo;
 
 
@@ -104,18 +109,28 @@ namespace VehicleWeightMeasurementSystemDemo
             InitializeComponent();
         }
 
-        public MainForm(SqlRepository repo,
-            PlateRecognitionService plateService
-            //,
-            //SerialPortService serial,
-            //CameraWatcherService camera
+        public MainForm(IConfiguration config,
+            SqlRepository repo,
+            PlateRecognitionService plateService,
+            SerialPortService serialService,
+            CameraWatcherService cameraWatcher
             )
             : this()
         {
+            _config = config;
             _repo = repo;
+
             _plateService = plateService;
-            //_serialService = serial;
-            //_cameraService = camera;
+
+            _serialService = serialService;
+            _serialService.OnConnectionChanged += HandleSerialStatus;
+            _serialService.OnDataReceived += async (raw) => await HandleSerialData(raw);
+
+
+
+            _cameraWatcher = cameraWatcher;
+            _cameraWatcher.OnImageCaptured += async (lineId, path) => await HandleImage(lineId, path);
+            _cameraWatcher.OnStatusChanged += HandleCameraStatus;
         }
 
 
@@ -129,39 +144,15 @@ namespace VehicleWeightMeasurementSystemDemo
             ConfigureGrid();
             Style();
 
-
-
-            //ConfigureRTL(dgvAxles);
-            //ConfigureRTL(dgvRecords);
-
-            // 🔹 1. Load configuration (appsettings.json)
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false)
-                .Build();
-
-            var serialSettings = config.GetSection("SerialPort").Get<SerialPortSettings>();
-            var snapshotCameraSettings = config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
-            var ovarviewCamera = config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
-
-            //var connectionString = config.GetConnectionString("DefaultConnection");
-            //var options = new DbContextOptionsBuilder<AppDbContext>()
-            //.UseSqlServer(connectionString)
-            //.Options;
-
-            //var dbContext = new AppDbContext(options);
-
-            // 🔹 2. Create services using settings
-            _serialService = new SerialPortService(serialSettings);
-            _cameraService = new CameraWatcherService(snapshotCameraSettings);
-
+            // 🔹 1. Load configurations
+            var serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
+            var snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
+            var ovarviewCamera = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
 
 
             // 🔹 3. Wire events
             if (serialSettings.Enabled)
             {
-                _serialService.OnConnectionChanged += HandleSerialStatus;
-                _serialService.OnDataReceived += HandleSerialData;
                 // Start services
                 _serialService.Start();
             }
@@ -170,10 +161,8 @@ namespace VehicleWeightMeasurementSystemDemo
             if (snapshotCameraSettings.Enabled)
             {
 
-                var lineIds = await _repo.GetActiveLineIdsAsync();
-                _cameraService.OnStatusChanged += HandleCameraStatus;
-                _cameraService.OnImageCaptured += HandleImage;
-                _cameraService.Start(lineIds); // no need to pass path anymore
+                 lineIds = await _repo.GetActiveLineIdsAsync();
+                _cameraWatcher.Start(lineIds); // no need to pass path anymore
 
 
                 _plateService.AddCamera(pictureBoxVehicle);
@@ -330,22 +319,49 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
-        private async void HandleSerialData(string raw)
+        private void UpdateVehicleUI(VehicleDto vehicle)
+        {
+            lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
+            lblLine.Text = $"Line: {vehicle.LineId}";
+            lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
+            lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
+
+            dgvAxles.DataSource = null;
+            dgvAxles.DataSource = vehicle.Axles;
+        }
+
+        private void UpdateImageUI(string imagePath, PlateResultDto plate)
+        {
+            using (var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var ms = new MemoryStream())
+            {
+                fs.CopyTo(ms);
+                ms.Position = 0;
+
+                var img = Image.FromStream(ms);
+
+                pictureBoxVehicle.Image?.Dispose();
+                pictureBoxVehicle.Image = new Bitmap(img);
+            }
+
+            lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+        }
+
+        private async Task HandleSerialData(string raw)
         {
             try
             {
                 var vehicle = VehicleParser.Parse(raw);
                 CalculationService.CalculateDistances(vehicle);
 
-
-                // 🔥 👉 اینجا ADC رو به Axles وصل کن
+                // 🔹 Map ADC → Axles
                 var adcList = new List<string?>
-                    {
-                        vehicle.ADC1,
-                        vehicle.ADC2,
-                        vehicle.ADC3,
-                        vehicle.ADC4
-                    };
+                {
+                    vehicle.ADC1,
+                    vehicle.ADC2,
+                    vehicle.ADC3,
+                    vehicle.ADC4
+                };
 
                 for (int i = 0; i < vehicle.Axles.Count; i++)
                 {
@@ -357,27 +373,21 @@ namespace VehicleWeightMeasurementSystemDemo
                         : "-";
                 }
 
-
-                this.Invoke(() =>
+                // 🔹 UI Update (SAFE)
+                if (InvokeRequired)
                 {
-                    lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
-                    lblLine.Text = $"Line: {vehicle.LineId}";
-                    lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
-                    lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
+                    await InvokeAsync(() => UpdateVehicleUI(vehicle));
+                }
+                else
+                {
+                    UpdateVehicleUI(vehicle);
+                }
 
-                    dgvAxles.DataSource = null;
-                    dgvAxles.DataSource = vehicle.Axles;
-                });
-
-                string imagePath = null;
-
-                // 🔥 WAIT for IMAGE instead of VEHICLE
-                imagePath = await WaitForImageAsync(vehicle.LineId);
+                string imagePath = await WaitForImageAsync(vehicle.LineId);
 
                 if (imagePath == null)
                 {
                     Log.Warning("❌ No image found for Line {LineId}", vehicle.LineId);
-                    //return;
                 }
 
                 var plate = _plateService.Extract(imagePath);
@@ -387,24 +397,14 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 if (!string.IsNullOrEmpty(imagePath))
                 {
-                    this.Invoke(() =>
+                    if (InvokeRequired)
                     {
-                        using (var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                        {
-                            using (var ms = new MemoryStream())
-                            {
-                                fs.CopyTo(ms);
-                                ms.Position = 0;
-
-                                var img = Image.FromStream(ms);
-
-                                pictureBoxVehicle.Image?.Dispose();
-                                pictureBoxVehicle.Image = new Bitmap(img);
-                            }
-                        }
-
-                        lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
-                    });
+                        await InvokeAsync(() => UpdateImageUI(imagePath, plate));
+                    }
+                    else
+                    {
+                        UpdateImageUI(imagePath, plate);
+                    }
                 }
             }
             catch (Exception ex)
@@ -414,7 +414,7 @@ namespace VehicleWeightMeasurementSystemDemo
         }
 
 
-        private void HandleImage(int lineId, string path)
+        private async Task HandleImage(int lineId, string path)
         {
             try
             {
@@ -553,13 +553,13 @@ namespace VehicleWeightMeasurementSystemDemo
         private void startSystemToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _serialService?.Start();
-            //_cameraService?.Start();
+            _cameraWatcher?.Start(lineIds);
         }
 
         private void stopSystemToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _serialService?.Stop();
-            _cameraService?.Stop();
+            _cameraWatcher?.Stop();
         }
 
         private void dailyReportToolStripMenuItem_Click(object sender, EventArgs e)
