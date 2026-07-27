@@ -11,5 +11,6 @@ namespace VehicleWeightMeasurementSystemDemo
         public string WatchRootPath { get; set; }
         public string Filter { get; set; }
         public bool IncludeSubfolders { get; set; }
+        public bool Enabled { get; set; }
     }
 }

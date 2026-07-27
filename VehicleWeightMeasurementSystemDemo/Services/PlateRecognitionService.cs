@@ -40,6 +40,7 @@ namespace VehicleWeightMeasurementSystemDemo.Services
                 License.per_camera
             );
 
+
             _cameras.Add(cam);
 
             var dto = new CameraDto

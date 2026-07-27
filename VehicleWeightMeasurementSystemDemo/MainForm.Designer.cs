@@ -163,6 +163,35 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvAxles.RowHeadersWidth = 51;
             dgvAxles.Size = new Size(543, 217);
             dgvAxles.TabIndex = 5;
+            dgvAxles.AutoGenerateColumns = false;
+            dgvAxles.Columns.Clear();
+
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle",
+                HeaderText = "Axle",
+                DataPropertyName = "AxleIndex",
+                Width = 30
+            });
+
+
+            // 🔹 ADC Column
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ADC",
+                HeaderText = "ADC",
+                DataPropertyName = "ADCDisplay",
+                Width = 120
+            });
+
+            // 🔹 Distance Column
+            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Distance",
+                HeaderText = "Distance (m)",
+                DataPropertyName = "DistanceDisplay",
+                Width = 120
+            });
             // 
             // lblSpeed
             // 

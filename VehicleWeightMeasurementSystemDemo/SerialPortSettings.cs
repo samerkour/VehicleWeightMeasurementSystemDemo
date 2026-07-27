@@ -13,5 +13,6 @@ namespace VehicleWeightMeasurementSystemDemo
         public string Parity { get; set; }
         public int DataBits { get; set; }
         public string StopBits { get; set; }
+        public bool Enabled { get; set; }
     }
 }

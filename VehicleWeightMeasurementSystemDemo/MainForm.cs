@@ -130,7 +130,6 @@ namespace VehicleWeightMeasurementSystemDemo
             Style();
 
 
-            _plateService.AddCamera(pictureBoxVehicle);
 
             //ConfigureRTL(dgvAxles);
             //ConfigureRTL(dgvRecords);
@@ -142,7 +141,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 .Build();
 
             var serialSettings = config.GetSection("SerialPort").Get<SerialPortSettings>();
-            var cameraSettings = config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
+            var snapshotCameraSettings = config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
             var ovarviewCamera = config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
 
             //var connectionString = config.GetConnectionString("DefaultConnection");
@@ -154,25 +153,33 @@ namespace VehicleWeightMeasurementSystemDemo
 
             // 🔹 2. Create services using settings
             _serialService = new SerialPortService(serialSettings);
-            _cameraService = new CameraWatcherService(cameraSettings);
-            //_plateService = new PlateRecognitionService(new SatpaRecognitionEngine());
-            //_repo = new SqlRepository(dbContext);
+            _cameraService = new CameraWatcherService(snapshotCameraSettings);
+
+
 
             // 🔹 3. Wire events
-            _serialService.OnConnectionChanged += HandleSerialStatus;
-            _serialService.OnDataReceived += HandleSerialData;
+            if (serialSettings.Enabled)
+            {
+                _serialService.OnConnectionChanged += HandleSerialStatus;
+                _serialService.OnDataReceived += HandleSerialData;
+                // Start services
+                _serialService.Start();
+            }
 
 
-            var lineIds = await _repo.GetActiveLineIdsAsync();
+            if (snapshotCameraSettings.Enabled)
+            {
 
-            _cameraService.OnStatusChanged += HandleCameraStatus;
-            _cameraService.OnImageCaptured += HandleImage;
-
-            // 🔹 4. Start services
-            _serialService.Start();
-            _cameraService.Start(lineIds); // no need to pass path anymore
+                var lineIds = await _repo.GetActiveLineIdsAsync();
+                _cameraService.OnStatusChanged += HandleCameraStatus;
+                _cameraService.OnImageCaptured += HandleImage;
+                _cameraService.Start(lineIds); // no need to pass path anymore
 
 
+                _plateService.AddCamera(pictureBoxVehicle);
+            }
+
+ 
             if (ovarviewCamera.Enabled)
             {
 
@@ -180,7 +187,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 _camTimer.Interval = ovarviewCamera.RefreshIntervalMs;
                 _camTimer.Tick += async (s, e) =>
                 {
-                    await LoadHikvisionImage(
+                    await LoadImage(
                      picCam1,
                      $"http://{ovarviewCamera.Host}{ovarviewCamera.PictureUrl}",
                      ovarviewCamera.Username,
@@ -190,10 +197,8 @@ namespace VehicleWeightMeasurementSystemDemo
                 _camTimer.Start();
             }
 
-
-
-
             await LoadGrid(); // 🔴 load existing data
+
         }
 
         private void Style()
@@ -291,7 +296,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         //}
 
-        private async Task LoadHikvisionImage(PictureBox pic, string url, string user, string pass)
+        private async Task LoadImage(PictureBox pic, string url, string user, string pass)
         {
             try
             {
@@ -426,58 +431,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 Log.Error(ex, "Error queueing image: {Path}", path);
             }
         }
-
-        //private void HandleImage(int lineId, string path)
-        //{
-        //    try
-        //    {
-        //        var plate = _plateService.Extract(path);
-
-        //        this.Invoke(async () =>
-        //        {
-        //            pictureBoxVehicle.Image = Image.FromFile(path);
-        //            lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
-
-        //            // 🔥 WAIT for serial data
-        //            var vehicle = await WaitForVehicleAsync(lineId);
-
-        //            if (vehicle != null)
-        //            {
-        //                await _repo.SaveAsync(vehicle, path, plate);
-        //                await LoadGrid();
-        //            }
-        //            else
-        //            {
-        //                Log.Warning("❌ No vehicle found after wait for Line {LineId}", lineId);
-        //            }
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Error(ex, "Error processing image: {Path}", path);
-        //    }
-        //}
-
-        //private async Task<VehicleDto?> WaitForVehicleAsync(int lineId, int timeoutMs = 3000)
-        //{
-        //    var start = DateTime.Now;
-
-        //    while ((DateTime.Now - start).TotalMilliseconds < timeoutMs)
-        //    {
-        //        lock (_lock)
-        //        {
-        //            if (_vehiclesByLine.ContainsKey(lineId) &&
-        //                _vehiclesByLine[lineId].Count > 0)
-        //            {
-        //                return _vehiclesByLine[lineId].Dequeue();
-        //            }
-        //        }
-
-        //        await Task.Delay(50); // 🔥 retry every 50ms
-        //    }
-
-        //    return null; // ⛔ timeout
-        //}
 
         private async Task<string?> WaitForImageAsync(int lineId, int timeoutMs = 2000)
         {
