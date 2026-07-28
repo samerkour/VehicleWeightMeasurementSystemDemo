@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VehicleWeightMeasurementSystemDemo.Models
+namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
 {
     public class VehicleEntity
     {
@@ -49,6 +49,6 @@ namespace VehicleWeightMeasurementSystemDemo.Models
 
         // 🔥 Navigation
         public List<AxleEntity> Axles { get; set; } = new();
-        public List<CameraPhotoEntity> Photos { get; set; } = new();
+        public List<CameraPhotosEntity> Photos { get; set; } = new();
     }
 }

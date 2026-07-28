@@ -11,8 +11,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Runtime.InteropServices.ComTypes;
-using static VehicleWeightMeasurementSystemDemo.Services.SATPA_API;
-namespace VehicleWeightMeasurementSystemDemo.Services
+using static VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop.SATPA_API;
+
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop
 {
     class SATPA
     {

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static VehicleWeightMeasurementSystemDemo.Services.SATPA_API;
+using static VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop.SATPA_API;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions
 {
     public interface IPlateRecognitionEngine
     {

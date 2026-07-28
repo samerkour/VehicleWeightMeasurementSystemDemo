@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 {
 
     using Microsoft.Extensions.Options;
+    using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
 
     public class CameraWatcherService
     {

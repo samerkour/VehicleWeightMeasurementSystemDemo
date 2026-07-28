@@ -6,9 +6,11 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
-using VehicleWeightMeasurementSystemDemo.Camera;
-using VehicleWeightMeasurementSystemDemo.Data;
-using VehicleWeightMeasurementSystemDemo.Services;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Serial;
 
 namespace VehicleWeightMeasurementSystemDemo
 {

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VehicleWeightMeasurementSystemDemo.Models;
+using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.Domain.Services
 {
-    public static class CalculationService
+    public static class DistanceCalculator
     {
         public static void CalculateDistances(VehicleDto vehicle)
         {

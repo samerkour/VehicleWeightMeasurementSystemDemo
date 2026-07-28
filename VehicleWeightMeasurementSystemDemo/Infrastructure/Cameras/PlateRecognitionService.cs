@@ -6,11 +6,13 @@ using System.Resources;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using VehicleWeightMeasurementSystemDemo.Camera;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
+using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
-using static VehicleWeightMeasurementSystemDemo.Services.SATPA_API;
+using static VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop.SATPA_API;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 {
     public class PlateRecognitionService
     {
@@ -26,7 +28,7 @@ namespace VehicleWeightMeasurementSystemDemo.Services
         private readonly List<SATPA> _cameras = new();
 
 
-        public CameraDto AddCamera(PictureBox preview)
+        public bool AddCamera(PictureBox preview)
         {
             if (_cameras.Any())
                 throw new InvalidOperationException("Camera already added.");
@@ -43,15 +45,10 @@ namespace VehicleWeightMeasurementSystemDemo.Services
 
             _cameras.Add(cam);
 
-            var dto = new CameraDto
-            {
-                CameraNumber = 1,//cam.name,
-                Name = cam.name
-            };
+            if(_cameras.Any())
+                return true;
 
-            //OnCameraAdded?.Invoke(dto);
-
-            return dto;
+            return false;
         }
 
         public PlateRecognitionService(IPlateRecognitionEngine engine)

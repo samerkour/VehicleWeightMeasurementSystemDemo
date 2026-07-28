@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VehicleWeightMeasurementSystemDemo.Models;
+using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Parsing
 {
     public class VehicleParser
     {

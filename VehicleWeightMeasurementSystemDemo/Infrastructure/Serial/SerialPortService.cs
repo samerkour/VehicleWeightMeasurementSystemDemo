@@ -8,8 +8,9 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
 using System.IO.Ports;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Serial
 {
     public class SerialPortService
     {

@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 
-namespace VehicleWeightMeasurementSystemDemo.Services
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop
 {
 
 

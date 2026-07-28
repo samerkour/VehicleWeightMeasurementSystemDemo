@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VehicleWeightMeasurementSystemDemo.Models
+namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
 {
     public class AxleEntity
     {

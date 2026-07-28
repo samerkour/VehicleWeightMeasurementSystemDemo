@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VehicleWeightMeasurementSystemDemo
+namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration
 {
 
     public class OverviewCameraSettings

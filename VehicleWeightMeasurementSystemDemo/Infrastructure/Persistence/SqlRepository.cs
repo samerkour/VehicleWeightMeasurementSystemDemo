@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VehicleWeightMeasurementSystemDemo.Camera;
-using VehicleWeightMeasurementSystemDemo.Models;
+using VehicleWeightMeasurementSystemDemo.Domain.Entities;
+using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 
-namespace VehicleWeightMeasurementSystemDemo.Data
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 {
     public class SqlRepository
     {
@@ -105,7 +105,7 @@ namespace VehicleWeightMeasurementSystemDemo.Data
                 };
 
                 // 🔥 Add CameraPhoto correctly (1-to-many)
-                var photo = new CameraPhotoEntity
+                var photo = new CameraPhotosEntity
                 {
                     FileName = file?.Name ?? "-",
                     FullPath = file?.FullName ?? "-",

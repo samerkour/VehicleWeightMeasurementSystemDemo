@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VehicleWeightMeasurementSystemDemo.Services;
-using static VehicleWeightMeasurementSystemDemo.Services.SATPA_API;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
+using static VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop.SATPA_API;
 
-namespace VehicleWeightMeasurementSystemDemo.Camera
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 {
     public class SatpaRecognitionEngine : IPlateRecognitionEngine
     {

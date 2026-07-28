@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VehicleWeightMeasurementSystemDemo.Models;
+using VehicleWeightMeasurementSystemDemo.Domain.Entities;
 
-namespace VehicleWeightMeasurementSystemDemo.Data
+namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 {
     public class AppDbContext : DbContext
     {
@@ -14,7 +14,7 @@ namespace VehicleWeightMeasurementSystemDemo.Data
         public DbSet<AxleEntity> Axles { get; set; }
         public DbSet<LineEntity> Lines => Set<LineEntity>();
 
-        public DbSet<CameraPhotoEntity> CameraPhotos { get; set; }
+        public DbSet<CameraPhotosEntity> CameraPhotos { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
@@ -52,7 +52,7 @@ namespace VehicleWeightMeasurementSystemDemo.Data
             modelBuilder.Entity<VehicleEntity>().ToTable("Vehicles");
             modelBuilder.Entity<AxleEntity>().ToTable("Axles");
             modelBuilder.Entity<LineEntity>().ToTable("Lines");
-            modelBuilder.Entity<CameraPhotoEntity>().ToTable("CameraPhotos");
+            modelBuilder.Entity<CameraPhotosEntity>().ToTable("CameraPhotos");
         }
 
 

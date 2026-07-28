@@ -1,13 +1,14 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.ComponentModel;
 using System.Net;
-using VehicleWeightMeasurementSystemDemo.Camera;
-using VehicleWeightMeasurementSystemDemo.Data;
-using VehicleWeightMeasurementSystemDemo.Models;
-using VehicleWeightMeasurementSystemDemo.Services;
-using static VehicleWeightMeasurementSystemDemo.Services.SATPA_API;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Parsing;
+using VehicleWeightMeasurementSystemDemo.Domain.Services;
+using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
+using VehicleWeightMeasurementSystemDemo.Infrastructure.Serial;
 
 namespace VehicleWeightMeasurementSystemDemo
 {
@@ -309,11 +310,6 @@ namespace VehicleWeightMeasurementSystemDemo
             }
             catch (Exception ex)
             {
-                // اگر قطع شد، تصویر سیاه کن
-                pic.Invoke(() =>
-                {
-                    pic.BackColor = Color.DarkRed;
-                });
 
                 Log.Warning("Camera error: {Message}", ex.Message);
             }
@@ -352,7 +348,7 @@ namespace VehicleWeightMeasurementSystemDemo
             try
             {
                 var vehicle = VehicleParser.Parse(raw);
-                CalculationService.CalculateDistances(vehicle);
+                DistanceCalculator.CalculateDistances(vehicle);
 
                 // 🔹 Map ADC → Axles
                 var adcList = new List<string?>
