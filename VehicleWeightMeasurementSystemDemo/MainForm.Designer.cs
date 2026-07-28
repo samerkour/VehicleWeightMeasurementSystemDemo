@@ -42,9 +42,6 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSpeed = new Label();
             lblDetectedPlate = new Label();
             pictureBoxVehicle = new PictureBox();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             grpImage = new GroupBox();
             picCam1 = new PictureBox();
@@ -57,9 +54,7 @@ namespace VehicleWeightMeasurementSystemDemo
             startSystemToolStripMenuItem = new ToolStripMenuItem();
             stopSystemToolStripMenuItem = new ToolStripMenuItem();
             reportsToolStripMenuItem = new ToolStripMenuItem();
-            dailyReportToolStripMenuItem = new ToolStripMenuItem();
-            monthlyReportToolStripMenuItem = new ToolStripMenuItem();
-            overweightVehiclesToolStripMenuItem = new ToolStripMenuItem();
+            VehicleReportToolStripMenuItem = new ToolStripMenuItem();
             settingsToolStripMenuItem = new ToolStripMenuItem();
             serialPortSettingsToolStripMenuItem = new ToolStripMenuItem();
             cameraSettingsToolStripMenuItem = new ToolStripMenuItem();
@@ -163,35 +158,6 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvAxles.RowHeadersWidth = 51;
             dgvAxles.Size = new Size(543, 217);
             dgvAxles.TabIndex = 5;
-            dgvAxles.AutoGenerateColumns = false;
-            dgvAxles.Columns.Clear();
-
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Axle",
-                HeaderText = "Axle",
-                DataPropertyName = "AxleIndex",
-                Width = 30
-            });
-
-
-            // 🔹 ADC Column
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "ADC",
-                HeaderText = "ADC",
-                DataPropertyName = "ADCDisplay",
-                Width = 120
-            });
-
-            // 🔹 Distance Column
-            dgvAxles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Distance",
-                HeaderText = "Distance (m)",
-                DataPropertyName = "DistanceDisplay",
-                Width = 120
-            });
             // 
             // lblSpeed
             // 
@@ -222,24 +188,6 @@ namespace VehicleWeightMeasurementSystemDemo
             pictureBoxVehicle.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxVehicle.TabIndex = 0;
             pictureBoxVehicle.TabStop = false;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            dataGridViewTextBoxColumn1.MinimumWidth = 6;
-            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            dataGridViewTextBoxColumn1.Width = 125;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
-            dataGridViewTextBoxColumn2.MinimumWidth = 6;
-            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            dataGridViewTextBoxColumn2.Width = 125;
-            // 
-            // dataGridViewTextBoxColumn3
-            // 
-            dataGridViewTextBoxColumn3.MinimumWidth = 6;
-            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            dataGridViewTextBoxColumn3.Width = 125;
             // 
             // grpImage
             // 
@@ -339,31 +287,17 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // reportsToolStripMenuItem
             // 
-            reportsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { dailyReportToolStripMenuItem, monthlyReportToolStripMenuItem, overweightVehiclesToolStripMenuItem });
+            reportsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { VehicleReportToolStripMenuItem });
             reportsToolStripMenuItem.Name = "reportsToolStripMenuItem";
             reportsToolStripMenuItem.Size = new Size(74, 24);
             reportsToolStripMenuItem.Text = "Reports";
             // 
-            // dailyReportToolStripMenuItem
+            // VehicleReportToolStripMenuItem
             // 
-            dailyReportToolStripMenuItem.Name = "dailyReportToolStripMenuItem";
-            dailyReportToolStripMenuItem.Size = new Size(225, 26);
-            dailyReportToolStripMenuItem.Text = "Daily Report";
-            dailyReportToolStripMenuItem.Click += dailyReportToolStripMenuItem_Click;
-            // 
-            // monthlyReportToolStripMenuItem
-            // 
-            monthlyReportToolStripMenuItem.Name = "monthlyReportToolStripMenuItem";
-            monthlyReportToolStripMenuItem.Size = new Size(225, 26);
-            monthlyReportToolStripMenuItem.Text = "Monthly Report";
-            monthlyReportToolStripMenuItem.Click += monthlyReportToolStripMenuItem_Click;
-            // 
-            // overweightVehiclesToolStripMenuItem
-            // 
-            overweightVehiclesToolStripMenuItem.Name = "overweightVehiclesToolStripMenuItem";
-            overweightVehiclesToolStripMenuItem.Size = new Size(225, 26);
-            overweightVehiclesToolStripMenuItem.Text = "Overweight Vehicles";
-            overweightVehiclesToolStripMenuItem.Click += overweightVehiclesToolStripMenuItem_Click;
+            VehicleReportToolStripMenuItem.Name = "dailyReportToolStripMenuItem";
+            VehicleReportToolStripMenuItem.Size = new Size(224, 26);
+            VehicleReportToolStripMenuItem.Text = "Vehicle Report";
+            VehicleReportToolStripMenuItem.Click += VehicleReportToolStripMenuItem_Click;
             // 
             // settingsToolStripMenuItem
             // 
@@ -422,6 +356,7 @@ namespace VehicleWeightMeasurementSystemDemo
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Vehicle Weight Measurement System";
+            FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             grpVehicleInfo.ResumeLayout(false);
             grpVehicleInfo.PerformLayout();
@@ -436,6 +371,7 @@ namespace VehicleWeightMeasurementSystemDemo
             PerformLayout();
         }
 
+    
         #endregion
         private Label lblSerialStatus;
         private Label lblCameraStatus;
@@ -461,16 +397,11 @@ namespace VehicleWeightMeasurementSystemDemo
         private ToolStripMenuItem exitToolStripMenuItem;
         private ToolStripMenuItem startSystemToolStripMenuItem;
         private ToolStripMenuItem stopSystemToolStripMenuItem;
-        private ToolStripMenuItem dailyReportToolStripMenuItem;
-        private ToolStripMenuItem monthlyReportToolStripMenuItem;
-        private ToolStripMenuItem overweightVehiclesToolStripMenuItem;
+        private ToolStripMenuItem VehicleReportToolStripMenuItem;
         private ToolStripMenuItem serialPortSettingsToolStripMenuItem;
         private ToolStripMenuItem cameraSettingsToolStripMenuItem;
         private ToolStripMenuItem databaseSettingsToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
 
         private PictureBox picCam1;
         private Label label1;

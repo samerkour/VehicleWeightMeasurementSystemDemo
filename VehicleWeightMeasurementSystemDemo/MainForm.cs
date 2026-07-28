@@ -9,19 +9,19 @@ using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Serial;
+using VehicleWeightMeasurementSystemDemo.Theming;
 
 namespace VehicleWeightMeasurementSystemDemo
 {
     public partial class MainForm : Form
     {
-        private System.Windows.Forms.Timer _camTimer;
         private bool IsDesignMode =>
         LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 
+        private CancellationTokenSource? _cameraCts;
+
 
         private List<int> lineIds;
-
-        private readonly Dictionary<int, Queue<VehicleDto>> _vehiclesByLine = new();
         private readonly Dictionary<int, Queue<string>> _imagesByLine = new();
         private readonly object _lock = new();
 
@@ -140,7 +140,7 @@ namespace VehicleWeightMeasurementSystemDemo
             if (IsDesignMode)
                 return;
 
-          
+
 
             ConfigureGrid();
             Style();
@@ -162,30 +162,14 @@ namespace VehicleWeightMeasurementSystemDemo
             if (snapshotCameraSettings.Enabled)
             {
 
-                 lineIds = await _repo.GetActiveLineIdsAsync();
+                lineIds = await _repo.GetActiveLineIdsAsync();
                 _cameraWatcher.Start(lineIds); // no need to pass path anymore
-
 
                 _plateService.AddCamera(pictureBoxVehicle);
             }
 
- 
-            if (ovarviewCamera.Enabled)
-            {
 
-                _camTimer = new System.Windows.Forms.Timer();
-                _camTimer.Interval = ovarviewCamera.RefreshIntervalMs;
-                _camTimer.Tick += async (s, e) =>
-                {
-                    await LoadImage(
-                     picCam1,
-                     $"http://{ovarviewCamera.Host}{ovarviewCamera.PictureUrl}",
-                     ovarviewCamera.Username,
-                     ovarviewCamera.Password
-                 );
-                };
-                _camTimer.Start();
-            }
+            StartOverviewCamera(ovarviewCamera);
 
             await LoadGrid(); // 🔴 load existing data
 
@@ -243,74 +227,99 @@ namespace VehicleWeightMeasurementSystemDemo
         }
 
 
-        //private async void HandleSerialData(string raw)
-        //{
-        //    try
-        //    {
-        //        var vehicle = VehicleParser.Parse(raw);
-        //        CalculationService.CalculateDistances(vehicle);
+        private void StartOverviewCamera(OverviewCameraSettings ovarviewCamera)
+        {
+            if (!ovarviewCamera.Enabled)
+                return;
 
-        //        //_currentVehicle = vehicle; // 🔴 store latest vehicle
+            _cameraCts = new CancellationTokenSource();
 
+            Task.Run(async () =>
+            {
+                while (!_cameraCts.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await LoadImage(
+                            picCam1,
+                            $"http://{ovarviewCamera.Host}{ovarviewCamera.PictureUrl}",
+                            ovarviewCamera.Username,
+                            ovarviewCamera.Password
+                        );
 
-        //        lock (_lock)
-        //        {
-        //            if (!_vehiclesByLine.ContainsKey(vehicle.LineId))
-        //                _vehiclesByLine[vehicle.LineId] = new Queue<VehicleDto>();
+                        await Task.Delay(
+                            ovarviewCamera.RefreshIntervalMs,
+                            _cameraCts.Token
+                        );
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("Camera stream error: {Message}", ex.Message);
+                    }
+                }
 
-        //            _vehiclesByLine[vehicle.LineId].Enqueue(vehicle);
-        //        }
+            }, _cameraCts.Token);
+        }
 
+        private void StopOverviewCamera()
+        {
+            if (_cameraCts == null)
+                return;
 
+            if (!_cameraCts.IsCancellationRequested)
+            {
+                _cameraCts.Cancel();
+            }
 
-        //        this.Invoke(() =>
-        //        {
-        //            lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
-        //            lblLine.Text = $"Line: {vehicle.LineId}";
-        //            lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
-        //            lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
-        //            lblADC1.Text = $"ADC1: {vehicle.ADC1}";
-        //            lblADC2.Text = $"ADC2: {vehicle.ADC2}";
-        //            lblADC3.Text = $"ADC3: {vehicle.ADC3}";
-        //            lblADC4.Text = $"ADC4: {vehicle.ADC4}";
+            _cameraCts.Dispose();
+            _cameraCts = null;
+        }
 
-        //            dgvAxles.DataSource = null;
-        //            dgvAxles.DataSource = vehicle.Axles;
-        //        });
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Error(ex, "Error processing serial data: {Raw}", raw);
-        //    }
-
-        //}
-
-        private async Task LoadImage(PictureBox pic, string url, string user, string pass)
+        private async Task LoadImage(
+             PictureBox pic,
+             string url,
+             string user,
+             string pass)
         {
             try
             {
-                var handler = new HttpClientHandler
+                using var handler = new HttpClientHandler
                 {
                     Credentials = new NetworkCredential(user, pass)
                 };
 
-                using var client = new HttpClient(handler);
+                using var client = new HttpClient(handler)
+                {
+                    Timeout = TimeSpan.FromSeconds(5)
+                };
 
                 var bytes = await client.GetByteArrayAsync(url);
 
                 using var ms = new MemoryStream(bytes);
-                var img = Image.FromStream(ms);
+                using var tempImage = Image.FromStream(ms);
+
+                var newImage = new Bitmap(tempImage);
+
+                if (pic.IsDisposed)
+                {
+                    newImage.Dispose();
+                    return;
+                }
 
                 pic.Invoke(() =>
                 {
-                    pic.Image?.Dispose(); // 🔥 مهم
-                    pic.Image = new Bitmap(img);
+                    var old = pic.Image;
+                    pic.Image = newImage;
+                    old?.Dispose();
                 });
+
             }
             catch (Exception ex)
             {
-
                 Log.Warning("Camera error: {Message}", ex.Message);
             }
         }
@@ -451,18 +460,25 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private async Task LoadGrid()
         {
-            var data = await _repo.GetAllAsync();
-
-            if (this.InvokeRequired)
+            try
             {
-                this.Invoke(() =>
+                var data = await _repo.GetAllAsync();
+
+                if (dgvRecords.InvokeRequired)
+                {
+                    dgvRecords.Invoke(() =>
+                    {
+                        dgvRecords.DataSource = data;
+                    });
+                }
+                else
                 {
                     dgvRecords.DataSource = data;
-                });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                dgvRecords.DataSource = data;
+                Log.Error(ex, "Error loading grid");
             }
         }
 
@@ -558,34 +574,24 @@ namespace VehicleWeightMeasurementSystemDemo
             _cameraWatcher?.Stop();
         }
 
-        private void dailyReportToolStripMenuItem_Click(object sender, EventArgs e)
+        private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e) 
         {
-            ShowDailyReport();
+            using (var form = new VehicleReportForm(_repo))
+            {
+                form.ShowDialog(this);
+            }
         }
 
-        private void monthlyReportToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ShowMonthlyReport();
-        }
-
-        private void ShowMonthlyReport()
-        {
-            MessageBox.Show("Monthly Report Coming Soon...");
-        }
-
-        private void overweightVehiclesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("Overweight Vehicles Report Coming Soon...");
-        }
-
-        private void ShowDailyReport()
-        {
-            MessageBox.Show("Daily Report Coming Soon...");
-        }
+     
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("Vehicle Weight System v1.0");
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            StopOverviewCamera();
         }
     }
 }

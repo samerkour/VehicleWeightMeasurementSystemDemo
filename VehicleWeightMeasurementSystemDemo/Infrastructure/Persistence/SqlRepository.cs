@@ -1,11 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VehicleWeightMeasurementSystemDemo.Domain.Entities;
 using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
+using VehicleWeightMeasurementSystemDemo.Reports;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 {
@@ -149,5 +152,79 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 throw;
             }
         }
+
+        public async Task<List<VehicleReportDto>> SearchAsync(
+            DateTime from,
+            DateTime to,
+            int? lineId,
+            string plate,
+            double? minWeight,
+            double? maxWeight,
+            bool overweight)
+        {
+
+            var query = _context.Vehicles
+
+                .Include(x => x.Line)
+                .AsQueryable();
+
+
+
+            query = query.Where(x =>
+                x.Timestamp <= from &&
+                x.Timestamp >= to.Date);
+
+
+            if (lineId.HasValue)
+            {
+                query = query.Where(x => x.LineId == lineId);
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(plate))
+            {
+                query = query.Where(x =>
+                   x.PlateNumber.Contains(plate));
+            }
+
+
+            if (minWeight.HasValue && minWeight != 0)
+            {
+                query = query.Where(x =>
+                   x.TotalWeight >= minWeight);
+            }
+
+
+            if (maxWeight.HasValue && maxWeight != 0)
+            {
+                query = query.Where(x =>
+                   x.TotalWeight <= maxWeight);
+            }
+
+
+            if (overweight)
+            {
+                query = query.Where(x =>
+                   x.TotalOverWeight > 0);
+            }
+
+
+            return await query
+            .OrderByDescending(x => x.Timestamp)
+            .Select(x => new VehicleReportDto
+            {
+                Id = x.Id,
+                Timestamp = x.Timestamp,
+                PlateNumber = x.PlateNumber,
+                LineName = x.Line.LineName,
+                Speed = x.Speed,
+                TotalWeight = x.TotalWeight,
+                AxleCount = x.AxleCount,
+                Overweight = x.TotalOverWeight > 0
+            })
+            .ToListAsync();
+
+        }
+
     }
 }
