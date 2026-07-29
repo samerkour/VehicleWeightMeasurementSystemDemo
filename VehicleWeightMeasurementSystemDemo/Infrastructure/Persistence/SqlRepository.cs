@@ -42,18 +42,34 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                         ADC3 = v.ADC3,
                         ADC4 = v.ADC4,
 
+
+                        // 🔥 MAP AXLES
+                        AxleWeight1 = v.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight2 = v.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight3 = v.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight4 = v.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight5 = v.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight6 = v.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
+
+
+                        Axle12 = v.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Distance).FirstOrDefault(),
+                        Axle23 = v.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Distance).FirstOrDefault(),
+                        Axle34 = v.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Distance).FirstOrDefault(),
+                        Axle45 = v.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Distance).FirstOrDefault(),
+                        Axle56 = v.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Distance).FirstOrDefault(),
+
                         // 🔥 ADD THIS
                         Axles = v.Axles
-                            .OrderBy(a => a.AxleIndex)
-                            .Select(a => new AxleDto
-                                {
-                                    AxleIndex = a.AxleIndex,
-                                    Weight = a.Weight,
-                                    TimeMs = a.TimeMs ?? 0,
-                                    Distance = a.Distance ?? 0
-                                }).ToList()
-                        })
-                        .ToListAsync();
+                                    .OrderBy(a => a.AxleIndex)
+                                    .Select(a => new AxleDto
+                                        {
+                                            AxleIndex = a.AxleIndex,
+                                            Weight = a.Weight,
+                                            TimeMs = a.TimeMs ?? 0,
+                                            Distance = a.Distance ?? 0
+                                        }).ToList()
+                                })
+                                .ToListAsync();
         }
 
         public async Task<List<int>> GetActiveLineIdsAsync()

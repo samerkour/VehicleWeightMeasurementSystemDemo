@@ -68,18 +68,68 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "AxleCount",
-                HeaderText = "AxleCount",
+                HeaderText = "Axle Count",
                 DataPropertyName = "AxleCount",
                 FillWeight = 10
             });
 
-            // AxlesSummary 🔥 (25%)
+            //// AxlesSummary 🔥 (25%)
+            //dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            //{
+            //    Name = "AxlesSummary",
+            //    HeaderText = "Axles Detail",
+            //    DataPropertyName = "AxlesSummary",
+            //    FillWeight = 25
+            //});
+
+
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "AxlesSummary",
-                HeaderText = "Axles Detail",
-                DataPropertyName = "AxlesSummary",
-                FillWeight = 25
+                Name = "W1",
+                HeaderText = "W1(kg)",
+                DataPropertyName = "AxleWeight1",
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W2",
+                HeaderText = "W2(kg)",
+                DataPropertyName = "AxleWeight2",
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W3",
+                HeaderText = "W3(kg)",
+                DataPropertyName = "AxleWeight3",
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W4",
+                HeaderText = "W4(kg)",
+                DataPropertyName = "AxleWeight4",
+                FillWeight = 15
+            });
+
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W5",
+                HeaderText = "W5(kg)",
+                DataPropertyName = "AxleWeight5",
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W6",
+                HeaderText = "W6(kg)",
+                DataPropertyName = "AxleWeight6",
+                FillWeight = 15
             });
 
             // TotalWeight
@@ -90,6 +140,53 @@ namespace VehicleWeightMeasurementSystemDemo
                 DataPropertyName = "TotalWeight",
                 FillWeight = 15
             });
+
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle12",
+                HeaderText = "Axle12(m)",
+                DataPropertyName = "Axle12",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle23",
+                HeaderText = "Axle23(m)",
+                DataPropertyName = "Axle23",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle34",
+                HeaderText = "Axle34(m)",
+                DataPropertyName = "Axle34",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle45",
+                HeaderText = "Axle45(m)",
+                DataPropertyName = "Axle45",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle56",
+                HeaderText = "Axle56(m)",
+                DataPropertyName = "Axle56",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
 
             // Timestamp
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
@@ -130,7 +227,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
 
             _cameraWatcher = cameraWatcher;
-            _cameraWatcher.OnImageCaptured += async (lineId, path) => await HandleImage(lineId, path);
+            _cameraWatcher.OnImageCaptured += HandleImage;
             _cameraWatcher.OnStatusChanged += HandleCameraStatus;
         }
 
@@ -199,7 +296,6 @@ namespace VehicleWeightMeasurementSystemDemo
             lblDetectedPlate.Font = new Font("Segoe UI", 12, FontStyle.Bold);
             lblDetectedPlate.ForeColor = UITheme.Success;
 
-            StyleGrid(dgvAxles);
             StyleGrid(dgvRecords);
 
             grpVehicleInfo.Padding = new Padding(10);
@@ -330,9 +426,15 @@ namespace VehicleWeightMeasurementSystemDemo
             lblLine.Text = $"Line: {vehicle.LineId}";
             lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
             lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
-
-            dgvAxles.DataSource = null;
-            dgvAxles.DataSource = vehicle.Axles;
+            lblADC1.Text = $"ADC1:\n\n {vehicle.ADC1}";
+            lblADC2.Text = $"ADC2:\n\n {vehicle.ADC2}";
+            lblADC3.Text = $"ADC3:\n\n {vehicle.ADC3}";
+            lblADC4.Text = $"ADC4:\n\n {vehicle.ADC4}";
+            lblAxle12.Text = $"Axle12:\n\n {vehicle.Axles[0].DistanceDisplay}";
+            lblAxle23.Text = $"Axle23:\n\n {vehicle.Axles[1].DistanceDisplay}";
+            lblAxle34.Text = $"Axle34:\n\n {vehicle.Axles[3].DistanceDisplay}";
+            lblAxle45.Text = $"Axle45:\n\n {vehicle.Axles[4].DistanceDisplay}";
+            lblAxle56.Text = $"Axle56:\n\n {vehicle.Axles[5].DistanceDisplay}";
         }
 
         private void UpdateImageUI(string imagePath, PlateResultDto plate)
@@ -359,58 +461,51 @@ namespace VehicleWeightMeasurementSystemDemo
                 var vehicle = VehicleParser.Parse(raw);
                 DistanceCalculator.CalculateDistances(vehicle);
 
-                // 🔹 Map ADC → Axles
-                var adcList = new List<string?>
-                {
-                    vehicle.ADC1,
-                    vehicle.ADC2,
-                    vehicle.ADC3,
-                    vehicle.ADC4
-                };
-
-                for (int i = 0; i < vehicle.Axles.Count; i++)
-                {
-                    var axle = vehicle.Axles[i];
-
-                    axle.ADCDisplay =
-                        i < adcList.Count && !string.IsNullOrWhiteSpace(adcList[i])
-                        ? adcList[i]
-                        : "-";
-                }
-
-                // 🔹 UI Update (SAFE)
+                // 🔹 UI
                 if (InvokeRequired)
-                {
                     await InvokeAsync(() => UpdateVehicleUI(vehicle));
-                }
                 else
-                {
                     UpdateVehicleUI(vehicle);
-                }
 
-                string imagePath = await WaitForImageAsync(vehicle.LineId);
+                // 🔥 1. صبر برای دریافت مسیر عکس
+                var imagePath = await WaitForImageReadyAsync(vehicle.LineId);
 
-                if (imagePath == null)
+                if (string.IsNullOrEmpty(imagePath))
                 {
                     Log.Warning("❌ No image found for Line {LineId}", vehicle.LineId);
+                    return;
                 }
 
-                var plate = _plateService.Extract(imagePath);
+                // 🔥 2. صبر برای آماده شدن فایل
+                if (!await WaitForFileReadySafe(imagePath))
+                {
+                    Log.Warning("⚠️ Image not ready: {Path}", imagePath);
+                }
 
-                await _repo.SaveAsync(vehicle, imagePath, plate);
-                await LoadGrid();
+                PlateResultDto plate = new PlateResultDto();
 
                 if (!string.IsNullOrEmpty(imagePath))
                 {
-                    if (InvokeRequired)
+                    // بررسی آماده بودن فایل
+                    if (await WaitForFileReadySafe(imagePath))
                     {
-                        await InvokeAsync(() => UpdateImageUI(imagePath, plate));
+                        plate = _plateService.Extract(imagePath);
                     }
                     else
                     {
-                        UpdateImageUI(imagePath, plate);
+                        Log.Warning("Image file is not ready: {Path}", imagePath);
                     }
                 }
+
+                await _repo.SaveAsync(vehicle, imagePath, plate);
+
+                await LoadGrid();
+
+                // 🔥 5. UI Image
+                if (InvokeRequired)
+                    await InvokeAsync(() => UpdateImageUI(imagePath, plate));
+                else
+                    UpdateImageUI(imagePath, plate);
             }
             catch (Exception ex)
             {
@@ -418,8 +513,8 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
-
-        private async Task HandleImage(int lineId, string path)
+        
+        private void HandleImage(int lineId, string path)
         {
             try
             {
@@ -437,7 +532,36 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
-        private async Task<string?> WaitForImageAsync(int lineId, int timeoutMs = 2000)
+        private async Task<bool> WaitForFileReadySafe(string path, int timeoutMs = 150)
+        {
+            for (int i = 0; i < 15; i++)
+            {
+                try
+                {
+                    if (!File.Exists(path))
+                    {
+                        await Task.Delay(timeoutMs);
+                        continue;
+                    }
+
+                    using var stream = new FileStream(
+                        path,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.ReadWrite);
+
+                    if (stream.Length > 0)
+                        return true;
+                }
+                catch { }
+
+                await Task.Delay(timeoutMs);
+            }
+
+            return false;
+        }
+
+        private async Task<string?> WaitForImageReadyAsync(int lineId, int timeoutMs = 1000)
         {
             var start = DateTime.Now;
 
