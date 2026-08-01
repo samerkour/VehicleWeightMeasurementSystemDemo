@@ -22,6 +22,13 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Weighing
 
         public DateTime Timestamp { get; set; } = DateTime.Now;
 
+        /// <summary>
+        /// مهر زمانی monotonic لحظه‌ی رسیدن رکورد از پورت سریال.
+        /// مبنای انطباق با عکس است. DateTime.Now برای این کار مناسب نیست
+        /// چون با تغییر ساعت سیستم یا NTP می‌تواند به عقب بپرد.
+        /// </summary>
+        public long ReceivedAtTicks { get; set; }
+
         public List<AxleDto> Axles { get; set; } = new();
 
         // 🔹 Calculated Property

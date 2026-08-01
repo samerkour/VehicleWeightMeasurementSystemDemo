@@ -20,10 +20,17 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private CancellationTokenSource? _cameraCts;
 
+        // وضعیت اجرا / خاموش‌شدن
+        private volatile bool _systemRunning;
+        private volatile bool _shuttingDown;
 
-        private List<int> lineIds;
-        private readonly Dictionary<int, Queue<string>> _imagesByLine = new();
+        private List<int> lineIds = new();
+        private readonly Dictionary<int, Queue<PendingImage>> _imagesByLine = new();
         private readonly object _lock = new();
+
+        // حداکثر عمر مجاز یک عکس در صف (برای جلوگیری از drift دائمی)
+        private const int ImageStaleMs = 5000;
+        private const int MaxQueuePerLine = 20;
 
         private SerialPortService _serialService;
         private CameraWatcherService _cameraWatcher;
@@ -31,6 +38,16 @@ namespace VehicleWeightMeasurementSystemDemo
         private IConfiguration _config;
         private SqlRepository _repo;
 
+        // تنظیمات نگه‌داشته‌شده برای Start/Stop از منو
+        private OverviewCameraSettings? _overviewSettings;
+        private bool _serialEnabled;
+        private bool _snapshotEnabled;
+
+        private sealed class PendingImage
+        {
+            public string Path { get; init; } = string.Empty;
+            public DateTime CapturedAtUtc { get; init; }
+        }
 
         private void ConfigureGrid()
         {
@@ -73,16 +90,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 FillWeight = 10
             });
 
-            //// AxlesSummary 🔥 (25%)
-            //dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
-            //{
-            //    Name = "AxlesSummary",
-            //    HeaderText = "Axles Detail",
-            //    DataPropertyName = "AxlesSummary",
-            //    FillWeight = 25
-            //});
-
-
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "W1",
@@ -115,7 +122,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 FillWeight = 15
             });
 
-
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "W5",
@@ -140,7 +146,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 DataPropertyName = "TotalWeight",
                 FillWeight = 15
             });
-
 
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -187,7 +192,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 FillWeight = 15
             });
 
-
             // Timestamp
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -224,59 +228,64 @@ namespace VehicleWeightMeasurementSystemDemo
             _serialService.OnConnectionChanged += HandleSerialStatus;
             _serialService.OnDataReceived += async (raw) => await HandleSerialData(raw);
 
-
-
             _cameraWatcher = cameraWatcher;
             _cameraWatcher.OnImageCaptured += HandleImage;
             _cameraWatcher.OnStatusChanged += HandleCameraStatus;
         }
-
 
         private async void MainForm_Load(object sender, EventArgs e)
         {
             if (IsDesignMode)
                 return;
 
-
-
-            ConfigureGrid();
-            Style();
-
-            // 🔹 1. Load configurations
-            var serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
-            var snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
-            var ovarviewCamera = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
-
-
-            // 🔹 3. Wire events
-            if (serialSettings.Enabled)
+            try
             {
-                // Start services
-                _serialService.Start();
+                ConfigureGrid();
+                Style();
+
+                // 🔹 1. Load configurations
+                var serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
+                var snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
+                var ovarviewCamera = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
+
+                _serialEnabled = serialSettings?.Enabled == true;
+                _snapshotEnabled = snapshotCameraSettings?.Enabled == true;
+                _overviewSettings = ovarviewCamera;
+
+                // 🔹 3. Wire events
+                if (_serialEnabled)
+                {
+                    // Start services
+                    _serialService.Start();
+                }
+
+                if (_snapshotEnabled)
+                {
+                    lineIds = await _repo.GetActiveLineIdsAsync() ?? new List<int>();
+                    _cameraWatcher.Start(lineIds); // no need to pass path anymore
+
+                    _plateService.AddCamera(pictureBoxVehicle);
+                }
+
+                StartOverviewCamera(ovarviewCamera);
+
+                _systemRunning = _serialEnabled || _snapshotEnabled;
+                UpdateSystemMenuState();
+
+                await LoadGrid(); // 🔴 load existing data
             }
-
-
-            if (snapshotCameraSettings.Enabled)
+            catch (Exception ex)
             {
-
-                lineIds = await _repo.GetActiveLineIdsAsync();
-                _cameraWatcher.Start(lineIds); // no need to pass path anymore
-
-                _plateService.AddCamera(pictureBoxVehicle);
+                Log.Error(ex, "MainForm_Load failed");
+                MessageBox.Show($"خطا در راه‌اندازی اولیه: {ex.Message}",
+                    "Startup", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
-
-            StartOverviewCamera(ovarviewCamera);
-
-            await LoadGrid(); // 🔴 load existing data
-
         }
 
         private void Style()
         {
             this.BackColor = UITheme.Background;
             this.Font = new Font("Segoe UI", 10);
-
 
             lblSerialStatus.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             lblSerialStatus.ForeColor = UITheme.Success;
@@ -319,20 +328,24 @@ namespace VehicleWeightMeasurementSystemDemo
             grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250);
 
             grid.GridColor = UITheme.Border;
-
         }
 
-
-        private void StartOverviewCamera(OverviewCameraSettings ovarviewCamera)
+        private void StartOverviewCamera(OverviewCameraSettings? ovarviewCamera)
         {
-            if (!ovarviewCamera.Enabled)
+            if (ovarviewCamera == null || !ovarviewCamera.Enabled)
                 return;
 
-            _cameraCts = new CancellationTokenSource();
+            // جلوگیری از راه‌اندازی چندبارهٔ حلقه
+            if (_cameraCts != null)
+                return;
+
+            var cts = new CancellationTokenSource();
+            _cameraCts = cts;
+            var token = cts.Token;
 
             Task.Run(async () =>
             {
-                while (!_cameraCts.Token.IsCancellationRequested)
+                while (!token.IsCancellationRequested)
                 {
                     try
                     {
@@ -345,7 +358,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
                         await Task.Delay(
                             ovarviewCamera.RefreshIntervalMs,
-                            _cameraCts.Token
+                            token
                         );
                     }
                     catch (OperationCanceledException)
@@ -357,22 +370,25 @@ namespace VehicleWeightMeasurementSystemDemo
                         Log.Warning("Camera stream error: {Message}", ex.Message);
                     }
                 }
-
-            }, _cameraCts.Token);
+            }, token);
         }
 
         private void StopOverviewCamera()
         {
-            if (_cameraCts == null)
+            var cts = _cameraCts;
+            _cameraCts = null;
+
+            if (cts == null)
                 return;
 
-            if (!_cameraCts.IsCancellationRequested)
+            try
             {
-                _cameraCts.Cancel();
+                if (!cts.IsCancellationRequested)
+                    cts.Cancel();
             }
+            catch (ObjectDisposedException) { }
 
-            _cameraCts.Dispose();
-            _cameraCts = null;
+            cts.Dispose();
         }
 
         private async Task LoadImage(
@@ -400,19 +416,23 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 var newImage = new Bitmap(tempImage);
 
-                if (pic.IsDisposed)
+                if (_shuttingDown || pic.IsDisposed || !pic.IsHandleCreated)
                 {
                     newImage.Dispose();
                     return;
                 }
 
-                pic.Invoke(() =>
+                try
                 {
-                    var old = pic.Image;
-                    pic.Image = newImage;
-                    old?.Dispose();
-                });
-
+                    pic.Invoke(() =>
+                    {
+                        var old = pic.Image;
+                        pic.Image = newImage;
+                        old?.Dispose();
+                    });
+                }
+                catch (ObjectDisposedException) { newImage.Dispose(); }
+                catch (InvalidOperationException) { newImage.Dispose(); }
             }
             catch (Exception ex)
             {
@@ -422,6 +442,9 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void UpdateVehicleUI(VehicleDto vehicle)
         {
+            if (vehicle == null)
+                return;
+
             lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
             lblLine.Text = $"Line: {vehicle.LineId}";
             lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
@@ -430,82 +453,100 @@ namespace VehicleWeightMeasurementSystemDemo
             lblADC2.Text = $"ADC2:\n\n {vehicle.ADC2}";
             lblADC3.Text = $"ADC3:\n\n {vehicle.ADC3}";
             lblADC4.Text = $"ADC4:\n\n {vehicle.ADC4}";
-            lblAxle12.Text = $"Axle12:\n\n {vehicle.Axles[0].DistanceDisplay}";
-            lblAxle23.Text = $"Axle23:\n\n {vehicle.Axles[1].DistanceDisplay}";
-            lblAxle34.Text = $"Axle34:\n\n {vehicle.Axles[3].DistanceDisplay}";
-            lblAxle45.Text = $"Axle45:\n\n {vehicle.Axles[4].DistanceDisplay}";
-            lblAxle56.Text = $"Axle56:\n\n {vehicle.Axles[5].DistanceDisplay}";
+
+            // دسترسی ایمن به محورها (قبلاً برای خودروی با کمتر از ۶ محور exception می‌داد)
+            lblAxle12.Text = $"Axle12:\n\n {AxleDistance(vehicle, 0)}";
+            lblAxle23.Text = $"Axle23:\n\n {AxleDistance(vehicle, 1)}";
+            lblAxle34.Text = $"Axle34:\n\n {AxleDistance(vehicle, 3)}";
+            lblAxle45.Text = $"Axle45:\n\n {AxleDistance(vehicle, 4)}";
+            lblAxle56.Text = $"Axle56:\n\n {AxleDistance(vehicle, 5)}";
         }
 
-        private void UpdateImageUI(string imagePath, PlateResultDto plate)
+        private static string AxleDistance(VehicleDto vehicle, int index)
         {
-            using (var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var ms = new MemoryStream())
+            var axles = vehicle.Axles;
+            if (axles == null || index < 0 || index >= axles.Count)
+                return "-";
+
+            return axles[index]?.DistanceDisplay ?? "-";
+        }
+
+        private void UpdateImageUI(string? imagePath, PlateResultDto? plate)
+        {
+            lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+
+            if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
             {
+                Log.Warning("UpdateImageUI skipped, image unavailable: {Path}", imagePath);
+                return;
+            }
+
+            try
+            {
+                using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var ms = new MemoryStream();
+
                 fs.CopyTo(ms);
                 ms.Position = 0;
 
-                var img = Image.FromStream(ms);
+                using var img = Image.FromStream(ms);
+                var bitmap = new Bitmap(img);
 
-                pictureBoxVehicle.Image?.Dispose();
-                pictureBoxVehicle.Image = new Bitmap(img);
+                var old = pictureBoxVehicle.Image;
+                pictureBoxVehicle.Image = bitmap;
+                old?.Dispose();
             }
-
-            lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+            catch (Exception ex)
+            {
+                Log.Warning("Failed to display image {Path}: {Message}", imagePath, ex.Message);
+            }
         }
 
         private async Task HandleSerialData(string raw)
         {
+            if (_shuttingDown)
+                return;
+
             try
             {
                 var vehicle = VehicleParser.Parse(raw);
+                if (vehicle == null)
+                {
+                    Log.Warning("Unparsable serial frame: {Raw}", raw);
+                    return;
+                }
+
                 DistanceCalculator.CalculateDistances(vehicle);
 
                 // 🔹 UI
-                if (InvokeRequired)
-                    await InvokeAsync(() => UpdateVehicleUI(vehicle));
-                else
-                    UpdateVehicleUI(vehicle);
+                await RunOnUiAsync(() => UpdateVehicleUI(vehicle));
 
                 // 🔥 1. صبر برای دریافت مسیر عکس
                 var imagePath = await WaitForImageReadyAsync(vehicle.LineId);
 
+                PlateResultDto plate = new PlateResultDto();
+
                 if (string.IsNullOrEmpty(imagePath))
                 {
                     Log.Warning("❌ No image found for Line {LineId}", vehicle.LineId);
-                    return;
                 }
-
-                // 🔥 2. صبر برای آماده شدن فایل
-                if (!await WaitForFileReadySafe(imagePath))
+                else if (await WaitForFileReadySafe(imagePath))
+                {
+                    // 🔥 2. فایل آماده است → استخراج پلاک
+                    plate = _plateService.Extract(imagePath);
+                }
+                else
                 {
                     Log.Warning("⚠️ Image not ready: {Path}", imagePath);
                 }
 
-                PlateResultDto plate = new PlateResultDto();
-
-                if (!string.IsNullOrEmpty(imagePath))
-                {
-                    // بررسی آماده بودن فایل
-                    if (await WaitForFileReadySafe(imagePath))
-                    {
-                        plate = _plateService.Extract(imagePath);
-                    }
-                    else
-                    {
-                        Log.Warning("Image file is not ready: {Path}", imagePath);
-                    }
-                }
-
+                // رکورد حتی بدون عکس هم ذخیره می‌شود تا داده وزن گم نشود
                 await _repo.SaveAsync(vehicle, imagePath, plate);
 
                 await LoadGrid();
 
                 // 🔥 5. UI Image
-                if (InvokeRequired)
-                    await InvokeAsync(() => UpdateImageUI(imagePath, plate));
-                else
-                    UpdateImageUI(imagePath, plate);
+                await RunOnUiAsync(() => UpdateImageUI(imagePath, plate));
             }
             catch (Exception ex)
             {
@@ -513,17 +554,63 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
-        
-        private void HandleImage(int lineId, string path)
+        /// <summary>
+        /// اجرای ایمن یک اکشن روی ترد UI، با محافظت در زمان بسته‌شدن فرم.
+        /// </summary>
+        private async Task RunOnUiAsync(Action action)
         {
+            if (_shuttingDown || IsDisposed || Disposing)
+                return;
+
             try
             {
+                if (InvokeRequired)
+                {
+                    if (!IsHandleCreated)
+                        return;
+
+                    await InvokeAsync(action);
+                }
+                else
+                {
+                    action();
+                }
+            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException ex)
+            {
+                Log.Warning("UI marshalling skipped: {Message}", ex.Message);
+            }
+        }
+
+        private void HandleImage(int lineId, string path, long capturedAtTicks)
+        {
+            if (_shuttingDown)
+                return;
+
+            try
+            {
+                var entry = new PendingImage
+                {
+                    Path = path,
+                    CapturedAtUtc = TicksToUtc(capturedAtTicks)
+                };
+
                 lock (_lock)
                 {
-                    if (!_imagesByLine.ContainsKey(lineId))
-                        _imagesByLine[lineId] = new Queue<string>();
+                    if (!_imagesByLine.TryGetValue(lineId, out var queue))
+                    {
+                        queue = new Queue<PendingImage>();
+                        _imagesByLine[lineId] = queue;
+                    }
 
-                    _imagesByLine[lineId].Enqueue(path);
+                    queue.Enqueue(entry);
+
+                    while (queue.Count > MaxQueuePerLine)
+                    {
+                        var dropped = queue.Dequeue();
+                        Log.Warning("Dropped overflow image for Line {LineId}: {Path}", lineId, dropped.Path);
+                    }
                 }
             }
             catch (Exception ex)
@@ -532,10 +619,30 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        private static DateTime TicksToUtc(long ticks)
+        {
+            var now = DateTime.UtcNow;
+
+            if (ticks <= 0 || ticks > DateTime.MaxValue.Ticks)
+                return now;
+
+            var candidate = new DateTime(ticks, DateTimeKind.Utc);
+
+            // اگر مبنای ticks زمان تقویمی نباشد (مثل Stopwatch)، مقدار بی‌معنا می‌شود
+            if (Math.Abs((now - candidate).TotalDays) > 1)
+                return now;
+
+            return candidate;
+        }
+
+
         private async Task<bool> WaitForFileReadySafe(string path, int timeoutMs = 150)
         {
             for (int i = 0; i < 15; i++)
             {
+                if (_shuttingDown)
+                    return false;
+
                 try
                 {
                     if (!File.Exists(path))
@@ -553,7 +660,8 @@ namespace VehicleWeightMeasurementSystemDemo
                     if (stream.Length > 0)
                         return true;
                 }
-                catch { }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
 
                 await Task.Delay(timeoutMs);
             }
@@ -563,16 +671,24 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private async Task<string?> WaitForImageReadyAsync(int lineId, int timeoutMs = 1000)
         {
-            var start = DateTime.Now;
+            var start = DateTime.UtcNow;
 
-            while ((DateTime.Now - start).TotalMilliseconds < timeoutMs)
+            while ((DateTime.UtcNow - start).TotalMilliseconds < timeoutMs)
             {
                 lock (_lock)
                 {
-                    if (_imagesByLine.ContainsKey(lineId) &&
-                        _imagesByLine[lineId].Count > 0)
+                    if (_imagesByLine.TryGetValue(lineId, out var queue))
                     {
-                        return _imagesByLine[lineId].Dequeue();
+                        // عکس‌های کهنه را دور بریز تا به خودروی بعدی نچسبند
+                        while (queue.Count > 0 &&
+                               (DateTime.UtcNow - queue.Peek().CapturedAtUtc).TotalMilliseconds > ImageStaleMs)
+                        {
+                            var stale = queue.Dequeue();
+                            Log.Warning("Discarded stale image for Line {LineId}: {Path}", lineId, stale.Path);
+                        }
+
+                        if (queue.Count > 0)
+                            return queue.Dequeue().Path;
                     }
                 }
 
@@ -584,9 +700,15 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private async Task LoadGrid()
         {
+            if (_shuttingDown)
+                return;
+
             try
             {
                 var data = await _repo.GetAllAsync();
+
+                if (dgvRecords.IsDisposed || !dgvRecords.IsHandleCreated)
+                    return;
 
                 if (dgvRecords.InvokeRequired)
                 {
@@ -600,6 +722,7 @@ namespace VehicleWeightMeasurementSystemDemo
                     dgvRecords.DataSource = data;
                 }
             }
+            catch (ObjectDisposedException) { }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error loading grid");
@@ -614,15 +737,6 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 var plateValue = row.Cells["PlateNumber"].Value?.ToString();
 
-                //if (string.IsNullOrWhiteSpace(plateValue) || plateValue == "---")
-                //{
-                //    row.DefaultCellStyle.BackColor = Color.LightPink;
-                //}
-                //else
-                //{
-                //    row.DefaultCellStyle.BackColor = Color.LightGreen;
-                //}
-
                 if (string.IsNullOrWhiteSpace(plateValue) || plateValue == "---")
                 {
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 235, 238); // soft red
@@ -636,31 +750,48 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void HandleSerialStatus(bool connected)
         {
-            this.Invoke(() =>
+            if (_shuttingDown || IsDisposed || Disposing || !IsHandleCreated)
+                return;
+
+            try
             {
-                if (connected)
-                {
-                    lblSerialStatus.Text = "Serial Port: ● Connected";
-                    lblSerialStatus.ForeColor = Color.Green;
-                }
+                if (InvokeRequired)
+                    Invoke(() => UpdateSerialStatus(connected));
                 else
-                {
-                    lblSerialStatus.Text = "Serial Port: ● Disconnected";
-                    lblSerialStatus.ForeColor = Color.Red;
-                }
-            });
+                    UpdateSerialStatus(connected);
+            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
+        }
+
+        private void UpdateSerialStatus(bool connected)
+        {
+            if (connected)
+            {
+                lblSerialStatus.Text = "Serial Port: ● Connected";
+                lblSerialStatus.ForeColor = Color.Green;
+            }
+            else
+            {
+                lblSerialStatus.Text = "Serial Port: ● Disconnected";
+                lblSerialStatus.ForeColor = Color.Red;
+            }
         }
 
         private void HandleCameraStatus(bool ok)
         {
-            if (InvokeRequired)
+            if (_shuttingDown || IsDisposed || Disposing || !IsHandleCreated)
+                return;
+
+            try
             {
-                Invoke(() => UpdateCameraStatus(ok));
+                if (InvokeRequired)
+                    Invoke(() => UpdateCameraStatus(ok));
+                else
+                    UpdateCameraStatus(ok);
             }
-            else
-            {
-                UpdateCameraStatus(ok);
-            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
         }
 
         private void UpdateCameraStatus(bool ok)
@@ -669,44 +800,110 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 lblCameraStatus.Text = "Camera Folder: ● Monitoring";
                 lblCameraStatus.ForeColor = Color.Green;
-                // optional:
-                // lblCameraStatus.BackColor = Color.LightGreen;
             }
             else
             {
                 lblCameraStatus.Text = "Camera Folder: ● Not Available";
                 lblCameraStatus.ForeColor = Color.Red;
-                // optional:
-                // lblCameraStatus.BackColor = Color.LightPink;
+            }
+        }
+
+        private void UpdateSystemMenuState()
+        {
+            if (IsDisposed || Disposing)
+                return;
+
+            try
+            {
+                startSystemToolStripMenuItem.Enabled = !_systemRunning;
+                stopSystemToolStripMenuItem.Enabled = _systemRunning;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("Menu state update failed: {Message}", ex.Message);
             }
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            Close(); // به‌جای Application.Exit تا FormClosing اجرا شود
         }
 
-        private void startSystemToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void startSystemToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _serialService?.Start();
-            _cameraWatcher?.Start(lineIds);
+            if (_systemRunning)
+            {
+                Log.Information("Start ignored, system already running");
+                return;
+            }
+
+            try
+            {
+                if (_serialService != null)
+                    _serialService.Start();
+
+                if (_cameraWatcher != null)
+                {
+                    if (lineIds == null || lineIds.Count == 0)
+                        lineIds = await _repo.GetActiveLineIdsAsync() ?? new List<int>();
+
+                    _cameraWatcher.Start(lineIds);
+                }
+
+                StartOverviewCamera(_overviewSettings);
+
+                _systemRunning = true;
+            }
+            catch (Exception ex)
+            {
+                _systemRunning = false;
+                Log.Error(ex, "Failed to start system");
+                MessageBox.Show($"خطا در راه‌اندازی سیستم: {ex.Message}",
+                    "Start", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                UpdateSystemMenuState();
+            }
         }
 
         private void stopSystemToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _serialService?.Stop();
-            _cameraWatcher?.Stop();
+            if (!_systemRunning)
+            {
+                Log.Information("Stop ignored, system already stopped");
+                return;
+            }
+
+            StopAllServices();
+            _systemRunning = false;
+            UpdateSystemMenuState();
         }
 
-        private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e) 
+        private void StopAllServices()
+        {
+            try { StopOverviewCamera(); }
+            catch (Exception ex) { Log.Warning("Overview stop failed: {Message}", ex.Message); }
+
+            try { _cameraWatcher?.Stop(); }
+            catch (Exception ex) { Log.Warning("Camera watcher stop failed: {Message}", ex.Message); }
+
+            try { _serialService?.Stop(); }
+            catch (Exception ex) { Log.Warning("Serial stop failed: {Message}", ex.Message); }
+
+            lock (_lock)
+            {
+                _imagesByLine.Clear();
+            }
+        }
+
+        private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using (var form = new VehicleReportForm(_repo))
             {
                 form.ShowDialog(this);
             }
         }
-
-     
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -715,7 +912,39 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            StopOverviewCamera();
+            if (_shuttingDown)
+                return;
+
+            _shuttingDown = true;
+
+            // قطع رویدادها تا callback روی فرم در حال بسته‌شدن اجرا نشود
+            try
+            {
+                if (_serialService != null)
+                    _serialService.OnConnectionChanged -= HandleSerialStatus;
+
+                if (_cameraWatcher != null)
+                {
+                    _cameraWatcher.OnImageCaptured -= HandleImage;
+                    _cameraWatcher.OnStatusChanged -= HandleCameraStatus;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("Event unsubscribe failed: {Message}", ex.Message);
+            }
+
+            StopAllServices();
+            _systemRunning = false;
+
+            try
+            {
+                pictureBoxVehicle.Image?.Dispose();
+                pictureBoxVehicle.Image = null;
+                picCam1.Image?.Dispose();
+                picCam1.Image = null;
+            }
+            catch { }
         }
     }
 }
