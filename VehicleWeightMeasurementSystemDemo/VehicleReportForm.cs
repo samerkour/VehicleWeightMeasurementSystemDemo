@@ -33,6 +33,56 @@ namespace VehicleWeightMeasurementSystemDemo
             _pager.BringToFront();
             dgvVehicles.SendToBack();
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+
+            Style();
+        }
+
+        private void Style()
+        {
+            this.BackColor = UITheme.Background;
+            this.Font = new Font("Segoe UI", 10);
+            this.Text = "Vehicle Report";
+
+            grpFilters.BackColor = UITheme.CardBack;
+            grpFilters.ForeColor = Color.Black;
+            grpFilters.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            grpFilters.Padding = new Padding(14);
+
+            StyleLabel(fromLabel);
+            StyleLabel(toLabel);
+            StyleLabel(lineLabel);
+            StyleLabel(plateLabel);
+            StyleLabel(minWeightLabel);
+            StyleLabel(maxWeightLabel);
+
+            StyleButton(btnSearch, UITheme.Success);
+            StyleButton(btnExcel, Color.FromArgb(33, 150, 243));
+
+            var pagerText = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            _lblPageInfo.Font = pagerText;
+            _lblPageInfo.ForeColor = Color.FromArgb(60, 60, 60);
+            _lblPageInfo.TextAlign = ContentAlignment.MiddleCenter;
+
+            _pager.BackColor = Color.White;
+        }
+
+        private void StyleLabel(Label label)
+        {
+            label.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            label.ForeColor = Color.FromArgb(30, 30, 30);
+            label.TextAlign = ContentAlignment.MiddleLeft;
+            label.AutoSize = false;
+            label.Width = 100;
+        }
+
+        private void StyleButton(Button button, Color back)
+        {
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 0;
+            button.BackColor = back;
+            button.ForeColor = Color.White;
+            button.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            button.Cursor = Cursors.Hand;
         }
 
 
@@ -180,8 +230,8 @@ namespace VehicleWeightMeasurementSystemDemo
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"خطا در دریافت گزارش: {ex.Message}",
-                    "خطا", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, $"Error loading report: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {

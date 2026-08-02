@@ -954,7 +954,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Vehicle Weight System v1.0");
+            MessageBox.Show("Vehicle Weight System v1.0\n\nCopyright © Farasoo Towzin Co.\nTehran, Iran.");
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)

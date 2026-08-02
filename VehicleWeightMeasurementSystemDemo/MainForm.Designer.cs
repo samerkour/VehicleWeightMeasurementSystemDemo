@@ -71,13 +71,13 @@ namespace VehicleWeightMeasurementSystemDemo
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             sqlCommand1 = new Microsoft.Data.SqlClient.SqlCommand();
+            overviewCameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             grpVehicleInfo.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
             pnlSelectedRecord.SuspendLayout();
-            flpSelectedRecord.SuspendLayout();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -326,12 +326,12 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // flpSelectedRecord
             // 
-            flpSelectedRecord.AutoScroll = false;
             flpSelectedRecord.Dock = DockStyle.Fill;
             flpSelectedRecord.Location = new Point(0, 0);
             flpSelectedRecord.Name = "flpSelectedRecord";
             flpSelectedRecord.Padding = new Padding(2, 6, 2, 6);
             flpSelectedRecord.Size = new Size(1138, 42);
+            flpSelectedRecord.TabIndex = 0;
             flpSelectedRecord.WrapContents = false;
             // 
             // menuStrip1
@@ -398,7 +398,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // settingsToolStripMenuItem
             // 
-            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, overviewCameraSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
             settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             settingsToolStripMenuItem.Size = new Size(76, 24);
             settingsToolStripMenuItem.Text = "Settings";
@@ -406,19 +406,19 @@ namespace VehicleWeightMeasurementSystemDemo
             // serialPortSettingsToolStripMenuItem
             // 
             serialPortSettingsToolStripMenuItem.Name = "serialPortSettingsToolStripMenuItem";
-            serialPortSettingsToolStripMenuItem.Size = new Size(216, 26);
+            serialPortSettingsToolStripMenuItem.Size = new Size(265, 26);
             serialPortSettingsToolStripMenuItem.Text = "Serial Port Settings";
             // 
             // cameraSettingsToolStripMenuItem
             // 
             cameraSettingsToolStripMenuItem.Name = "cameraSettingsToolStripMenuItem";
-            cameraSettingsToolStripMenuItem.Size = new Size(216, 26);
-            cameraSettingsToolStripMenuItem.Text = "Camera Settings";
+            cameraSettingsToolStripMenuItem.Size = new Size(265, 26);
+            cameraSettingsToolStripMenuItem.Text = "Snapshot Camera Settings";
             // 
             // databaseSettingsToolStripMenuItem
             // 
             databaseSettingsToolStripMenuItem.Name = "databaseSettingsToolStripMenuItem";
-            databaseSettingsToolStripMenuItem.Size = new Size(216, 26);
+            databaseSettingsToolStripMenuItem.Size = new Size(265, 26);
             databaseSettingsToolStripMenuItem.Text = "Database Settings";
             // 
             // helpToolStripMenuItem
@@ -439,6 +439,12 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             sqlCommand1.CommandTimeout = 30;
             sqlCommand1.EnableOptimizedParameterBinding = false;
+            // 
+            // overviewCameraSettingsToolStripMenuItem
+            // 
+            overviewCameraSettingsToolStripMenuItem.Name = "overviewCameraSettingsToolStripMenuItem";
+            overviewCameraSettingsToolStripMenuItem.Size = new Size(265, 26);
+            overviewCameraSettingsToolStripMenuItem.Text = "Overview Camera Settings";
             // 
             // MainForm
             // 
@@ -468,8 +474,6 @@ namespace VehicleWeightMeasurementSystemDemo
             ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
             pnlSelectedRecord.ResumeLayout(false);
-            flpSelectedRecord.ResumeLayout(false);
-            flpSelectedRecord.PerformLayout();
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ResumeLayout(false);
@@ -519,5 +523,6 @@ namespace VehicleWeightMeasurementSystemDemo
         private Label lblAxle56;
         private Label lblAxle45;
         private Microsoft.Data.SqlClient.SqlCommand sqlCommand1;
+        private ToolStripMenuItem overviewCameraSettingsToolStripMenuItem;
     }
 }
