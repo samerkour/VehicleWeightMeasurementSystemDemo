@@ -163,6 +163,18 @@ namespace VehicleWeightMeasurementSystemDemo
                    ListSortDirection.Descending);
         }
 
+        private void dgvVehicles_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            var timestampColumn = dgvVehicles.Columns["Timestamp"];
+            if (timestampColumn != null)
+            {
+                timestampColumn.HeaderText = "Time";
+                timestampColumn.DefaultCellStyle.FormatProvider =
+                    new System.Globalization.CultureInfo("fa-IR");
+                timestampColumn.DefaultCellStyle.Format = "yyyy/MM/dd HH:mm:ss";
+            }
+        }
+
         private async void btnExcel_Click(object sender, EventArgs e)
         {
 

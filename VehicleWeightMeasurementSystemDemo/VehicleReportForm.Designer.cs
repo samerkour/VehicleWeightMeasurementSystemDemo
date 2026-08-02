@@ -269,6 +269,7 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvVehicles.Size = new Size(987, 334);
             dgvVehicles.TabIndex = 1;
             dgvVehicles.ColumnHeaderMouseClick += dgvVehicles_ColumnHeaderMouseClick;
+            dgvVehicles.DataBindingComplete += dgvVehicles_DataBindingComplete;
             // 
             // _btnPrev
             // 
