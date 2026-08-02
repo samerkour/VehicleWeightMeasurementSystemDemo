@@ -11,11 +11,11 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Services
     {
         public static void CalculateDistances(VehicleDto vehicle)
         {
-            var speedMs = vehicle.Speed / 3.6;
+            var speedMs = (vehicle.Speed ?? 0) / 3.6;
 
             foreach (var axle in vehicle.Axles)
             {
-                axle.Distance =  speedMs * (axle.TimeMs / 1000);
+                axle.Distance = Math.Round(speedMs * ((axle.TimeMs ?? 0) / 1000), 2);
             }
         }
     }

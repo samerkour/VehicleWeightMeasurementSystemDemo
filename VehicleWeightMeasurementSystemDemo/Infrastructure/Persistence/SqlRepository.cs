@@ -119,11 +119,11 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                         AxleWeight6 = v.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
 
 
-                        Axle12 = v.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Distance).FirstOrDefault(),
-                        Axle23 = v.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Distance).FirstOrDefault(),
-                        Axle34 = v.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Distance).FirstOrDefault(),
-                        Axle45 = v.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Distance).FirstOrDefault(),
-                        Axle56 = v.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Distance).FirstOrDefault(),
+                        Axle12 = v.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle23 = v.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle34 = v.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle45 = v.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle56 = v.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
 
                         // 🔥 ADD THIS
                         Axles = v.Axles

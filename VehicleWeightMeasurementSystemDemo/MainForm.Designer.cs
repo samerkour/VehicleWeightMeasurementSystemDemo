@@ -54,6 +54,8 @@ namespace VehicleWeightMeasurementSystemDemo
             picCam1 = new PictureBox();
             dgvRecords = new DataGridView();
             lblRecordsTitle = new Label();
+            pnlSelectedRecord = new Panel();
+            flpSelectedRecord = new FlowLayoutPanel();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             exitToolStripMenuItem = new ToolStripMenuItem();
@@ -74,6 +76,8 @@ namespace VehicleWeightMeasurementSystemDemo
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
+            pnlSelectedRecord.SuspendLayout();
+            flpSelectedRecord.SuspendLayout();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -291,13 +295,14 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvRecords.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvRecords.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvRecords.Location = new Point(10, 606);
+            dgvRecords.Location = new Point(10, 654);
             dgvRecords.Margin = new Padding(3, 4, 3, 4);
             dgvRecords.Name = "dgvRecords";
             dgvRecords.RowHeadersWidth = 51;
-            dgvRecords.Size = new Size(1138, 284);
+            dgvRecords.Size = new Size(1138, 236);
             dgvRecords.TabIndex = 6;
             dgvRecords.DataBindingComplete += dgvRecords_DataBindingComplete;
+            dgvRecords.SelectionChanged += dgvRecords_SelectionChanged;
             // 
             // lblRecordsTitle
             // 
@@ -308,6 +313,26 @@ namespace VehicleWeightMeasurementSystemDemo
             lblRecordsTitle.Size = new Size(221, 28);
             lblRecordsTitle.TabIndex = 8;
             lblRecordsTitle.Text = "Database Records Log";
+            // 
+            // pnlSelectedRecord
+            // 
+            pnlSelectedRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            pnlSelectedRecord.Controls.Add(flpSelectedRecord);
+            pnlSelectedRecord.Location = new Point(10, 606);
+            pnlSelectedRecord.Margin = new Padding(3, 4, 3, 4);
+            pnlSelectedRecord.Name = "pnlSelectedRecord";
+            pnlSelectedRecord.Size = new Size(1138, 42);
+            pnlSelectedRecord.TabIndex = 10;
+            // 
+            // flpSelectedRecord
+            // 
+            flpSelectedRecord.AutoScroll = false;
+            flpSelectedRecord.Dock = DockStyle.Fill;
+            flpSelectedRecord.Location = new Point(0, 0);
+            flpSelectedRecord.Name = "flpSelectedRecord";
+            flpSelectedRecord.Padding = new Padding(2, 6, 2, 6);
+            flpSelectedRecord.Size = new Size(1138, 42);
+            flpSelectedRecord.WrapContents = false;
             // 
             // menuStrip1
             // 
@@ -421,6 +446,7 @@ namespace VehicleWeightMeasurementSystemDemo
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1160, 900);
             Controls.Add(lblRecordsTitle);
+            Controls.Add(pnlSelectedRecord);
             Controls.Add(dgvRecords);
             Controls.Add(grpImage);
             Controls.Add(grpVehicleInfo);
@@ -441,6 +467,9 @@ namespace VehicleWeightMeasurementSystemDemo
             grpImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
+            pnlSelectedRecord.ResumeLayout(false);
+            flpSelectedRecord.ResumeLayout(false);
+            flpSelectedRecord.PerformLayout();
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ResumeLayout(false);
@@ -462,6 +491,8 @@ namespace VehicleWeightMeasurementSystemDemo
         private Label lblDetectedPlate;
         private DataGridView dgvRecords;
         private Label lblRecordsTitle;
+        private Panel pnlSelectedRecord;
+        private FlowLayoutPanel flpSelectedRecord;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem monitoringToolStripMenuItem;

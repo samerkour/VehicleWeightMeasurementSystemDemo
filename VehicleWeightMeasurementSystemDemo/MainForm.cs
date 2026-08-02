@@ -748,6 +748,53 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        private void dgvRecords_SelectionChanged(object sender, EventArgs e)
+        {
+            flpSelectedRecord.SuspendLayout();
+            flpSelectedRecord.Controls.Clear();
+
+            if (dgvRecords.CurrentRow == null || dgvRecords.CurrentRow.IsNewRow)
+            {
+                flpSelectedRecord.Controls.Add(BuildCell("No record selected", Color.FromArgb(108, 117, 125)));
+                flpSelectedRecord.ResumeLayout();
+                return;
+            }
+
+            var row = dgvRecords.CurrentRow;
+
+            var plateValue = row.Cells["PlateNumber"].Value?.ToString();
+            var backColor =
+                string.IsNullOrWhiteSpace(plateValue) || plateValue == "---"
+                    ? UITheme.Danger
+                    : UITheme.Success;
+
+            foreach (DataGridViewColumn col in dgvRecords.Columns)
+            {
+                if (!col.Visible)
+                    continue;
+
+                var value = row.Cells[col.Index].Value;
+                flpSelectedRecord.Controls.Add(BuildCell($"{col.HeaderText}: {value}", backColor));
+            }
+
+            flpSelectedRecord.ResumeLayout();
+        }
+
+        private static Label BuildCell(string text, Color backColor)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = backColor,
+                Margin = new Padding(2),
+                Padding = new Padding(6, 2, 6, 2),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+        }
+
         private void HandleSerialStatus(bool connected)
         {
             if (_shuttingDown || IsDisposed || Disposing || !IsHandleCreated)
