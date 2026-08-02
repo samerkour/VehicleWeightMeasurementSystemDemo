@@ -357,7 +357,7 @@ namespace VehicleWeightMeasurementSystemDemo
             Name = "VehicleReportForm";
             Padding = new Padding(12);
             StartPosition = FormStartPosition.CenterParent;
-            Text = "VehicleReportForm";
+            Text = "Vehicle Report";
             grpFilters.ResumeLayout(false);
             grpFilters.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)nudMaxWeight).EndInit();

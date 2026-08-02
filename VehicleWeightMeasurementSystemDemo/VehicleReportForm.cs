@@ -34,6 +34,8 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvVehicles.SendToBack();
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
 
+            _cmbPageSize.SelectedIndex = 0;
+
             Style();
         }
 
@@ -64,6 +66,66 @@ namespace VehicleWeightMeasurementSystemDemo
             _lblPageInfo.TextAlign = ContentAlignment.MiddleCenter;
 
             _pager.BackColor = Color.White;
+
+            _pager.Resize += (s, e) => CenterPagerContent();
+            CenterPagerContent();
+
+            grpFilters.Resize += (s, e) => CenterFilterControls();
+            CenterFilterControls();
+        }
+
+        private void CenterFilterControls()
+        {
+            if (grpFilters == null || grpFilters.Width <= 0)
+                return;
+
+            Control[] items =
+            {
+                fromLabel, dtFrom,
+                toLabel, dtTo,
+                lineLabel, cmbLine,
+                plateLabel, txtPlate,
+                minWeightLabel, nudMinWeight,
+                maxWeightLabel, nudMaxWeight,
+                chkOverweight,
+                btnSearch, btnExcel
+            };
+
+            int minX = int.MaxValue;
+            int maxX = int.MinValue;
+
+            foreach (var item in items)
+            {
+                minX = Math.Min(minX, item.Left);
+                maxX = Math.Max(maxX, item.Right);
+            }
+
+            int contentWidth = maxX - minX;
+            int offset = (grpFilters.ClientSize.Width - contentWidth) / 2 - minX;
+
+            foreach (var item in items)
+            {
+                item.Left += offset;
+            }
+        }
+
+        private void CenterPagerContent()
+        {
+            if (_pager == null || _pager.Width <= 0)
+                return;
+
+            Control[] items = { _btnFirst, _btnPrev, _lblPageInfo, _cmbPageSize, _btnNext, _btnLast };
+
+            int total = 0;
+            foreach (var item in items)
+            {
+                total += item.Width;
+                if (item != items[^1])
+                    total += item.Margin.Left + item.Margin.Right;
+            }
+
+            int left = Math.Max(0, (_pager.Width - total) / 2);
+            _pager.Padding = new Padding(left, _pager.Padding.Top, _pager.Padding.Right, _pager.Padding.Bottom);
         }
 
         private void StyleLabel(Label label)
