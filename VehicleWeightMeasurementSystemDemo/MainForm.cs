@@ -944,6 +944,217 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        private void serialPortSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var current = _config.GetSection("SerialPort").Get<SerialPortSettings>();
+            if (current == null)
+            {
+                MessageBox.Show("SerialPort settings not found in configuration.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var form = new SerialPortSettingsForm(current);
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            var updated = form.Settings;
+            if (!SaveSerialSettings(updated))
+            {
+                MessageBox.Show("Failed to save serial port settings.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            ApplySerialSettings(updated);
+        }
+
+        private bool SaveSerialSettings(SerialPortSettings settings)
+        {
+            var section = new System.Text.Json.Nodes.JsonObject
+            {
+                ["PortName"] = settings.PortName,
+                ["BaudRate"] = settings.BaudRate,
+                ["Parity"] = settings.Parity,
+                ["DataBits"] = settings.DataBits,
+                ["StopBits"] = settings.StopBits,
+                ["Enabled"] = settings.Enabled
+            };
+
+            return SaveConfigSection("SerialPort", section);
+        }
+
+        private bool SaveConfigSection(string sectionName, System.Text.Json.Nodes.JsonObject section)
+        {
+            try
+            {
+                var path = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+                var json = File.ReadAllText(path);
+
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = new System.Text.Json.Nodes.JsonObject();
+
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (prop.Name.Equals(sectionName, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    root[prop.Name] = System.Text.Json.Nodes.JsonNode.Parse(prop.Value.GetRawText());
+                }
+
+                root[sectionName] = section;
+
+                File.WriteAllText(path, root.ToJsonString(
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to save config section {Section}", sectionName);
+                return false;
+            }
+        }
+
+        private async void cameraSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var current = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
+            if (current == null)
+            {
+                MessageBox.Show("SnapshotCamera settings not found in configuration.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var form = new SnapshotCameraSettingsForm(current);
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            var updated = form.Settings;
+
+            var section = new System.Text.Json.Nodes.JsonObject
+            {
+                ["WatchRootPath"] = updated.WatchRootPath,
+                ["Filter"] = updated.Filter,
+                ["IncludeSubfolders"] = updated.IncludeSubfolders,
+                ["Enabled"] = updated.Enabled,
+                ["ImageLookbackMs"] = updated.ImageLookbackMs,
+                ["ImageWaitTimeoutMs"] = updated.ImageWaitTimeoutMs
+            };
+
+            if (!SaveConfigSection("SnapshotCamera", section))
+            {
+                MessageBox.Show("Failed to save snapshot camera settings.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _snapshotEnabled = updated.Enabled;
+
+            if (_systemRunning)
+            {
+                _cameraWatcher?.Stop();
+
+                if (updated.Enabled)
+                {
+                    lineIds = await _repo.GetActiveLineIdsAsync() ?? new List<int>();
+                    _cameraWatcher.Start(lineIds);
+                }
+
+                UpdateCameraStatus(_cameraWatcher?.IsRunning == true);
+            }
+        }
+
+        private void overviewCameraSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var current = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
+            if (current == null)
+            {
+                MessageBox.Show("OverviewCamera settings not found in configuration.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var form = new OverviewCameraSettingsForm(current);
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            var updated = form.Settings;
+
+            var section = new System.Text.Json.Nodes.JsonObject
+            {
+                ["Host"] = updated.Host,
+                ["PictureUrl"] = updated.PictureUrl,
+                ["Username"] = updated.Username,
+                ["Password"] = updated.Password,
+                ["Enabled"] = updated.Enabled,
+                ["RefreshIntervalMs"] = updated.RefreshIntervalMs
+            };
+
+            if (!SaveConfigSection("OverviewCamera", section))
+            {
+                MessageBox.Show("Failed to save overview camera settings.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _overviewSettings = updated;
+
+            if (_systemRunning)
+            {
+                StopOverviewCamera();
+                StartOverviewCamera(_overviewSettings);
+            }
+        }
+
+        private void databaseSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var current = _config.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(current))
+            {
+                MessageBox.Show("DefaultConnection not found in configuration.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var form = new DatabaseSettingsForm(current);
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            if (!SaveConfigSection("ConnectionStrings",
+                new System.Text.Json.Nodes.JsonObject { ["DefaultConnection"] = form.ConnectionString }))
+            {
+                MessageBox.Show("Failed to save database settings.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            MessageBox.Show(this,
+                "Database settings saved. Restart the application for changes to take effect.",
+                "Database", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void ApplySerialSettings(SerialPortSettings settings)
+        {
+            try
+            {
+                _serialEnabled = settings.Enabled;
+
+                if (_systemRunning)
+                {
+                    _serialService?.Stop();
+
+                    if (settings.Enabled)
+                        _serialService?.Start();
+                }
+
+                UpdateSerialStatus(_serialService?.IsRunning == true);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to apply serial port settings");
+            }
+        }
+
         private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using (var form = new VehicleReportForm(_repo))

@@ -20,6 +20,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Serial
         public event Action<string> OnDataReceived;
         public event Action<bool> OnConnectionChanged;
 
+        public bool IsRunning => _port != null && _port.IsOpen;
+
         // ✅ Inject via IOptions
         public SerialPortService(IOptions<SerialPortSettings> options)
         {

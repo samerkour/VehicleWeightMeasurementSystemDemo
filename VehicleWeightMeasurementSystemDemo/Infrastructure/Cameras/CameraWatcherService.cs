@@ -33,6 +33,17 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
         public event Action<int, string, long> OnImageCaptured;
         public event Action<bool> OnStatusChanged;
 
+        public bool IsRunning
+        {
+            get
+            {
+                lock (_linesLock)
+                {
+                    return _lines.Any(w => w.Watcher.EnableRaisingEvents);
+                }
+            }
+        }
+
         public CameraWatcherService(IOptions<SnapshotCameraSettings> options)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));

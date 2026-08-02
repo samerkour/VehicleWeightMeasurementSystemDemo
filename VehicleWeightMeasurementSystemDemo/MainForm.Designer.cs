@@ -406,20 +406,23 @@ namespace VehicleWeightMeasurementSystemDemo
             // serialPortSettingsToolStripMenuItem
             // 
             serialPortSettingsToolStripMenuItem.Name = "serialPortSettingsToolStripMenuItem";
-            serialPortSettingsToolStripMenuItem.Size = new Size(265, 26);
+            serialPortSettingsToolStripMenuItem.Size = new Size(216, 26);
             serialPortSettingsToolStripMenuItem.Text = "Serial Port Settings";
+            serialPortSettingsToolStripMenuItem.Click += serialPortSettingsToolStripMenuItem_Click;
             // 
             // cameraSettingsToolStripMenuItem
             // 
             cameraSettingsToolStripMenuItem.Name = "cameraSettingsToolStripMenuItem";
             cameraSettingsToolStripMenuItem.Size = new Size(265, 26);
             cameraSettingsToolStripMenuItem.Text = "Snapshot Camera Settings";
+            cameraSettingsToolStripMenuItem.Click += cameraSettingsToolStripMenuItem_Click;
             // 
             // databaseSettingsToolStripMenuItem
             // 
             databaseSettingsToolStripMenuItem.Name = "databaseSettingsToolStripMenuItem";
             databaseSettingsToolStripMenuItem.Size = new Size(265, 26);
             databaseSettingsToolStripMenuItem.Text = "Database Settings";
+            databaseSettingsToolStripMenuItem.Click += databaseSettingsToolStripMenuItem_Click;
             // 
             // helpToolStripMenuItem
             // 
@@ -445,6 +448,7 @@ namespace VehicleWeightMeasurementSystemDemo
             overviewCameraSettingsToolStripMenuItem.Name = "overviewCameraSettingsToolStripMenuItem";
             overviewCameraSettingsToolStripMenuItem.Size = new Size(265, 26);
             overviewCameraSettingsToolStripMenuItem.Text = "Overview Camera Settings";
+            overviewCameraSettingsToolStripMenuItem.Click += overviewCameraSettingsToolStripMenuItem_Click;
             // 
             // MainForm
             // 
