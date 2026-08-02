@@ -1,4 +1,6 @@
-﻿namespace VehicleWeightMeasurementSystemDemo
+﻿using VehicleWeightMeasurementSystemDemo.Theming;
+
+namespace VehicleWeightMeasurementSystemDemo
 {
     partial class VehicleReportForm
     {
@@ -28,6 +30,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             grpFilters = new GroupBox();
             maxWeightLabel = new Label();
             minWeightLabel = new Label();
@@ -45,14 +50,23 @@
             dtTo = new DateTimePicker();
             dtFrom = new DateTimePicker();
             dgvVehicles = new DataGridView();
+            _btnPrev = new Button();
+            _btnFirst = new Button();
+            _btnNext = new Button();
+            _btnLast = new Button();
+            _cmbPageSize = new ComboBox();
+            _pager = new FlowLayoutPanel();
+            _lblPageInfo = new Label();
             grpFilters.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nudMaxWeight).BeginInit();
             ((System.ComponentModel.ISupportInitialize)nudMinWeight).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvVehicles).BeginInit();
+            _pager.SuspendLayout();
             SuspendLayout();
             // 
             // grpFilters
             // 
+            grpFilters.BackColor = Color.White;
             grpFilters.Controls.Add(maxWeightLabel);
             grpFilters.Controls.Add(minWeightLabel);
             grpFilters.Controls.Add(plateLabel);
@@ -68,9 +82,13 @@
             grpFilters.Controls.Add(cmbLine);
             grpFilters.Controls.Add(dtTo);
             grpFilters.Controls.Add(dtFrom);
-            grpFilters.Location = new Point(12, 22);
+            grpFilters.Dock = DockStyle.Top;
+            grpFilters.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            grpFilters.ForeColor = Color.FromArgb(30, 30, 30);
+            grpFilters.Location = new Point(12, 12);
             grpFilters.Name = "grpFilters";
-            grpFilters.Size = new Size(987, 295);
+            grpFilters.Padding = new Padding(10);
+            grpFilters.Size = new Size(987, 300);
             grpFilters.TabIndex = 0;
             grpFilters.TabStop = false;
             grpFilters.Text = "Filters";
@@ -78,18 +96,18 @@
             // maxWeightLabel
             // 
             maxWeightLabel.AutoSize = true;
-            maxWeightLabel.Location = new Point(501, 129);
+            maxWeightLabel.Location = new Point(501, 134);
             maxWeightLabel.Name = "maxWeightLabel";
-            maxWeightLabel.Size = new Size(88, 20);
+            maxWeightLabel.Size = new Size(94, 20);
             maxWeightLabel.TabIndex = 14;
             maxWeightLabel.Text = "Max Weight";
             // 
             // minWeightLabel
             // 
             minWeightLabel.AutoSize = true;
-            minWeightLabel.Location = new Point(76, 129);
+            minWeightLabel.Location = new Point(64, 148);
             minWeightLabel.Name = "minWeightLabel";
-            minWeightLabel.Size = new Size(85, 20);
+            minWeightLabel.Size = new Size(91, 20);
             minWeightLabel.TabIndex = 13;
             minWeightLabel.Text = "Min Weight";
             // 
@@ -98,34 +116,34 @@
             plateLabel.AutoSize = true;
             plateLabel.Location = new Point(501, 85);
             plateLabel.Name = "plateLabel";
-            plateLabel.Size = new Size(42, 20);
+            plateLabel.Size = new Size(44, 20);
             plateLabel.TabIndex = 12;
             plateLabel.Text = "Plate";
             // 
             // lineLabel
             // 
             lineLabel.AutoSize = true;
-            lineLabel.Location = new Point(76, 82);
+            lineLabel.Location = new Point(64, 85);
             lineLabel.Name = "lineLabel";
-            lineLabel.Size = new Size(36, 20);
+            lineLabel.Size = new Size(38, 20);
             lineLabel.TabIndex = 11;
             lineLabel.Text = "Line";
             // 
             // toLabel
             // 
             toLabel.AutoSize = true;
-            toLabel.Location = new Point(501, 42);
+            toLabel.Location = new Point(501, 43);
             toLabel.Name = "toLabel";
-            toLabel.Size = new Size(25, 20);
+            toLabel.Size = new Size(26, 20);
             toLabel.TabIndex = 10;
             toLabel.Text = "To";
             // 
             // fromLabel
             // 
             fromLabel.AutoSize = true;
-            fromLabel.Location = new Point(76, 37);
+            fromLabel.Location = new Point(64, 37);
             fromLabel.Name = "fromLabel";
-            fromLabel.Size = new Size(43, 20);
+            fromLabel.Size = new Size(46, 20);
             fromLabel.TabIndex = 9;
             fromLabel.Text = "From";
             // 
@@ -133,7 +151,7 @@
             // 
             btnExcel.Location = new Point(602, 242);
             btnExcel.Name = "btnExcel";
-            btnExcel.Size = new Size(94, 29);
+            btnExcel.Size = new Size(137, 29);
             btnExcel.TabIndex = 8;
             btnExcel.Text = "Export Excel";
             btnExcel.UseVisualStyleBackColor = true;
@@ -143,7 +161,7 @@
             // 
             btnSearch.Location = new Point(167, 242);
             btnSearch.Name = "btnSearch";
-            btnSearch.Size = new Size(94, 29);
+            btnSearch.Size = new Size(137, 29);
             btnSearch.TabIndex = 7;
             btnSearch.Text = "Search";
             btnSearch.UseVisualStyleBackColor = true;
@@ -152,9 +170,9 @@
             // chkOverweight
             // 
             chkOverweight.AutoSize = true;
-            chkOverweight.Location = new Point(148, 193);
+            chkOverweight.Location = new Point(167, 190);
             chkOverweight.Name = "chkOverweight";
-            chkOverweight.Size = new Size(107, 24);
+            chkOverweight.Size = new Size(113, 24);
             chkOverweight.TabIndex = 6;
             chkOverweight.Text = "Overweight";
             chkOverweight.UseVisualStyleBackColor = true;
@@ -168,7 +186,7 @@
             // 
             // nudMinWeight
             // 
-            nudMinWeight.Location = new Point(167, 127);
+            nudMinWeight.Location = new Point(167, 141);
             nudMinWeight.Name = "nudMinWeight";
             nudMinWeight.Size = new Size(150, 27);
             nudMinWeight.TabIndex = 4;
@@ -183,14 +201,17 @@
             // cmbLine
             // 
             cmbLine.FormattingEnabled = true;
-            cmbLine.Location = new Point(167, 82);
+            cmbLine.Items.AddRange(new object[] { "1", "2", "3", "4" });
+            cmbLine.Location = new Point(167, 89);
             cmbLine.Name = "cmbLine";
             cmbLine.Size = new Size(151, 28);
             cmbLine.TabIndex = 2;
+            cmbLine.Tag = "1";
+            cmbLine.Text = "1";
             // 
             // dtTo
             // 
-            dtTo.Location = new Point(602, 37);
+            dtTo.Location = new Point(602, 38);
             dtTo.Name = "dtTo";
             dtTo.Size = new Size(250, 27);
             dtTo.TabIndex = 1;
@@ -204,23 +225,137 @@
             // 
             // dgvVehicles
             // 
+            dgvVehicles.AllowUserToAddRows = false;
+            dgvVehicles.AllowUserToDeleteRows = false;
             dgvVehicles.AllowUserToOrderColumns = true;
-            dgvVehicles.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvVehicles.Location = new Point(12, 334);
+            dgvVehicles.AllowUserToResizeRows = false;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(248, 249, 251);
+            dgvVehicles.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
+            dgvVehicles.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dgvVehicles.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvVehicles.BackgroundColor = Color.White;
+            dgvVehicles.BorderStyle = BorderStyle.None;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = Color.FromArgb(30, 30, 30);
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.Padding = new Padding(6, 0, 6, 0);
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(30, 30, 30);
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            dgvVehicles.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dgvVehicles.ColumnHeadersHeight = 36;
+            dgvVehicles.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = Color.White;
+            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle3.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle3.Padding = new Padding(6, 2, 6, 2);
+            dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(0, 120, 215);
+            dataGridViewCellStyle3.SelectionForeColor = Color.White;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            dgvVehicles.DefaultCellStyle = dataGridViewCellStyle3;
+            dgvVehicles.EnableHeadersVisualStyles = false;
+            dgvVehicles.GridColor = Color.FromArgb(220, 220, 220);
+            dgvVehicles.Location = new Point(12, 312);
+            dgvVehicles.Margin = new Padding(0, 8, 0, 0);
+            dgvVehicles.MultiSelect = false;
             dgvVehicles.Name = "dgvVehicles";
+            dgvVehicles.ReadOnly = true;
+            dgvVehicles.RowHeadersVisible = false;
             dgvVehicles.RowHeadersWidth = 51;
-            dgvVehicles.Size = new Size(987, 296);
+            dgvVehicles.RowTemplate.Height = 30;
+            dgvVehicles.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvVehicles.Size = new Size(987, 334);
             dgvVehicles.TabIndex = 1;
             dgvVehicles.ColumnHeaderMouseClick += dgvVehicles_ColumnHeaderMouseClick;
+            // 
+            // _btnPrev
+            // 
+            _btnPrev.Location = new Point(103, 3);
+            _btnPrev.Name = "_btnPrev";
+            _btnPrev.Size = new Size(94, 28);
+            _btnPrev.TabIndex = 2;
+            _btnPrev.Text = "Prev";
+            _btnPrev.UseVisualStyleBackColor = true;
+            _btnPrev.Click += _btnPrev_Click;
+            // 
+            // _btnFirst
+            // 
+            _btnFirst.Location = new Point(3, 3);
+            _btnFirst.Name = "_btnFirst";
+            _btnFirst.Size = new Size(94, 28);
+            _btnFirst.TabIndex = 3;
+            _btnFirst.Text = "First";
+            _btnFirst.UseVisualStyleBackColor = true;
+            _btnFirst.Click += _btnFirst_Click;
+            // 
+            // _btnNext
+            // 
+            _btnNext.Location = new Point(375, 3);
+            _btnNext.Name = "_btnNext";
+            _btnNext.Size = new Size(94, 28);
+            _btnNext.TabIndex = 4;
+            _btnNext.Text = "Next";
+            _btnNext.UseVisualStyleBackColor = true;
+            _btnNext.Click += _btnNext_Click;
+            // 
+            // _btnLast
+            // 
+            _btnLast.Location = new Point(475, 3);
+            _btnLast.Name = "_btnLast";
+            _btnLast.Size = new Size(94, 28);
+            _btnLast.TabIndex = 5;
+            _btnLast.Text = "Last";
+            _btnLast.UseVisualStyleBackColor = true;
+            _btnLast.Click += _btnLast_Click;
+            // 
+            // _cmbPageSize
+            // 
+            _cmbPageSize.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cmbPageSize.FormattingEnabled = true;
+            _cmbPageSize.Items.AddRange(new object[] { "50", "100", "150", "200", "300", "400", "500", "1000", "10000" });
+            _cmbPageSize.Location = new Point(289, 3);
+            _cmbPageSize.Name = "_cmbPageSize";
+            _cmbPageSize.Size = new Size(80, 28);
+            _cmbPageSize.TabIndex = 6;
+            _cmbPageSize.SelectedIndexChanged += _cmbPageSize_SelectedIndexChanged;
+            // 
+            // _pager
+            // 
+            _pager.Controls.Add(_btnFirst);
+            _pager.Controls.Add(_btnPrev);
+            _pager.Controls.Add(_lblPageInfo);
+            _pager.Controls.Add(_cmbPageSize);
+            _pager.Controls.Add(_btnNext);
+            _pager.Controls.Add(_btnLast);
+            _pager.Dock = DockStyle.Bottom;
+            _pager.Location = new Point(12, 654);
+            _pager.Name = "_pager";
+            _pager.Size = new Size(987, 40);
+            _pager.TabIndex = 7;
+            // 
+            // _lblPageInfo
+            // 
+            _lblPageInfo.AutoSize = true;
+            _lblPageInfo.Location = new Point(207, 7);
+            _lblPageInfo.Margin = new Padding(7);
+            _lblPageInfo.Name = "_lblPageInfo";
+            _lblPageInfo.Size = new Size(72, 20);
+            _lblPageInfo.TabIndex = 7;
+            _lblPageInfo.Text = "Page Size";
             // 
             // VehicleReportForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1011, 706);
+            Controls.Add(_pager);
             Controls.Add(dgvVehicles);
             Controls.Add(grpFilters);
+            MinimumSize = new Size(900, 600);
             Name = "VehicleReportForm";
+            Padding = new Padding(12);
             StartPosition = FormStartPosition.CenterParent;
             Text = "VehicleReportForm";
             grpFilters.ResumeLayout(false);
@@ -228,6 +363,8 @@
             ((System.ComponentModel.ISupportInitialize)nudMaxWeight).EndInit();
             ((System.ComponentModel.ISupportInitialize)nudMinWeight).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvVehicles).EndInit();
+            _pager.ResumeLayout(false);
+            _pager.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -250,5 +387,12 @@
         private Label lineLabel;
         private Label toLabel;
         private Label fromLabel;
+        private Button _btnPrev;
+        private Button _btnFirst;
+        private Button _btnNext;
+        private Button _btnLast;
+        private ComboBox _cmbPageSize;
+        private FlowLayoutPanel _pager;
+        private Label _lblPageInfo;
     }
 }

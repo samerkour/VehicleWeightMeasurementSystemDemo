@@ -20,9 +20,76 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
         {
             _context = context;
         }
+
+
+        private IQueryable<VehicleEntity> BuildSearchQuery(
+            DateTime from, DateTime to, int? lineId, string plate,
+            double? minWeight, double? maxWeight, bool overweight)
+        {
+            var query = _context.Vehicles.AsNoTracking().AsQueryable();
+
+            // همان بدنه فیلترهای فعلی SearchAsync (خطوط 182-225) را اینجا بگذار
+            // date / lineId / plate / minWeight / maxWeight / overweight
+
+            return query;
+        }
+
+        //public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchPagedAsync(
+        //    DateTime from, DateTime to, int? lineId, string plate,
+        //    double? minWeight, double? maxWeight, bool overweight,
+        //    int page, int pageSize)
+        //{
+        //    if (page < 1) page = 1;
+        //    if (pageSize < 1) pageSize = 50;
+
+        //    var query = BuildSearchQuery(from, to, lineId, plate, minWeight, maxWeight, overweight);
+
+        //    var total = await query.CountAsync();
+
+        //    var items = await query
+        //        .OrderByDescending(x => x.Timestamp)
+        //        .Skip((page - 1) * pageSize)
+        //        .Take(pageSize)
+        //        .Select(x => new VehicleReportDto
+        //        {
+        //            Id = x.Id,
+        //            Timestamp = x.Timestamp,
+        //            PlateNumber = x.PlateNumber,
+        //            LineName = x.Line.LineName,
+        //            Speed = x.Speed,
+        //            TotalWeight = x.TotalWeight,
+        //            AxleCount = x.AxleCount,
+        //            Overweight = x.TotalOverWeight > 0
+        //        })
+        //        .ToListAsync();
+
+        //    return (items, total);
+        //}
+
+        public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchPagedAsync(
+            DateTime from, DateTime to, int? lineId, string plate,
+            double? minWeight, double? maxWeight, bool overweight,
+            int page, int pageSize)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
+
+            // بدون Skip/Take در دیتابیس
+            var all = await SearchAsync(from, to, lineId, plate, minWeight, maxWeight, overweight);
+
+            var items = all
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return (items, all.Count);
+        }
+
+
         public async Task<List<VehicleDto>> GetAllAsync()
         {
             return await _context.Vehicles
+                .AsNoTracking()
                 .Include(v => v.Axles)   // 🔥 IMPORTANT
                 .OrderByDescending(v => v.Timestamp)
                 .Take(100)
@@ -187,8 +254,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
 
             query = query.Where(x =>
-                x.Timestamp <= from &&
-                x.Timestamp >= to.Date);
+                x.Timestamp >= from &&
+                x.Timestamp <= to.Date);
 
 
             if (lineId.HasValue)
