@@ -1,15 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Resources;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
 using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop;
-using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop.SATPA_API;
 
 namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
@@ -24,52 +16,36 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
             "GEORGIA","TRANZIT","AFGHANISTAN","ARMENIA","IRAQ"
         };
 
-
         private readonly List<SATPA> _cameras = new();
-
-
-        public bool AddCamera(PictureBox preview)
-        {
-            if (_cameras.Any())
-                throw new InvalidOperationException("Camera already added.");
-
-            byte camNum = 0;
-
-            var cam = new SATPA(
-                camNum,
-                $"cam{camNum}",
-                preview,
-                License.per_camera
-            );
-
-
-            _cameras.Add(cam);
-
-            if(_cameras.Any())
-                return true;
-
-            return false;
-        }
 
         public PlateRecognitionService(IPlateRecognitionEngine engine)
         {
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
         }
 
+        public bool AddCamera(PictureBox preview)
+        {
+            if (_cameras.Any())
+                throw new InvalidOperationException("Camera already added.");
+
+            var cam = new SATPA(
+                0,
+                "cam0",
+                preview,
+                License.per_camera
+            );
+
+            _cameras.Add(cam);
+            return true;
+        }
+
         public PlateResultDto Extract(string imagePath, byte camIndex = 0)
         {
             if (string.IsNullOrEmpty(imagePath))
-                return new PlateResultDto() ;
-
-
-            var camera = _cameras[camIndex];
-            //camera.save_setting();
-
-            var results = new PlateResultDto();
+                return new PlateResultDto();
 
             RECT rc = new RECT();
             string buffer = new string(' ', 20);
-            
             float confidence = 0;
 
             int count = _engine.Recognize(
@@ -80,32 +56,30 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
                 ref rc
             );
 
+            PlateResultDto best = null;
+
             for (int i = 0; i < count; i++)
             {
                 string json = _engine.GetPlate(camIndex, i);
 
                 var plate = JsonSerializer.Deserialize<SPlateResult>(json);
+                if (plate == null)
+                    continue;
 
-                //var image = (Bitmap)camera.make_pic_plate(
-                //    plate.plate_image_pointer,
-                //    plate.plate_height,
-                //    plate.plate_width
-                //);
+                var result = new PlateResultDto
+                {
+                    PlateNumber = FormatIranianPlate(plate.plate_string_unicode_indices),
+                    Confidence = plate.confidence,
+                    Country = countries[plate.country]
+                };
 
-                results = new PlateResultDto
-                    {
-                        //PlateNumber = plate.plate_string,
-                        PlateNumber = FormatIranianPlate(plate.plate_string_unicode_indices),
-                        Confidence = plate.confidence,
-                        Country = countries[plate.country]
-                        //,
-                        //PlateImage = image
-                    };
+                // در صورت وجود چند پلاک، مطمئن‌ترین نتیجه را برمی‌گردانیم
+                if (best == null || plate.confidence > best.Confidence)
+                    best = result;
             }
 
-            return results;
+            return best ?? new PlateResultDto();
         }
-
 
         public static string FormatIranianPlate(int[] unicodeIndices)
         {
@@ -126,21 +100,5 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 
             return rtlMark + $"{part3} ایران {part2} {letter} {part1}";
         }
-
-      
-
-        //public string FormatIranianPlate(string plate)
-        //{
-        //    if (string.IsNullOrWhiteSpace(plate) || plate.Length < 7)
-        //        return plate;
-
-        //    // Example: ۱۸س۲۴۴۱۱
-        //    var part1 = plate.Substring(0, 2);   // ۱۸
-        //    var letter = plate.Substring(2, 1);  // س
-        //    var part2 = plate.Substring(3, 3);   // ۲۴۴
-        //    var part3 = plate.Substring(6);      // ۱۱
-
-        //    return $"{part1} {letter} {part2} {part3}";
-        //}
     }
 }

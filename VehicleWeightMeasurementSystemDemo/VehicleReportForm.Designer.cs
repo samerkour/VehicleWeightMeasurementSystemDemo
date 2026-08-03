@@ -200,39 +200,28 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // cmbLine
             // 
-            cmbLine.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbLine.FormattingEnabled = true;
             cmbLine.Items.AddRange(new object[] { "1", "2", "3", "4" });
             cmbLine.Location = new Point(167, 89);
             cmbLine.Name = "cmbLine";
             cmbLine.Size = new Size(151, 28);
             cmbLine.TabIndex = 2;
+            cmbLine.Tag = "1";
+            cmbLine.Text = "1";
             // 
             // dtTo
             // 
-            dtTo.BackColor = Color.White;
-            dtTo.BorderStyle = BorderStyle.FixedSingle;
             dtTo.Location = new Point(602, 38);
-            dtTo.Margin = new Padding(3, 4, 3, 4);
-            dtTo.MinimumSize = new Size(150, 28);
             dtTo.Name = "dtTo";
-            dtTo.RightToLeft = RightToLeft.Yes;
             dtTo.Size = new Size(250, 29);
             dtTo.TabIndex = 1;
-            dtTo.ValueNullable = new DateTime(2026, 8, 3, 13, 28, 29, 553);
             // 
             // dtFrom
             // 
-            dtFrom.BackColor = Color.White;
-            dtFrom.BorderStyle = BorderStyle.FixedSingle;
             dtFrom.Location = new Point(167, 38);
-            dtFrom.Margin = new Padding(3, 4, 3, 4);
-            dtFrom.MinimumSize = new Size(150, 28);
             dtFrom.Name = "dtFrom";
-            dtFrom.RightToLeft = RightToLeft.Yes;
             dtFrom.Size = new Size(250, 29);
             dtFrom.TabIndex = 0;
-            dtFrom.ValueNullable = new DateTime(2026, 8, 3, 13, 28, 29, 564);
             // 
             // dgvVehicles
             // 

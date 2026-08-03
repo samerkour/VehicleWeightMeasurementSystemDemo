@@ -45,16 +45,6 @@ namespace VehicleWeightMeasurementSystemDemo
             Style();
         }
 
-     
-
-        private int? SelectedLineId()
-        {
-            if (cmbLine.SelectedItem is not null && Convert.ToInt32(cmbLine.SelectedItem) > 0)
-                return Convert.ToInt32(cmbLine.SelectedItem);
-
-            return null;
-        }
-
         private void Style()
         {
             this.BackColor = UITheme.Background;
@@ -220,7 +210,7 @@ namespace VehicleWeightMeasurementSystemDemo
             try
             {
                 var data = await _repo.SearchAsync(
-                dtFrom.Value, dtTo.Value, SelectedLineId(),
+                dtFrom.Value, dtTo.Value, cmbLine.SelectedValue as int?,
                 txtPlate.Text, (double)nudMinWeight.Value,
                 (double)nudMaxWeight.Value, chkOverweight.Checked);
 
@@ -315,7 +305,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 var (items, total) = await _repo.SearchPagedAsync(
                     dtFrom.Value,
                     dtTo.Value,
-                    SelectedLineId(),
+                    cmbLine.SelectedValue as int?,
                     txtPlate.Text,
                     (double)nudMinWeight.Value,
                     (double)nudMaxWeight.Value,
