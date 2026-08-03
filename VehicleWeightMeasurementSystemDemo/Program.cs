@@ -92,7 +92,8 @@ namespace VehicleWeightMeasurementSystemDemo
             builder.Services.AddScoped<SqlRepository>();
 
             builder.Services.AddSingleton<IPlateRecognitionEngine, SatpaRecognitionEngine>();
-            builder.Services.AddSingleton<PlateRecognitionService>();
+            builder.Services.AddSingleton<IPlateImageProcessor, PlateImageProcessor>();
+            builder.Services.AddSingleton<IPlateRecognitionService, PlateRecognitionService>();
 
 
             // 🔹 Bind config

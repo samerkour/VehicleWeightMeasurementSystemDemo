@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.ComponentModel;
 using System.Net;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Parsing;
 using VehicleWeightMeasurementSystemDemo.Domain.Services;
@@ -34,7 +35,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private SerialPortService _serialService;
         private CameraWatcherService _cameraWatcher;
-        private PlateRecognitionService _plateService;
+        private IPlateRecognitionService _plateService;
         private IConfiguration _config;
         private SqlRepository _repo;
 
@@ -226,7 +227,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         public MainForm(IConfiguration config,
             SqlRepository repo,
-            PlateRecognitionService plateService,
+            IPlateRecognitionService plateService,
             SerialPortService serialService,
             CameraWatcherService cameraWatcher
             )
@@ -512,6 +513,28 @@ namespace VehicleWeightMeasurementSystemDemo
             catch (Exception ex)
             {
                 Log.Warning("Failed to display image {Path}: {Message}", imagePath, ex.Message);
+            }
+
+            UpdatePlateImageUI(plate?.PlateImage);
+        }
+
+        private void UpdatePlateImageUI(Bitmap? plateImage)
+        {
+            try
+            {
+                if (InvokeRequired)
+                {
+                    BeginInvoke(new Action(() => UpdatePlateImageUI(plateImage)));
+                    return;
+                }
+
+                var old = pictureBoxPlate.Image;
+                pictureBoxPlate.Image = plateImage;
+                old?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("Failed to display plate image: {Message}", ex.Message);
             }
         }
 

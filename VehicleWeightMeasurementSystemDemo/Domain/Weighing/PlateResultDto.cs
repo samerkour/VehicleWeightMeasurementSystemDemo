@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,6 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Weighing
         public string PlateNumber { get; set; }
         public float Confidence { get; set; }
         public string Country { get; set; }
-        //public Bitmap PlateImage { get; set; }
+        public Bitmap PlateImage { get; set; }
     }
 }

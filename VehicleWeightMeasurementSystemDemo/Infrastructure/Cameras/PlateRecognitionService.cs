@@ -1,4 +1,9 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Text.Json;
+using Serilog;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
 using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop;
@@ -6,9 +11,10 @@ using static VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras.Interop.S
 
 namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 {
-    public class PlateRecognitionService
+    public class PlateRecognitionService : IPlateRecognitionService
     {
         private readonly IPlateRecognitionEngine _engine;
+        private readonly IPlateImageProcessor _imageProcessor;
 
         private readonly string[] countries =
         {
@@ -18,9 +24,10 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 
         private readonly List<SATPA> _cameras = new();
 
-        public PlateRecognitionService(IPlateRecognitionEngine engine)
+        public PlateRecognitionService(IPlateRecognitionEngine engine, IPlateImageProcessor imageProcessor)
         {
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+            _imageProcessor = imageProcessor ?? throw new ArgumentNullException(nameof(imageProcessor));
         }
 
         public bool AddCamera(PictureBox preview)
@@ -78,7 +85,23 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
                     best = result;
             }
 
-            return best ?? new PlateResultDto();
+            if (best == null)
+            {
+                Log.Warning("No plate detected in {Path}", imagePath);
+                return new PlateResultDto();
+            }
+
+            // کراپ تصویر پلاک از تصویر اصلی
+            try
+            {
+                best.PlateImage = _imageProcessor.CropPlate(imagePath, rc);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to crop plate image for {Path}", imagePath);
+            }
+
+            return best;
         }
 
         public static string FormatIranianPlate(int[] unicodeIndices)

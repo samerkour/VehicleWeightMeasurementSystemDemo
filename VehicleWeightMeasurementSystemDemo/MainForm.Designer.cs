@@ -49,6 +49,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSpeed = new Label();
             lblDetectedPlate = new Label();
             pictureBoxVehicle = new PictureBox();
+            pictureBoxPlate = new PictureBox();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             grpImage = new GroupBox();
             picCam1 = new PictureBox();
@@ -67,13 +68,14 @@ namespace VehicleWeightMeasurementSystemDemo
             settingsToolStripMenuItem = new ToolStripMenuItem();
             serialPortSettingsToolStripMenuItem = new ToolStripMenuItem();
             cameraSettingsToolStripMenuItem = new ToolStripMenuItem();
+            overviewCameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             sqlCommand1 = new Microsoft.Data.SqlClient.SqlCommand();
-            overviewCameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             grpVehicleInfo.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxPlate).BeginInit();
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
@@ -102,6 +104,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // grpVehicleInfo
             // 
             grpVehicleInfo.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpVehicleInfo.Controls.Add(pictureBoxPlate);
             grpVehicleInfo.Controls.Add(lblAxle56);
             grpVehicleInfo.Controls.Add(lblAxle45);
             grpVehicleInfo.Controls.Add(lblAxle34);
@@ -248,7 +251,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             lblDetectedPlate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblDetectedPlate.AutoSize = true;
-            lblDetectedPlate.Location = new Point(209, 215);
+            lblDetectedPlate.Location = new Point(209, 184);
             lblDetectedPlate.Name = "lblDetectedPlate";
             lblDetectedPlate.Size = new Size(180, 23);
             lblDetectedPlate.TabIndex = 1;
@@ -260,10 +263,21 @@ namespace VehicleWeightMeasurementSystemDemo
             pictureBoxVehicle.Location = new Point(204, 15);
             pictureBoxVehicle.Margin = new Padding(3, 4, 3, 4);
             pictureBoxVehicle.Name = "pictureBoxVehicle";
-            pictureBoxVehicle.Size = new Size(350, 227);
+            pictureBoxVehicle.Size = new Size(350, 255);
             pictureBoxVehicle.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxVehicle.TabIndex = 0;
             pictureBoxVehicle.TabStop = false;
+            // 
+            // pictureBoxPlate
+            // 
+            pictureBoxPlate.BorderStyle = BorderStyle.FixedSingle;
+            pictureBoxPlate.Location = new Point(218, 217);
+            pictureBoxPlate.Margin = new Padding(3, 4, 3, 4);
+            pictureBoxPlate.Name = "pictureBoxPlate";
+            pictureBoxPlate.Size = new Size(164, 43);
+            pictureBoxPlate.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBoxPlate.TabIndex = 17;
+            pictureBoxPlate.TabStop = false;
             // 
             // grpImage
             // 
@@ -406,7 +420,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // serialPortSettingsToolStripMenuItem
             // 
             serialPortSettingsToolStripMenuItem.Name = "serialPortSettingsToolStripMenuItem";
-            serialPortSettingsToolStripMenuItem.Size = new Size(216, 26);
+            serialPortSettingsToolStripMenuItem.Size = new Size(265, 26);
             serialPortSettingsToolStripMenuItem.Text = "Serial Port Settings";
             serialPortSettingsToolStripMenuItem.Click += serialPortSettingsToolStripMenuItem_Click;
             // 
@@ -416,6 +430,13 @@ namespace VehicleWeightMeasurementSystemDemo
             cameraSettingsToolStripMenuItem.Size = new Size(265, 26);
             cameraSettingsToolStripMenuItem.Text = "Snapshot Camera Settings";
             cameraSettingsToolStripMenuItem.Click += cameraSettingsToolStripMenuItem_Click;
+            // 
+            // overviewCameraSettingsToolStripMenuItem
+            // 
+            overviewCameraSettingsToolStripMenuItem.Name = "overviewCameraSettingsToolStripMenuItem";
+            overviewCameraSettingsToolStripMenuItem.Size = new Size(265, 26);
+            overviewCameraSettingsToolStripMenuItem.Text = "Overview Camera Settings";
+            overviewCameraSettingsToolStripMenuItem.Click += overviewCameraSettingsToolStripMenuItem_Click;
             // 
             // databaseSettingsToolStripMenuItem
             // 
@@ -443,13 +464,6 @@ namespace VehicleWeightMeasurementSystemDemo
             sqlCommand1.CommandTimeout = 30;
             sqlCommand1.EnableOptimizedParameterBinding = false;
             // 
-            // overviewCameraSettingsToolStripMenuItem
-            // 
-            overviewCameraSettingsToolStripMenuItem.Name = "overviewCameraSettingsToolStripMenuItem";
-            overviewCameraSettingsToolStripMenuItem.Size = new Size(265, 26);
-            overviewCameraSettingsToolStripMenuItem.Text = "Overview Camera Settings";
-            overviewCameraSettingsToolStripMenuItem.Click += overviewCameraSettingsToolStripMenuItem_Click;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -474,6 +488,7 @@ namespace VehicleWeightMeasurementSystemDemo
             grpVehicleInfo.ResumeLayout(false);
             grpVehicleInfo.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxPlate).EndInit();
             grpImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
@@ -496,6 +511,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private GroupBox grpImage;
         private PictureBox pictureBoxVehicle;
+        private PictureBox pictureBoxPlate;
         private Label lblDetectedPlate;
         private DataGridView dgvRecords;
         private Label lblRecordsTitle;
