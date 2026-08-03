@@ -20,6 +20,9 @@ namespace VehicleWeightMeasurementSystemDemo
         int _currentPage = 1;
         private int _totalCount;
         private bool _loading;
+        private readonly BindingSource _gridSource = new();
+        private string _sortProperty = "Timestamp";
+        private ListSortDirection _sortDirection = ListSortDirection.Descending;
 
         private int TotalPages => Math.Max(1, (int)Math.Ceiling(_totalCount / (double)_pageSize));
 
@@ -35,6 +38,9 @@ namespace VehicleWeightMeasurementSystemDemo
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
 
             _cmbPageSize.SelectedIndex = 0;
+
+            dtFrom.Value = DateTime.Today.AddMonths(-1);
+            dtTo.Value = DateTime.Now;
 
             Style();
         }
@@ -158,9 +164,27 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void dgvVehicles_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            dgvVehicles.Sort(
-                   dgvVehicles.Columns[e.ColumnIndex],
-                   ListSortDirection.Descending);
+            var column = dgvVehicles.Columns[e.ColumnIndex];
+            if (string.IsNullOrEmpty(column.DataPropertyName))
+                return;
+
+            // اگر روی همان ستون کلیک شد، جهت عوض می‌شود؛ در غیر این صورت نزولی
+            if (_sortProperty == column.DataPropertyName)
+                _sortDirection = _sortDirection == ListSortDirection.Ascending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+            else
+            {
+                _sortProperty = column.DataPropertyName;
+                _sortDirection = ListSortDirection.Descending;
+            }
+
+            ApplySort();
+        }
+
+        private void ApplySort()
+        {
+            _gridSource.Sort = $"{_sortProperty} {(_sortDirection == ListSortDirection.Ascending ? "ASC" : "DESC")}";
         }
 
         private void dgvVehicles_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
@@ -300,7 +324,9 @@ namespace VehicleWeightMeasurementSystemDemo
                     return;
                 }
 
-                dgvVehicles.DataSource = items;
+                dgvVehicles.DataSource = _gridSource;
+                _gridSource.DataSource = items;
+                ApplySort();
             }
             catch (Exception ex)
             {
@@ -319,7 +345,7 @@ namespace VehicleWeightMeasurementSystemDemo
         {
             _lblPageInfo.Text = _totalCount == 0
                 ? "No Record Found"
-                : $"Page {_currentPage} از {TotalPages}  |  Total Count: {_totalCount:N0}";
+                : $"Page {_currentPage} From {TotalPages}  |  Total Count: {_totalCount:N0}";
 
             _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
             _btnNext.Enabled = _btnLast.Enabled = _currentPage < TotalPages;

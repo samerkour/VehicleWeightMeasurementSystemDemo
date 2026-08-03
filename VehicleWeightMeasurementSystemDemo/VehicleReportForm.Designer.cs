@@ -47,8 +47,8 @@ namespace VehicleWeightMeasurementSystemDemo
             nudMinWeight = new NumericUpDown();
             txtPlate = new TextBox();
             cmbLine = new ComboBox();
-            dtTo = new DateTimePicker();
-            dtFrom = new DateTimePicker();
+            dtTo = new VehicleWeightMeasurementSystemDemo.Controls.JalaliDateTimePicker();
+            dtFrom = new VehicleWeightMeasurementSystemDemo.Controls.JalaliDateTimePicker();
             dgvVehicles = new DataGridView();
             _btnPrev = new Button();
             _btnFirst = new Button();
@@ -213,14 +213,14 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             dtTo.Location = new Point(602, 38);
             dtTo.Name = "dtTo";
-            dtTo.Size = new Size(250, 27);
+            dtTo.Size = new Size(250, 29);
             dtTo.TabIndex = 1;
             // 
             // dtFrom
             // 
             dtFrom.Location = new Point(167, 38);
             dtFrom.Name = "dtFrom";
-            dtFrom.Size = new Size(250, 27);
+            dtFrom.Size = new Size(250, 29);
             dtFrom.TabIndex = 0;
             // 
             // dgvVehicles
@@ -374,8 +374,8 @@ namespace VehicleWeightMeasurementSystemDemo
         private GroupBox grpFilters;
         private TextBox txtPlate;
         private ComboBox cmbLine;
-        private DateTimePicker dtTo;
-        private DateTimePicker dtFrom;
+        private VehicleWeightMeasurementSystemDemo.Controls.JalaliDateTimePicker dtTo;
+        private VehicleWeightMeasurementSystemDemo.Controls.JalaliDateTimePicker dtFrom;
         private CheckBox chkOverweight;
         private NumericUpDown nudMaxWeight;
         private NumericUpDown nudMinWeight;
