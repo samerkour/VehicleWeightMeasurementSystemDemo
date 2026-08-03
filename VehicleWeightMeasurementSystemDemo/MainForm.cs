@@ -201,9 +201,22 @@ namespace VehicleWeightMeasurementSystemDemo
                 FillWeight = 15,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    Format = "yyyy-MM-dd HH:mm:ss"
+                    Format = "yyyy/MM/dd HH:mm:ss",
+                    FormatProvider = PersianCulture
                 }
             });
+        }
+
+        // فرهنگ فارسی با تقویم جلالی برای نمایش تاریخ شمسی
+        private static System.Globalization.CultureInfo PersianCulture
+        {
+            get
+            {
+                var culture = new System.Globalization.CultureInfo("fa-IR");
+                culture.DateTimeFormat.Calendar = new System.Globalization.PersianCalendar();
+                culture.DateTimeFormat.DateSeparator = "/";
+                return culture;
+            }
         }
 
         public MainForm()
