@@ -34,6 +34,11 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSerialStatus = new Label();
             lblCameraStatus = new Label();
             grpVehicleInfo = new GroupBox();
+            lblTotalWeight = new Label();
+            lblAxles = new Label();
+            lblLine = new Label();
+            lblSpeed = new Label();
+            pictureBoxPlate = new PictureBox();
             lblAxle56 = new Label();
             lblAxle45 = new Label();
             lblAxle34 = new Label();
@@ -43,16 +48,12 @@ namespace VehicleWeightMeasurementSystemDemo
             lblADC3 = new Label();
             lblADC2 = new Label();
             lblADC1 = new Label();
-            lblTotalWeight = new Label();
-            lblAxles = new Label();
-            lblLine = new Label();
-            lblSpeed = new Label();
             lblDetectedPlate = new Label();
             pictureBoxVehicle = new PictureBox();
-            pictureBoxPlate = new PictureBox();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             grpImage = new GroupBox();
             picCam1 = new PictureBox();
+            pictureBoxPlateCam = new PictureBox();
             dgvRecords = new DataGridView();
             lblRecordsTitle = new Label();
             pnlSelectedRecord = new Panel();
@@ -74,10 +75,12 @@ namespace VehicleWeightMeasurementSystemDemo
             aboutToolStripMenuItem = new ToolStripMenuItem();
             sqlCommand1 = new Microsoft.Data.SqlClient.SqlCommand();
             grpVehicleInfo.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPlate).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
+            picCam1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxPlateCam).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
             pnlSelectedRecord.SuspendLayout();
             menuStrip1.SuspendLayout();
@@ -104,6 +107,10 @@ namespace VehicleWeightMeasurementSystemDemo
             // grpVehicleInfo
             // 
             grpVehicleInfo.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpVehicleInfo.Controls.Add(lblTotalWeight);
+            grpVehicleInfo.Controls.Add(lblAxles);
+            grpVehicleInfo.Controls.Add(lblLine);
+            grpVehicleInfo.Controls.Add(lblSpeed);
             grpVehicleInfo.Controls.Add(pictureBoxPlate);
             grpVehicleInfo.Controls.Add(lblAxle56);
             grpVehicleInfo.Controls.Add(lblAxle45);
@@ -114,10 +121,6 @@ namespace VehicleWeightMeasurementSystemDemo
             grpVehicleInfo.Controls.Add(lblADC3);
             grpVehicleInfo.Controls.Add(lblADC2);
             grpVehicleInfo.Controls.Add(lblADC1);
-            grpVehicleInfo.Controls.Add(lblTotalWeight);
-            grpVehicleInfo.Controls.Add(lblAxles);
-            grpVehicleInfo.Controls.Add(lblLine);
-            grpVehicleInfo.Controls.Add(lblSpeed);
             grpVehicleInfo.Controls.Add(lblDetectedPlate);
             grpVehicleInfo.Controls.Add(pictureBoxVehicle);
             grpVehicleInfo.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
@@ -130,91 +133,10 @@ namespace VehicleWeightMeasurementSystemDemo
             grpVehicleInfo.TabStop = false;
             grpVehicleInfo.Text = "Vehicle Information";
             // 
-            // lblAxle56
-            // 
-            lblAxle56.AutoSize = true;
-            lblAxle56.Location = new Point(484, 392);
-            lblAxle56.Name = "lblAxle56";
-            lblAxle56.Size = new Size(61, 23);
-            lblAxle56.TabIndex = 16;
-            lblAxle56.Text = "Axle56";
-            // 
-            // lblAxle45
-            // 
-            lblAxle45.AutoSize = true;
-            lblAxle45.Location = new Point(368, 392);
-            lblAxle45.Name = "lblAxle45";
-            lblAxle45.Size = new Size(62, 23);
-            lblAxle45.TabIndex = 15;
-            lblAxle45.Text = "Axle45";
-            // 
-            // lblAxle34
-            // 
-            lblAxle34.AutoSize = true;
-            lblAxle34.Location = new Point(252, 392);
-            lblAxle34.Name = "lblAxle34";
-            lblAxle34.Size = new Size(62, 23);
-            lblAxle34.TabIndex = 14;
-            lblAxle34.Text = "Axle34";
-            // 
-            // lblAxle23
-            // 
-            lblAxle23.AutoSize = true;
-            lblAxle23.Location = new Point(137, 392);
-            lblAxle23.Name = "lblAxle23";
-            lblAxle23.Size = new Size(61, 23);
-            lblAxle23.TabIndex = 13;
-            lblAxle23.Text = "Axle23";
-            // 
-            // lblAxle12
-            // 
-            lblAxle12.AutoSize = true;
-            lblAxle12.Location = new Point(24, 392);
-            lblAxle12.Name = "lblAxle12";
-            lblAxle12.Size = new Size(59, 23);
-            lblAxle12.TabIndex = 12;
-            lblAxle12.Text = "Axle12";
-            // 
-            // lblADC4
-            // 
-            lblADC4.AutoSize = true;
-            lblADC4.Location = new Point(388, 289);
-            lblADC4.Name = "lblADC4";
-            lblADC4.Size = new Size(54, 23);
-            lblADC4.TabIndex = 11;
-            lblADC4.Text = "ADC4";
-            // 
-            // lblADC3
-            // 
-            lblADC3.AutoSize = true;
-            lblADC3.Location = new Point(266, 289);
-            lblADC3.Name = "lblADC3";
-            lblADC3.Size = new Size(53, 23);
-            lblADC3.TabIndex = 10;
-            lblADC3.Text = "ADC3";
-            // 
-            // lblADC2
-            // 
-            lblADC2.AutoSize = true;
-            lblADC2.Location = new Point(144, 289);
-            lblADC2.Name = "lblADC2";
-            lblADC2.Size = new Size(53, 23);
-            lblADC2.TabIndex = 9;
-            lblADC2.Text = "ADC2";
-            // 
-            // lblADC1
-            // 
-            lblADC1.AutoSize = true;
-            lblADC1.Location = new Point(24, 289);
-            lblADC1.Name = "lblADC1";
-            lblADC1.Size = new Size(51, 23);
-            lblADC1.TabIndex = 8;
-            lblADC1.Text = "ADC1";
-            // 
             // lblTotalWeight
             // 
             lblTotalWeight.AutoSize = true;
-            lblTotalWeight.Location = new Point(11, 158);
+            lblTotalWeight.Location = new Point(11, 169);
             lblTotalWeight.Name = "lblTotalWeight";
             lblTotalWeight.Size = new Size(131, 23);
             lblTotalWeight.TabIndex = 7;
@@ -223,7 +145,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxles
             // 
             lblAxles.AutoSize = true;
-            lblAxles.Location = new Point(14, 117);
+            lblAxles.Location = new Point(14, 129);
             lblAxles.Name = "lblAxles";
             lblAxles.Size = new Size(108, 23);
             lblAxles.TabIndex = 6;
@@ -232,7 +154,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblLine
             // 
             lblLine.AutoSize = true;
-            lblLine.Location = new Point(14, 76);
+            lblLine.Location = new Point(14, 89);
             lblLine.Name = "lblLine";
             lblLine.Size = new Size(71, 23);
             lblLine.TabIndex = 5;
@@ -241,17 +163,109 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblSpeed
             // 
             lblSpeed.AutoSize = true;
-            lblSpeed.Location = new Point(11, 35);
+            lblSpeed.Location = new Point(11, 49);
             lblSpeed.Name = "lblSpeed";
             lblSpeed.Size = new Size(87, 23);
             lblSpeed.TabIndex = 4;
             lblSpeed.Text = "Speed: ---";
             // 
+            // pictureBoxPlate
+            // 
+            pictureBoxPlate.BackColor = Color.Transparent;
+            pictureBoxPlate.Location = new Point(216, 253);
+            pictureBoxPlate.Margin = new Padding(3, 4, 3, 4);
+            pictureBoxPlate.Name = "pictureBoxPlate";
+            pictureBoxPlate.Size = new Size(136, 59);
+            pictureBoxPlate.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBoxPlate.TabIndex = 17;
+            pictureBoxPlate.TabStop = false;
+            // 
+            // lblAxle56
+            // 
+            lblAxle56.AutoSize = true;
+            lblAxle56.Location = new Point(484, 419);
+            lblAxle56.Name = "lblAxle56";
+            lblAxle56.Size = new Size(61, 23);
+            lblAxle56.TabIndex = 16;
+            lblAxle56.Text = "Axle56";
+            // 
+            // lblAxle45
+            // 
+            lblAxle45.AutoSize = true;
+            lblAxle45.Location = new Point(368, 419);
+            lblAxle45.Name = "lblAxle45";
+            lblAxle45.Size = new Size(62, 23);
+            lblAxle45.TabIndex = 15;
+            lblAxle45.Text = "Axle45";
+            // 
+            // lblAxle34
+            // 
+            lblAxle34.AutoSize = true;
+            lblAxle34.Location = new Point(252, 419);
+            lblAxle34.Name = "lblAxle34";
+            lblAxle34.Size = new Size(62, 23);
+            lblAxle34.TabIndex = 14;
+            lblAxle34.Text = "Axle34";
+            // 
+            // lblAxle23
+            // 
+            lblAxle23.AutoSize = true;
+            lblAxle23.Location = new Point(137, 419);
+            lblAxle23.Name = "lblAxle23";
+            lblAxle23.Size = new Size(61, 23);
+            lblAxle23.TabIndex = 13;
+            lblAxle23.Text = "Axle23";
+            // 
+            // lblAxle12
+            // 
+            lblAxle12.AutoSize = true;
+            lblAxle12.Location = new Point(24, 419);
+            lblAxle12.Name = "lblAxle12";
+            lblAxle12.Size = new Size(59, 23);
+            lblAxle12.TabIndex = 12;
+            lblAxle12.Text = "Axle12";
+            // 
+            // lblADC4
+            // 
+            lblADC4.AutoSize = true;
+            lblADC4.Location = new Point(388, 316);
+            lblADC4.Name = "lblADC4";
+            lblADC4.Size = new Size(54, 23);
+            lblADC4.TabIndex = 11;
+            lblADC4.Text = "ADC4";
+            // 
+            // lblADC3
+            // 
+            lblADC3.AutoSize = true;
+            lblADC3.Location = new Point(266, 316);
+            lblADC3.Name = "lblADC3";
+            lblADC3.Size = new Size(53, 23);
+            lblADC3.TabIndex = 10;
+            lblADC3.Text = "ADC3";
+            // 
+            // lblADC2
+            // 
+            lblADC2.AutoSize = true;
+            lblADC2.Location = new Point(144, 316);
+            lblADC2.Name = "lblADC2";
+            lblADC2.Size = new Size(53, 23);
+            lblADC2.TabIndex = 9;
+            lblADC2.Text = "ADC2";
+            // 
+            // lblADC1
+            // 
+            lblADC1.AutoSize = true;
+            lblADC1.Location = new Point(24, 316);
+            lblADC1.Name = "lblADC1";
+            lblADC1.Size = new Size(51, 23);
+            lblADC1.TabIndex = 8;
+            lblADC1.Text = "ADC1";
+            // 
             // lblDetectedPlate
             // 
             lblDetectedPlate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblDetectedPlate.AutoSize = true;
-            lblDetectedPlate.Location = new Point(209, 184);
+            lblDetectedPlate.Location = new Point(209, 227);
             lblDetectedPlate.Name = "lblDetectedPlate";
             lblDetectedPlate.Size = new Size(180, 23);
             lblDetectedPlate.TabIndex = 1;
@@ -263,21 +277,10 @@ namespace VehicleWeightMeasurementSystemDemo
             pictureBoxVehicle.Location = new Point(204, 15);
             pictureBoxVehicle.Margin = new Padding(3, 4, 3, 4);
             pictureBoxVehicle.Name = "pictureBoxVehicle";
-            pictureBoxVehicle.Size = new Size(350, 255);
+            pictureBoxVehicle.Size = new Size(350, 274);
             pictureBoxVehicle.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxVehicle.TabIndex = 0;
             pictureBoxVehicle.TabStop = false;
-            // 
-            // pictureBoxPlate
-            // 
-            pictureBoxPlate.BorderStyle = BorderStyle.FixedSingle;
-            pictureBoxPlate.Location = new Point(218, 217);
-            pictureBoxPlate.Margin = new Padding(3, 4, 3, 4);
-            pictureBoxPlate.Name = "pictureBoxPlate";
-            pictureBoxPlate.Size = new Size(164, 43);
-            pictureBoxPlate.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBoxPlate.TabIndex = 17;
-            pictureBoxPlate.TabStop = false;
             // 
             // grpImage
             // 
@@ -296,6 +299,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // picCam1
             // 
             picCam1.BorderStyle = BorderStyle.FixedSingle;
+            picCam1.Controls.Add(pictureBoxPlateCam);
             picCam1.Dock = DockStyle.Fill;
             picCam1.Location = new Point(3, 27);
             picCam1.Name = "picCam1";
@@ -303,6 +307,18 @@ namespace VehicleWeightMeasurementSystemDemo
             picCam1.SizeMode = PictureBoxSizeMode.StretchImage;
             picCam1.TabIndex = 0;
             picCam1.TabStop = false;
+            // 
+            // pictureBoxPlateCam
+            // 
+            pictureBoxPlateCam.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            pictureBoxPlateCam.BackColor = Color.Transparent;
+            pictureBoxPlateCam.Location = new Point(380, 416);
+            pictureBoxPlateCam.Margin = new Padding(3, 4, 3, 4);
+            pictureBoxPlateCam.Name = "pictureBoxPlateCam";
+            pictureBoxPlateCam.Size = new Size(164, 43);
+            pictureBoxPlateCam.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBoxPlateCam.TabIndex = 18;
+            pictureBoxPlateCam.TabStop = false;
             // 
             // dgvRecords
             // 
@@ -487,10 +503,12 @@ namespace VehicleWeightMeasurementSystemDemo
             Load += MainForm_Load;
             grpVehicleInfo.ResumeLayout(false);
             grpVehicleInfo.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPlate).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
             grpImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
+            picCam1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pictureBoxPlateCam).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
             pnlSelectedRecord.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
@@ -533,6 +551,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private ToolStripMenuItem aboutToolStripMenuItem;
 
         private PictureBox picCam1;
+        private PictureBox pictureBoxPlateCam;
         private Label lblADC4;
         private Label lblADC3;
         private Label lblADC2;

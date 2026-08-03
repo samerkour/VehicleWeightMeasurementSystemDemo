@@ -531,6 +531,10 @@ namespace VehicleWeightMeasurementSystemDemo
                 var old = pictureBoxPlate.Image;
                 pictureBoxPlate.Image = plateImage;
                 old?.Dispose();
+
+                var oldCam = pictureBoxPlateCam.Image;
+                pictureBoxPlateCam.Image = plateImage;
+                oldCam?.Dispose();
             }
             catch (Exception ex)
             {
