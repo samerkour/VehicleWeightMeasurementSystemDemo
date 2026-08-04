@@ -326,11 +326,11 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvRecords.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvRecords.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvRecords.Location = new Point(10, 654);
+            dgvRecords.Location = new Point(10, 610);
             dgvRecords.Margin = new Padding(3, 4, 3, 4);
             dgvRecords.Name = "dgvRecords";
             dgvRecords.RowHeadersWidth = 51;
-            dgvRecords.Size = new Size(1138, 236);
+            dgvRecords.Size = new Size(1138, 280);
             dgvRecords.TabIndex = 6;
             dgvRecords.DataBindingComplete += dgvRecords_DataBindingComplete;
             dgvRecords.SelectionChanged += dgvRecords_SelectionChanged;
