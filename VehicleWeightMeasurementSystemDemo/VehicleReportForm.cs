@@ -28,14 +28,16 @@ namespace VehicleWeightMeasurementSystemDemo
 
 
         public SqlRepository _repo { get; }
+        private readonly decimal _alpha;
 
-        public VehicleReportForm(SqlRepository repo)
+        public VehicleReportForm(SqlRepository repo, decimal alpha = 1.5m)
         {
             InitializeComponent();
             grpFilters.BringToFront();
             _pager.BringToFront();
             dgvVehicles.SendToBack();
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _alpha = alpha;
 
             _cmbPageSize.SelectedIndex = 0;
 
@@ -43,6 +45,17 @@ namespace VehicleWeightMeasurementSystemDemo
             dtTo.Value = DateTime.Now;
 
             Style();
+        }
+
+        private void ScaleTotalWeights(List<VehicleReportDto> items)
+        {
+            if (items == null) return;
+
+            foreach (var item in items)
+            {
+                if (item.TotalWeight.HasValue)
+                    item.TotalWeight = (double?)((decimal)item.TotalWeight.Value * _alpha);
+            }
         }
 
         private void Style()
@@ -323,6 +336,8 @@ namespace VehicleWeightMeasurementSystemDemo
                     await LoadPageAsync();
                     return;
                 }
+
+                ScaleTotalWeights(items);
 
                 dgvVehicles.DataSource = _gridSource;
                 _gridSource.DataSource = items;

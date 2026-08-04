@@ -171,7 +171,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblHint.Name = "lblHint";
             lblHint.Size = new Size(480, 40);
             lblHint.TabIndex = 9;
-            lblHint.Text = "Changes take effect after restarting the application.";
+            lblHint.Text = "Changes take effect after restarting the monitoring system.";
             // 
             // btnTest
             // 

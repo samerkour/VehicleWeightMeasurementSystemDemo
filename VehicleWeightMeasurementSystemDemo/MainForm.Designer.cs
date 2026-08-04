@@ -71,6 +71,7 @@ namespace VehicleWeightMeasurementSystemDemo
             cameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             overviewCameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
+            weightSettingsToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             sqlCommand1 = new Microsoft.Data.SqlClient.SqlCommand();
@@ -428,7 +429,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // settingsToolStripMenuItem
             // 
-            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, overviewCameraSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, overviewCameraSettingsToolStripMenuItem, weightSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
             settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             settingsToolStripMenuItem.Size = new Size(76, 24);
             settingsToolStripMenuItem.Text = "Settings";
@@ -453,6 +454,13 @@ namespace VehicleWeightMeasurementSystemDemo
             overviewCameraSettingsToolStripMenuItem.Size = new Size(265, 26);
             overviewCameraSettingsToolStripMenuItem.Text = "Overview Camera Settings";
             overviewCameraSettingsToolStripMenuItem.Click += overviewCameraSettingsToolStripMenuItem_Click;
+            // 
+            // weightSettingsToolStripMenuItem
+            // 
+            weightSettingsToolStripMenuItem.Name = "weightSettingsToolStripMenuItem";
+            weightSettingsToolStripMenuItem.Size = new Size(265, 26);
+            weightSettingsToolStripMenuItem.Text = "Weight Settings";
+            weightSettingsToolStripMenuItem.Click += weightSettingsToolStripMenuItem_Click;
             // 
             // databaseSettingsToolStripMenuItem
             // 
@@ -548,6 +556,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private ToolStripMenuItem serialPortSettingsToolStripMenuItem;
         private ToolStripMenuItem cameraSettingsToolStripMenuItem;
         private ToolStripMenuItem databaseSettingsToolStripMenuItem;
+        private ToolStripMenuItem weightSettingsToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
 
         private PictureBox picCam1;
