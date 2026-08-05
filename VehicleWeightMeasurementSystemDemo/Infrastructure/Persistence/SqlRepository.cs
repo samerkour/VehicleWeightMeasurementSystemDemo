@@ -159,13 +159,18 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .ToListAsync();
         }
 
-        public async Task<(int HasPlateCount, int TotalCount)> GetRecordCountsAsync()
+        public async Task<(int HasPlateCount, int TotalCount)> GetRecordCountsAsync(DateTime? date = null)
         {
             await using var _context = await CreateContextAsync();
 
-            var total = await _context.Vehicles.CountAsync();
+            var dayStart = (date ?? DateTime.Now).Date;
+            var dayEnd = dayStart.AddDays(1);
+
+            var total = await _context.Vehicles
+                .CountAsync(v => v.Timestamp >= dayStart && v.Timestamp < dayEnd);
             var hasPlate = await _context.Vehicles
-                .CountAsync(v => v.PlateNumber != null &&
+                .CountAsync(v => v.Timestamp >= dayStart && v.Timestamp < dayEnd &&
+                                 v.PlateNumber != null &&
                                  v.PlateNumber != "" &&
                                  v.PlateNumber != "---");
 

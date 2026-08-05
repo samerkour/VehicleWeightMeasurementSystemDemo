@@ -33,6 +33,7 @@ namespace VehicleWeightMeasurementSystemDemo
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(VehicleReportForm));
             grpFilters = new GroupBox();
             maxWeightLabel = new Label();
             minWeightLabel = new Label();
@@ -211,17 +212,29 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // dtTo
             // 
+            dtTo.BackColor = Color.White;
+            dtTo.BorderStyle = BorderStyle.FixedSingle;
             dtTo.Location = new Point(602, 38);
+            dtTo.Margin = new Padding(3, 4, 3, 4);
+            dtTo.MinimumSize = new Size(150, 28);
             dtTo.Name = "dtTo";
+            dtTo.RightToLeft = RightToLeft.Yes;
             dtTo.Size = new Size(250, 29);
             dtTo.TabIndex = 1;
+            dtTo.ValueNullable = new DateTime(2026, 8, 5, 13, 54, 35, 72);
             // 
             // dtFrom
             // 
+            dtFrom.BackColor = Color.White;
+            dtFrom.BorderStyle = BorderStyle.FixedSingle;
             dtFrom.Location = new Point(167, 38);
+            dtFrom.Margin = new Padding(3, 4, 3, 4);
+            dtFrom.MinimumSize = new Size(150, 28);
             dtFrom.Name = "dtFrom";
+            dtFrom.RightToLeft = RightToLeft.Yes;
             dtFrom.Size = new Size(250, 29);
             dtFrom.TabIndex = 0;
+            dtFrom.ValueNullable = new DateTime(2026, 8, 5, 13, 54, 35, 82);
             // 
             // dgvVehicles
             // 
@@ -354,6 +367,7 @@ namespace VehicleWeightMeasurementSystemDemo
             Controls.Add(_pager);
             Controls.Add(dgvVehicles);
             Controls.Add(grpFilters);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MinimumSize = new Size(900, 600);
             Name = "VehicleReportForm";
             Padding = new Padding(12);
