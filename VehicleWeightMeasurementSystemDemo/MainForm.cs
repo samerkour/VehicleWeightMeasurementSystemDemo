@@ -64,7 +64,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 Name = "Id",
                 HeaderText = "Seq",
                 DataPropertyName = "Id",
-                FillWeight = 8
+                FillWeight = 12
             });
 
             // PlateNumber
@@ -73,7 +73,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 Name = "PlateNumber",
                 HeaderText = "Plate",
                 DataPropertyName = "PlateNumber",
-                FillWeight = 15
+                FillWeight = 20
             });
 
             // Speed
