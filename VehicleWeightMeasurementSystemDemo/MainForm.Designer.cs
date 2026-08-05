@@ -369,7 +369,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblRecordCounts.AutoSize = true;
             lblRecordCounts.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblRecordCounts.ForeColor = Color.FromArgb(33, 150, 243);
-            lblRecordCounts.Location = new Point(250, 537);
+            lblRecordCounts.Location = new Point(257, 536);
             lblRecordCounts.Name = "lblRecordCounts";
             lblRecordCounts.Size = new Size(54, 23);
             lblRecordCounts.TabIndex = 11;
