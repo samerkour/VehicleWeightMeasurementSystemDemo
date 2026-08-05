@@ -33,6 +33,7 @@ namespace VehicleWeightMeasurementSystemDemo
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             lblSerialStatus = new Label();
             lblCameraStatus = new Label();
+            lblCurentDate = new Label();
             grpVehicleInfo = new GroupBox();
             lblTotalWeight = new Label();
             lblAxles = new Label();
@@ -107,6 +108,19 @@ namespace VehicleWeightMeasurementSystemDemo
             lblCameraStatus.Size = new Size(200, 20);
             lblCameraStatus.TabIndex = 2;
             lblCameraStatus.Text = "Camera Folder: ● Monitoring";
+            // 
+            // lblCurentDate
+            // 
+            lblCurentDate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            lblCurentDate.AutoSize = true;
+            lblCurentDate.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            lblCurentDate.ForeColor = Color.FromArgb(33, 150, 243);
+            lblCurentDate.Location = new Point(1020, 36);
+            lblCurentDate.Name = "lblCurentDate";
+            lblCurentDate.Size = new Size(130, 23);
+            lblCurentDate.TabIndex = 13;
+            lblCurentDate.Text = "Date: ---";
+            lblCurentDate.TextAlign = ContentAlignment.MiddleRight;
             // 
             // grpVehicleInfo
             // 
@@ -532,6 +546,7 @@ namespace VehicleWeightMeasurementSystemDemo
             Controls.Add(tblTop);
             Controls.Add(lblCameraStatus);
             Controls.Add(lblSerialStatus);
+            Controls.Add(lblCurentDate);
             Controls.Add(menuStrip1);
             Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
@@ -562,6 +577,7 @@ namespace VehicleWeightMeasurementSystemDemo
         #endregion
         private Label lblSerialStatus;
         private Label lblCameraStatus;
+        private Label lblCurentDate;
         private GroupBox grpVehicleInfo;
         private Label lblSpeed;
         private Label lblLine;

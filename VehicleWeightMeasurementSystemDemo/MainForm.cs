@@ -232,6 +232,14 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        private void UpdateDateLabel()
+        {
+            if (lblCurentDate.IsDisposed)
+                return;
+
+            lblCurentDate.Text = "Date: " + DateTime.Now.ToString("yyyy/MM/dd", PersianCulture);
+        }
+
         public MainForm()
         {
             InitializeComponent();
@@ -268,6 +276,8 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 ConfigureGrid();
                 Style();
+
+                UpdateDateLabel();
 
                 // 🔹 1. Load configurations
                 var serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
