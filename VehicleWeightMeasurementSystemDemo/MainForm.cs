@@ -486,17 +486,17 @@ namespace VehicleWeightMeasurementSystemDemo
             lblLine.Text = $"Line: {vehicle.LineId}";
             lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
             lblTotalWeight.Text = $"TotalWeight: {ScaleWeight(vehicle.TotalWeight)}";
-            lblADC1.Text = $"ADC1:\n\n {vehicle.ADC1}";
-            lblADC2.Text = $"ADC2:\n\n {vehicle.ADC2}";
-            lblADC3.Text = $"ADC3:\n\n {vehicle.ADC3}";
-            lblADC4.Text = $"ADC4:\n\n {vehicle.ADC4}";
+            lblADC1.Text = $"ADC1\n{vehicle.ADC1}";
+            lblADC2.Text = $"ADC2\n{vehicle.ADC2}";
+            lblADC3.Text = $"ADC3\n{vehicle.ADC3}";
+            lblADC4.Text = $"ADC4\n{vehicle.ADC4}";
 
             // دسترسی ایمن به محورها (قبلاً برای خودروی با کمتر از ۶ محور exception می‌داد)
-            lblAxle12.Text = $"Axle12:\n\n {AxleDistance(vehicle, 0)}";
-            lblAxle23.Text = $"Axle23:\n\n {AxleDistance(vehicle, 1)}";
-            lblAxle34.Text = $"Axle34:\n\n {AxleDistance(vehicle, 3)}";
-            lblAxle45.Text = $"Axle45:\n\n {AxleDistance(vehicle, 4)}";
-            lblAxle56.Text = $"Axle56:\n\n {AxleDistance(vehicle, 5)}";
+            lblAxle12.Text = $"Axle12\n{AxleDistance(vehicle, 0)}";
+            lblAxle23.Text = $"Axle23\n{AxleDistance(vehicle, 1)}";
+            lblAxle34.Text = $"Axle34\n{AxleDistance(vehicle, 3)}";
+            lblAxle45.Text = $"Axle45\n{AxleDistance(vehicle, 4)}";
+            lblAxle56.Text = $"Axle56\n{AxleDistance(vehicle, 5)}";
         }
 
         private static string AxleDistance(VehicleDto vehicle, int index)

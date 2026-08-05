@@ -202,7 +202,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle56
             // 
             lblAxle56.AutoSize = true;
-            lblAxle56.Location = new Point(484, 379);
+            lblAxle56.Location = new Point(484, 384);
             lblAxle56.Name = "lblAxle56";
             lblAxle56.Size = new Size(61, 23);
             lblAxle56.TabIndex = 16;
@@ -211,7 +211,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle45
             // 
             lblAxle45.AutoSize = true;
-            lblAxle45.Location = new Point(368, 379);
+            lblAxle45.Location = new Point(368, 384);
             lblAxle45.Name = "lblAxle45";
             lblAxle45.Size = new Size(62, 23);
             lblAxle45.TabIndex = 15;
@@ -220,7 +220,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle34
             // 
             lblAxle34.AutoSize = true;
-            lblAxle34.Location = new Point(252, 379);
+            lblAxle34.Location = new Point(252, 384);
             lblAxle34.Name = "lblAxle34";
             lblAxle34.Size = new Size(62, 23);
             lblAxle34.TabIndex = 14;
@@ -229,7 +229,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle23
             // 
             lblAxle23.AutoSize = true;
-            lblAxle23.Location = new Point(137, 379);
+            lblAxle23.Location = new Point(137, 384);
             lblAxle23.Name = "lblAxle23";
             lblAxle23.Size = new Size(61, 23);
             lblAxle23.TabIndex = 13;
@@ -238,7 +238,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle12
             // 
             lblAxle12.AutoSize = true;
-            lblAxle12.Location = new Point(24, 379);
+            lblAxle12.Location = new Point(24, 384);
             lblAxle12.Name = "lblAxle12";
             lblAxle12.Size = new Size(59, 23);
             lblAxle12.TabIndex = 12;
