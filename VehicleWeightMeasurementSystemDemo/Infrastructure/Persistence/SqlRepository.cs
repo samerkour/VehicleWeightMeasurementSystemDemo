@@ -147,6 +147,17 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .ToListAsync();
         }
 
+        public async Task<(int HasPlateCount, int TotalCount)> GetRecordCountsAsync()
+        {
+            var total = await _context.Vehicles.CountAsync();
+            var hasPlate = await _context.Vehicles
+                .CountAsync(v => v.PlateNumber != null &&
+                                 v.PlateNumber != "" &&
+                                 v.PlateNumber != "---");
+
+            return (hasPlate, total);
+        }
+
         public async Task SaveAsync(
             VehicleDto v,
             string imagePath,

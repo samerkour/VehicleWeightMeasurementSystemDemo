@@ -56,6 +56,7 @@ namespace VehicleWeightMeasurementSystemDemo
             pictureBoxPlateCam = new PictureBox();
             dgvRecords = new DataGridView();
             lblRecordsTitle = new Label();
+            lblRecordCounts = new Label();
             pnlSelectedRecord = new Panel();
             flpSelectedRecord = new FlowLayoutPanel();
             menuStrip1 = new MenuStrip();
@@ -345,6 +346,17 @@ namespace VehicleWeightMeasurementSystemDemo
             lblRecordsTitle.TabIndex = 8;
             lblRecordsTitle.Text = "Database Records Log";
             // 
+            // lblRecordCounts
+            // 
+            lblRecordCounts.AutoSize = true;
+            lblRecordCounts.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+            lblRecordCounts.ForeColor = Color.FromArgb(80, 80, 80);
+            lblRecordCounts.Location = new Point(245, 580);
+            lblRecordCounts.Name = "lblRecordCounts";
+            lblRecordCounts.Size = new Size(140, 23);
+            lblRecordCounts.TabIndex = 11;
+            lblRecordCounts.Text = "(- / -)";
+            // 
             // pnlSelectedRecord
             // 
             pnlSelectedRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -494,6 +506,7 @@ namespace VehicleWeightMeasurementSystemDemo
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1160, 900);
             Controls.Add(lblRecordsTitle);
+            Controls.Add(lblRecordCounts);
             Controls.Add(pnlSelectedRecord);
             Controls.Add(dgvRecords);
             Controls.Add(grpImage);
@@ -541,6 +554,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private Label lblDetectedPlate;
         private DataGridView dgvRecords;
         private Label lblRecordsTitle;
+        private Label lblRecordCounts;
         private Panel pnlSelectedRecord;
         private FlowLayoutPanel flpSelectedRecord;
         private MenuStrip menuStrip1;

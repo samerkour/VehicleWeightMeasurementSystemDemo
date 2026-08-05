@@ -780,6 +780,23 @@ namespace VehicleWeightMeasurementSystemDemo
 
             try
             {
+                var (hasPlate, total) = await _repo.GetRecordCountsAsync();
+
+                if (_shuttingDown || lblRecordCounts.IsDisposed || !lblRecordCounts.IsHandleCreated)
+                    return;
+
+                if (lblRecordCounts.InvokeRequired)
+                {
+                    lblRecordCounts.Invoke(() =>
+                    {
+                        lblRecordCounts.Text = $"(HasPlate {hasPlate} / Total {total})";
+                    });
+                }
+                else
+                {
+                    lblRecordCounts.Text = $"(HasPlate {hasPlate} / Total {total})";
+                }
+
                 var data = await _repo.GetAllAsync();
                 ScaleWeightList(data);
 
