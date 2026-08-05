@@ -14,18 +14,25 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 {
     public class SqlRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public SqlRepository(AppDbContext context)
+        public SqlRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
 
-        private IQueryable<VehicleEntity> BuildSearchQuery(
+        private async Task<AppDbContext> CreateContextAsync()
+        {
+            return await _contextFactory.CreateDbContextAsync();
+        }
+
+
+        private async Task<IQueryable<VehicleEntity>> BuildSearchQuery(
             DateTime from, DateTime to, int? lineId, string plate,
             double? minWeight, double? maxWeight, bool overweight)
         {
+            var _context = await CreateContextAsync();
             var query = _context.Vehicles.AsNoTracking().AsQueryable();
 
             // همان بدنه فیلترهای فعلی SearchAsync (خطوط 182-225) را اینجا بگذار
@@ -88,6 +95,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
         public async Task<List<VehicleDto>> GetAllAsync()
         {
+            await using var _context = await CreateContextAsync();
+
             return await _context.Vehicles
                 .AsNoTracking()
                 .Include(v => v.Axles)   // 🔥 IMPORTANT
@@ -142,6 +151,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
         public async Task<List<int>> GetActiveLineIdsAsync()
         {
+            await using var _context = await CreateContextAsync();
+
             return await _context.Lines
                 .Where(l => l.IsActive)
                 .Select(l => l.Id)
@@ -150,6 +161,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
         public async Task<(int HasPlateCount, int TotalCount)> GetRecordCountsAsync()
         {
+            await using var _context = await CreateContextAsync();
+
             var total = await _context.Vehicles.CountAsync();
             var hasPlate = await _context.Vehicles
                 .CountAsync(v => v.PlateNumber != null &&
@@ -164,6 +177,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             string imagePath,
             PlateResultDto plate)
         {
+            await using var _context = await CreateContextAsync();
+
             using var trx = await _context.Database.BeginTransactionAsync();
 
             try
@@ -257,6 +272,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             double? maxWeight,
             bool overweight)
         {
+            await using var _context = await CreateContextAsync();
 
             var query = _context.Vehicles
 
