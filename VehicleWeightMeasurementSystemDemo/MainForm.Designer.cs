@@ -71,11 +71,12 @@ namespace VehicleWeightMeasurementSystemDemo
             serialPortSettingsToolStripMenuItem = new ToolStripMenuItem();
             cameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             overviewCameraSettingsToolStripMenuItem = new ToolStripMenuItem();
-            databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
             weightSettingsToolStripMenuItem = new ToolStripMenuItem();
+            databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             sqlCommand1 = new Microsoft.Data.SqlClient.SqlCommand();
+            tblTop = new TableLayoutPanel();
             grpVehicleInfo.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPlate).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
@@ -86,6 +87,7 @@ namespace VehicleWeightMeasurementSystemDemo
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
             pnlSelectedRecord.SuspendLayout();
             menuStrip1.SuspendLayout();
+            tblTop.SuspendLayout();
             SuspendLayout();
             // 
             // lblSerialStatus
@@ -108,7 +110,6 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // grpVehicleInfo
             // 
-            grpVehicleInfo.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpVehicleInfo.Controls.Add(lblTotalWeight);
             grpVehicleInfo.Controls.Add(lblAxles);
             grpVehicleInfo.Controls.Add(lblLine);
@@ -125,12 +126,13 @@ namespace VehicleWeightMeasurementSystemDemo
             grpVehicleInfo.Controls.Add(lblADC1);
             grpVehicleInfo.Controls.Add(lblDetectedPlate);
             grpVehicleInfo.Controls.Add(pictureBoxVehicle);
+            grpVehicleInfo.Dock = DockStyle.Fill;
             grpVehicleInfo.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpVehicleInfo.Location = new Point(588, 71);
+            grpVehicleInfo.Location = new Point(583, 4);
             grpVehicleInfo.Margin = new Padding(3, 4, 3, 4);
             grpVehicleInfo.Name = "grpVehicleInfo";
             grpVehicleInfo.Padding = new Padding(3, 4, 3, 4);
-            grpVehicleInfo.Size = new Size(560, 500);
+            grpVehicleInfo.Size = new Size(574, 451);
             grpVehicleInfo.TabIndex = 3;
             grpVehicleInfo.TabStop = false;
             grpVehicleInfo.Text = "Vehicle Information";
@@ -173,11 +175,12 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // pictureBoxPlate
             // 
+            pictureBoxPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             pictureBoxPlate.BackColor = Color.Transparent;
             pictureBoxPlate.Location = new Point(216, 253);
             pictureBoxPlate.Margin = new Padding(3, 4, 3, 4);
             pictureBoxPlate.Name = "pictureBoxPlate";
-            pictureBoxPlate.Size = new Size(136, 59);
+            pictureBoxPlate.Size = new Size(168, 59);
             pictureBoxPlate.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxPlate.TabIndex = 17;
             pictureBoxPlate.TabStop = false;
@@ -185,7 +188,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle56
             // 
             lblAxle56.AutoSize = true;
-            lblAxle56.Location = new Point(484, 419);
+            lblAxle56.Location = new Point(484, 379);
             lblAxle56.Name = "lblAxle56";
             lblAxle56.Size = new Size(61, 23);
             lblAxle56.TabIndex = 16;
@@ -194,7 +197,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle45
             // 
             lblAxle45.AutoSize = true;
-            lblAxle45.Location = new Point(368, 419);
+            lblAxle45.Location = new Point(368, 379);
             lblAxle45.Name = "lblAxle45";
             lblAxle45.Size = new Size(62, 23);
             lblAxle45.TabIndex = 15;
@@ -203,7 +206,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle34
             // 
             lblAxle34.AutoSize = true;
-            lblAxle34.Location = new Point(252, 419);
+            lblAxle34.Location = new Point(252, 379);
             lblAxle34.Name = "lblAxle34";
             lblAxle34.Size = new Size(62, 23);
             lblAxle34.TabIndex = 14;
@@ -212,7 +215,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle23
             // 
             lblAxle23.AutoSize = true;
-            lblAxle23.Location = new Point(137, 419);
+            lblAxle23.Location = new Point(137, 379);
             lblAxle23.Name = "lblAxle23";
             lblAxle23.Size = new Size(61, 23);
             lblAxle23.TabIndex = 13;
@@ -221,7 +224,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle12
             // 
             lblAxle12.AutoSize = true;
-            lblAxle12.Location = new Point(24, 419);
+            lblAxle12.Location = new Point(24, 379);
             lblAxle12.Name = "lblAxle12";
             lblAxle12.Size = new Size(59, 23);
             lblAxle12.TabIndex = 12;
@@ -265,9 +268,9 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // lblDetectedPlate
             // 
-            lblDetectedPlate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblDetectedPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblDetectedPlate.AutoSize = true;
-            lblDetectedPlate.Location = new Point(209, 227);
+            lblDetectedPlate.Location = new Point(204, 226);
             lblDetectedPlate.Name = "lblDetectedPlate";
             lblDetectedPlate.Size = new Size(180, 23);
             lblDetectedPlate.TabIndex = 1;
@@ -275,6 +278,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // pictureBoxVehicle
             // 
+            pictureBoxVehicle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             pictureBoxVehicle.BorderStyle = BorderStyle.FixedSingle;
             pictureBoxVehicle.Location = new Point(204, 15);
             pictureBoxVehicle.Margin = new Padding(3, 4, 3, 4);
@@ -286,14 +290,14 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // grpImage
             // 
-            grpImage.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpImage.Controls.Add(picCam1);
+            grpImage.Dock = DockStyle.Fill;
             grpImage.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpImage.Location = new Point(10, 71);
+            grpImage.Location = new Point(3, 4);
             grpImage.Margin = new Padding(3, 4, 3, 4);
             grpImage.Name = "grpImage";
             grpImage.Padding = new Padding(3, 4, 3, 4);
-            grpImage.Size = new Size(560, 500);
+            grpImage.Size = new Size(574, 451);
             grpImage.TabIndex = 4;
             grpImage.TabStop = false;
             grpImage.Text = "Vehicle Camera OverView";
@@ -305,7 +309,7 @@ namespace VehicleWeightMeasurementSystemDemo
             picCam1.Dock = DockStyle.Fill;
             picCam1.Location = new Point(3, 27);
             picCam1.Name = "picCam1";
-            picCam1.Size = new Size(554, 469);
+            picCam1.Size = new Size(568, 420);
             picCam1.SizeMode = PictureBoxSizeMode.StretchImage;
             picCam1.TabIndex = 0;
             picCam1.TabStop = false;
@@ -314,7 +318,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             pictureBoxPlateCam.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             pictureBoxPlateCam.BackColor = Color.Transparent;
-            pictureBoxPlateCam.Location = new Point(380, 416);
+            pictureBoxPlateCam.Location = new Point(394, 367);
             pictureBoxPlateCam.Margin = new Padding(3, 4, 3, 4);
             pictureBoxPlateCam.Name = "pictureBoxPlateCam";
             pictureBoxPlateCam.Size = new Size(164, 43);
@@ -327,11 +331,11 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvRecords.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvRecords.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvRecords.Location = new Point(10, 610);
+            dgvRecords.Location = new Point(10, 563);
             dgvRecords.Margin = new Padding(3, 4, 3, 4);
             dgvRecords.Name = "dgvRecords";
             dgvRecords.RowHeadersWidth = 51;
-            dgvRecords.Size = new Size(1138, 280);
+            dgvRecords.Size = new Size(1138, 327);
             dgvRecords.TabIndex = 6;
             dgvRecords.DataBindingComplete += dgvRecords_DataBindingComplete;
             dgvRecords.SelectionChanged += dgvRecords_SelectionChanged;
@@ -340,7 +344,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             lblRecordsTitle.AutoSize = true;
             lblRecordsTitle.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblRecordsTitle.Location = new Point(13, 575);
+            lblRecordsTitle.Location = new Point(13, 531);
             lblRecordsTitle.Name = "lblRecordsTitle";
             lblRecordsTitle.Size = new Size(221, 28);
             lblRecordsTitle.TabIndex = 8;
@@ -349,11 +353,11 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblRecordCounts
             // 
             lblRecordCounts.AutoSize = true;
-            lblRecordCounts.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+            lblRecordCounts.Font = new Font("Segoe UI", 10F);
             lblRecordCounts.ForeColor = Color.FromArgb(80, 80, 80);
-            lblRecordCounts.Location = new Point(245, 580);
+            lblRecordCounts.Location = new Point(250, 537);
             lblRecordCounts.Name = "lblRecordCounts";
-            lblRecordCounts.Size = new Size(140, 23);
+            lblRecordCounts.Size = new Size(51, 23);
             lblRecordCounts.TabIndex = 11;
             lblRecordCounts.Text = "(- / -)";
             // 
@@ -361,7 +365,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             pnlSelectedRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlSelectedRecord.Controls.Add(flpSelectedRecord);
-            pnlSelectedRecord.Location = new Point(10, 606);
+            pnlSelectedRecord.Location = new Point(10, 563);
             pnlSelectedRecord.Margin = new Padding(3, 4, 3, 4);
             pnlSelectedRecord.Name = "pnlSelectedRecord";
             pnlSelectedRecord.Size = new Size(1138, 42);
@@ -500,6 +504,22 @@ namespace VehicleWeightMeasurementSystemDemo
             sqlCommand1.CommandTimeout = 30;
             sqlCommand1.EnableOptimizedParameterBinding = false;
             // 
+            // tblTop
+            // 
+            tblTop.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tblTop.ColumnCount = 2;
+            tblTop.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tblTop.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tblTop.Controls.Add(grpImage, 0, 0);
+            tblTop.Controls.Add(grpVehicleInfo, 1, 0);
+            tblTop.Location = new Point(0, 71);
+            tblTop.Margin = new Padding(3, 4, 3, 4);
+            tblTop.Name = "tblTop";
+            tblTop.RowCount = 1;
+            tblTop.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tblTop.Size = new Size(1160, 459);
+            tblTop.TabIndex = 12;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -509,8 +529,7 @@ namespace VehicleWeightMeasurementSystemDemo
             Controls.Add(lblRecordCounts);
             Controls.Add(pnlSelectedRecord);
             Controls.Add(dgvRecords);
-            Controls.Add(grpImage);
-            Controls.Add(grpVehicleInfo);
+            Controls.Add(tblTop);
             Controls.Add(lblCameraStatus);
             Controls.Add(lblSerialStatus);
             Controls.Add(menuStrip1);
@@ -534,6 +553,7 @@ namespace VehicleWeightMeasurementSystemDemo
             pnlSelectedRecord.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
+            tblTop.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -557,6 +577,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private Label lblRecordCounts;
         private Panel pnlSelectedRecord;
         private FlowLayoutPanel flpSelectedRecord;
+        private TableLayoutPanel tblTop;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem monitoringToolStripMenuItem;
