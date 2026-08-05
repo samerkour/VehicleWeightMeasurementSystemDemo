@@ -117,7 +117,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblCurentDate.ForeColor = Color.FromArgb(33, 150, 243);
             lblCurentDate.Location = new Point(1020, 36);
             lblCurentDate.Name = "lblCurentDate";
-            lblCurentDate.Size = new Size(130, 23);
+            lblCurentDate.Size = new Size(79, 23);
             lblCurentDate.TabIndex = 13;
             lblCurentDate.Text = "Date: ---";
             lblCurentDate.TextAlign = ContentAlignment.MiddleRight;
@@ -194,7 +194,7 @@ namespace VehicleWeightMeasurementSystemDemo
             pictureBoxPlate.Location = new Point(216, 253);
             pictureBoxPlate.Margin = new Padding(3, 4, 3, 4);
             pictureBoxPlate.Name = "pictureBoxPlate";
-            pictureBoxPlate.Size = new Size(168, 59);
+            pictureBoxPlate.Size = new Size(174, 59);
             pictureBoxPlate.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxPlate.TabIndex = 17;
             pictureBoxPlate.TabStop = false;
