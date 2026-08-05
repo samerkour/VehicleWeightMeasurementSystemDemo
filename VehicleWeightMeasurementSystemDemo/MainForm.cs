@@ -61,6 +61,15 @@ namespace VehicleWeightMeasurementSystemDemo
             // PlateNumber
             dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
             {
+                Name = "Id",
+                HeaderText = "Seq",
+                DataPropertyName = "Id",
+                FillWeight = 8
+            });
+
+            // PlateNumber
+            dgvRecords.Columns.Add(new DataGridViewTextBoxColumn
+            {
                 Name = "PlateNumber",
                 HeaderText = "Plate",
                 DataPropertyName = "PlateNumber",
@@ -205,7 +214,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 FillWeight = 15,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    Format = "yyyy/MM/dd HH:mm:ss",
+                    Format = "HH:mm:ss",
                     FormatProvider = PersianCulture
                 }
             });

@@ -8,6 +8,8 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Weighing
 {
     public class VehicleDto
     {
+        public int Id { get; set; }
+
         public string? PlateNumber { get; set; }
 
         public double? Speed { get; set; }        // km/h

@@ -95,6 +95,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .Take(100)
                 .Select(v => new VehicleDto
                     {
+                        Id = v.Id,
                         Timestamp = v.Timestamp,
                         PlateNumber = v.PlateNumber,
                         Speed = v.Speed,
