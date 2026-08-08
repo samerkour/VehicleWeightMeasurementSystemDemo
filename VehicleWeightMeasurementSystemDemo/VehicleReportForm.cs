@@ -44,7 +44,179 @@ namespace VehicleWeightMeasurementSystemDemo
             dtFrom.Value = DateTime.Today.AddMonths(-1);
             dtTo.Value = DateTime.Now;
 
+            ConfigureGrid();
             Style();
+        }
+
+        private void ConfigureGrid()
+        {
+            dgvVehicles.AutoGenerateColumns = false;
+            dgvVehicles.Columns.Clear();
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Id",
+                HeaderText = "Seq",
+                DataPropertyName = "Id",
+                FillWeight = 12
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "PlateNumber",
+                HeaderText = "Plate",
+                DataPropertyName = "PlateNumber",
+                FillWeight = 20
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Speed",
+                HeaderText = "Speed",
+                DataPropertyName = "Speed",
+                FillWeight = 10
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "LineName",
+                HeaderText = "Line",
+                DataPropertyName = "LineName",
+                FillWeight = 10
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "AxleCount",
+                HeaderText = "Axle Count",
+                DataPropertyName = "AxleCount",
+                FillWeight = 10
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W1",
+                HeaderText = "W1(kg)",
+                DataPropertyName = "AxleWeight1",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W2",
+                HeaderText = "W2(kg)",
+                DataPropertyName = "AxleWeight2",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W3",
+                HeaderText = "W3(kg)",
+                DataPropertyName = "AxleWeight3",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W4",
+                HeaderText = "W4(kg)",
+                DataPropertyName = "AxleWeight4",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W5",
+                HeaderText = "W5(kg)",
+                DataPropertyName = "AxleWeight5",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "W6",
+                HeaderText = "W6(kg)",
+                DataPropertyName = "AxleWeight6",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "TotalWeight",
+                HeaderText = "TotalWeight",
+                DataPropertyName = "TotalWeight",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle12",
+                HeaderText = "Axle12(m)",
+                DataPropertyName = "Axle12",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle23",
+                HeaderText = "Axle23(m)",
+                DataPropertyName = "Axle23",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle34",
+                HeaderText = "Axle34(m)",
+                DataPropertyName = "Axle34",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle45",
+                HeaderText = "Axle45(m)",
+                DataPropertyName = "Axle45",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Axle56",
+                HeaderText = "Axle56(m)",
+                DataPropertyName = "Axle56",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "F2" },
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Timestamp",
+                HeaderText = "Time",
+                DataPropertyName = "Timestamp",
+                FillWeight = 15,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Format = "yyyy/MM/dd HH:mm:ss",
+                    FormatProvider = PersianCulture
+                }
+            });
+        }
+
+        private static System.Globalization.CultureInfo PersianCulture
+        {
+            get
+            {
+                var culture = new System.Globalization.CultureInfo("fa-IR");
+                culture.DateTimeFormat.Calendar = new System.Globalization.PersianCalendar();
+                culture.DateTimeFormat.DateSeparator = "/";
+                return culture;
+            }
         }
 
         private void ScaleTotalWeights(List<VehicleReportDto> items)
@@ -55,7 +227,19 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 if (item.TotalWeight.HasValue)
                     item.TotalWeight = (double?)((decimal)item.TotalWeight.Value * _alpha);
+
+                item.AxleWeight1 = ScaleWeightNullable(item.AxleWeight1);
+                item.AxleWeight2 = ScaleWeightNullable(item.AxleWeight2);
+                item.AxleWeight3 = ScaleWeightNullable(item.AxleWeight3);
+                item.AxleWeight4 = ScaleWeightNullable(item.AxleWeight4);
+                item.AxleWeight5 = ScaleWeightNullable(item.AxleWeight5);
+                item.AxleWeight6 = ScaleWeightNullable(item.AxleWeight6);
             }
+        }
+
+        private double? ScaleWeightNullable(double? weight)
+        {
+            return weight.HasValue ? (double?)((decimal)weight.Value * _alpha) : null;
         }
 
         private void Style()
@@ -227,6 +411,8 @@ namespace VehicleWeightMeasurementSystemDemo
                 txtPlate.Text, (double)nudMinWeight.Value,
                 (double)nudMaxWeight.Value, chkOverweight.Checked);
 
+                ScaleTotalWeights(data);
+
                 if (data.Count == 0)
                 {
                     MessageBox.Show(this, "No Record Found.", "Info",
@@ -273,22 +459,46 @@ namespace VehicleWeightMeasurementSystemDemo
         {
             var dt = new DataTable();
 
+            dt.Columns.Add("Seq");
             dt.Columns.Add("Plate");
-            dt.Columns.Add("Line");
             dt.Columns.Add("Speed");
-            dt.Columns.Add("Axles");
+            dt.Columns.Add("Line");
+            dt.Columns.Add("Axle Count");
+            dt.Columns.Add("W1(kg)");
+            dt.Columns.Add("W2(kg)");
+            dt.Columns.Add("W3(kg)");
+            dt.Columns.Add("W4(kg)");
+            dt.Columns.Add("W5(kg)");
+            dt.Columns.Add("W6(kg)");
             dt.Columns.Add("TotalWeight");
+            dt.Columns.Add("Axle12(m)");
+            dt.Columns.Add("Axle23(m)");
+            dt.Columns.Add("Axle34(m)");
+            dt.Columns.Add("Axle45(m)");
+            dt.Columns.Add("Axle56(m)");
             dt.Columns.Add("Date");
 
             foreach (var v in list)
             {
                 dt.Rows.Add(
+                    v.Id,
                     v.PlateNumber,
-                    v.LineName,
                     v.Speed,
+                    v.LineName,
                     v.AxleCount,
+                    v.AxleWeight1,
+                    v.AxleWeight2,
+                    v.AxleWeight3,
+                    v.AxleWeight4,
+                    v.AxleWeight5,
+                    v.AxleWeight6,
                     v.TotalWeight,
-                    v.Timestamp
+                    v.Axle12,
+                    v.Axle23,
+                    v.Axle34,
+                    v.Axle45,
+                    v.Axle56,
+                    v.Timestamp.ToString("yyyy/MM/dd HH:mm:ss", PersianCulture)
                 );
             }
 
