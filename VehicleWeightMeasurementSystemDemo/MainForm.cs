@@ -47,6 +47,9 @@ namespace VehicleWeightMeasurementSystemDemo
         // ضریب اعمال‌شده روی مقادیر وزن قبل از نمایش (پیش‌فرض 1.5 از تنظیمات)
         private decimal _alpha = 1.5m;
 
+        // تایمر به‌روزرسانی ساعت/تاریخ در lblCurentDate
+        private readonly System.Windows.Forms.Timer _clockTimer = new() { Interval = 1000 };
+
         private sealed class PendingImage
         {
             public string Path { get; init; } = string.Empty;
@@ -237,7 +240,7 @@ namespace VehicleWeightMeasurementSystemDemo
             if (lblCurentDate.IsDisposed)
                 return;
 
-            lblCurentDate.Text = "Date: " + DateTime.Now.ToString("yyyy/MM/dd", PersianCulture);
+            lblCurentDate.Text = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss", PersianCulture);
         }
 
         public MainForm()
@@ -278,6 +281,8 @@ namespace VehicleWeightMeasurementSystemDemo
                 Style();
 
                 UpdateDateLabel();
+                _clockTimer.Tick += (s, e) => UpdateDateLabel();
+                _clockTimer.Start();
 
                 // 🔹 1. Load configurations
                 var serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
@@ -564,10 +569,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 var old = pictureBoxPlate.Image;
                 pictureBoxPlate.Image = plateImage;
                 old?.Dispose();
-
-                var oldCam = pictureBoxPlateCam.Image;
-                pictureBoxPlateCam.Image = plateImage;
-                oldCam?.Dispose();
             }
             catch (Exception ex)
             {
@@ -869,6 +870,8 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 flpSelectedRecord.Controls.Add(BuildCell("No record selected", Color.FromArgb(108, 117, 125)));
                 flpSelectedRecord.ResumeLayout();
+
+                lblSelectedPlate.Text = "Plate: ---";
                 return;
             }
 
@@ -879,6 +882,8 @@ namespace VehicleWeightMeasurementSystemDemo
                 string.IsNullOrWhiteSpace(plateValue) || plateValue == "---"
                     ? UITheme.Danger
                     : UITheme.Success;
+
+            lblSelectedPlate.Text = $"Plate: {plateValue ?? "---"}";
 
             foreach (DataGridViewColumn col in dgvRecords.Columns)
             {
@@ -1335,6 +1340,13 @@ namespace VehicleWeightMeasurementSystemDemo
 
             StopAllServices();
             _systemRunning = false;
+
+            try
+            {
+                _clockTimer.Stop();
+                _clockTimer.Dispose();
+            }
+            catch { }
 
             try
             {
