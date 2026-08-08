@@ -200,7 +200,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle56
             // 
             lblAxle56.AutoSize = true;
-            lblAxle56.Location = new Point(484, 384);
+            lblAxle56.Location = new Point(484, 326);
             lblAxle56.Name = "lblAxle56";
             lblAxle56.Size = new Size(61, 23);
             lblAxle56.TabIndex = 16;
@@ -209,7 +209,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle45
             // 
             lblAxle45.AutoSize = true;
-            lblAxle45.Location = new Point(368, 384);
+            lblAxle45.Location = new Point(368, 326);
             lblAxle45.Name = "lblAxle45";
             lblAxle45.Size = new Size(62, 23);
             lblAxle45.TabIndex = 15;
@@ -218,7 +218,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle34
             // 
             lblAxle34.AutoSize = true;
-            lblAxle34.Location = new Point(252, 384);
+            lblAxle34.Location = new Point(252, 326);
             lblAxle34.Name = "lblAxle34";
             lblAxle34.Size = new Size(62, 23);
             lblAxle34.TabIndex = 14;
@@ -227,7 +227,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle23
             // 
             lblAxle23.AutoSize = true;
-            lblAxle23.Location = new Point(137, 384);
+            lblAxle23.Location = new Point(137, 326);
             lblAxle23.Name = "lblAxle23";
             lblAxle23.Size = new Size(61, 23);
             lblAxle23.TabIndex = 13;
@@ -236,7 +236,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblAxle12
             // 
             lblAxle12.AutoSize = true;
-            lblAxle12.Location = new Point(24, 384);
+            lblAxle12.Location = new Point(24, 326);
             lblAxle12.Name = "lblAxle12";
             lblAxle12.Size = new Size(59, 23);
             lblAxle12.TabIndex = 12;
@@ -245,7 +245,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblADC4
             // 
             lblADC4.AutoSize = true;
-            lblADC4.Location = new Point(388, 316);
+            lblADC4.Location = new Point(388, 269);
             lblADC4.Name = "lblADC4";
             lblADC4.Size = new Size(54, 23);
             lblADC4.TabIndex = 11;
@@ -254,7 +254,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblADC3
             // 
             lblADC3.AutoSize = true;
-            lblADC3.Location = new Point(266, 316);
+            lblADC3.Location = new Point(266, 269);
             lblADC3.Name = "lblADC3";
             lblADC3.Size = new Size(53, 23);
             lblADC3.TabIndex = 10;
@@ -263,7 +263,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblADC2
             // 
             lblADC2.AutoSize = true;
-            lblADC2.Location = new Point(144, 316);
+            lblADC2.Location = new Point(144, 269);
             lblADC2.Name = "lblADC2";
             lblADC2.Size = new Size(53, 23);
             lblADC2.TabIndex = 9;
@@ -272,7 +272,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // lblADC1
             // 
             lblADC1.AutoSize = true;
-            lblADC1.Location = new Point(24, 316);
+            lblADC1.Location = new Point(24, 269);
             lblADC1.Name = "lblADC1";
             lblADC1.Size = new Size(51, 23);
             lblADC1.TabIndex = 8;
@@ -330,11 +330,11 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvRecords.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvRecords.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvRecords.Location = new Point(10, 605);
+            dgvRecords.Location = new Point(10, 536);
             dgvRecords.Margin = new Padding(3, 4, 3, 4);
             dgvRecords.Name = "dgvRecords";
             dgvRecords.RowHeadersWidth = 51;
-            dgvRecords.Size = new Size(1138, 285);
+            dgvRecords.Size = new Size(1138, 354);
             dgvRecords.TabIndex = 6;
             dgvRecords.DataBindingComplete += dgvRecords_DataBindingComplete;
             dgvRecords.SelectionChanged += dgvRecords_SelectionChanged;
@@ -343,7 +343,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             lblRecordsTitle.AutoSize = true;
             lblRecordsTitle.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblRecordsTitle.Location = new Point(13, 531);
+            lblRecordsTitle.Location = new Point(13, 462);
             lblRecordsTitle.Name = "lblRecordsTitle";
             lblRecordsTitle.Size = new Size(221, 28);
             lblRecordsTitle.TabIndex = 8;
@@ -354,7 +354,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblRecordCounts.AutoSize = true;
             lblRecordCounts.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblRecordCounts.ForeColor = Color.FromArgb(33, 150, 243);
-            lblRecordCounts.Location = new Point(257, 536);
+            lblRecordCounts.Location = new Point(257, 467);
             lblRecordCounts.Name = "lblRecordCounts";
             lblRecordCounts.Size = new Size(54, 23);
             lblRecordCounts.TabIndex = 11;
@@ -366,7 +366,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSelectedPlate.AutoSize = true;
             lblSelectedPlate.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblSelectedPlate.ForeColor = Color.FromArgb(33, 150, 243);
-            lblSelectedPlate.Location = new Point(1010, 536);
+            lblSelectedPlate.Location = new Point(1010, 467);
             lblSelectedPlate.Name = "lblSelectedPlate";
             lblSelectedPlate.Size = new Size(140, 23);
             lblSelectedPlate.TabIndex = 14;
@@ -377,7 +377,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             pnlSelectedRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlSelectedRecord.Controls.Add(flpSelectedRecord);
-            pnlSelectedRecord.Location = new Point(10, 563);
+            pnlSelectedRecord.Location = new Point(10, 494);
             pnlSelectedRecord.Margin = new Padding(3, 4, 3, 4);
             pnlSelectedRecord.Name = "pnlSelectedRecord";
             pnlSelectedRecord.Size = new Size(1138, 42);
@@ -520,8 +520,8 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             tblTop.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             tblTop.ColumnCount = 2;
-            tblTop.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tblTop.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tblTop.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            tblTop.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 75F));
             tblTop.Controls.Add(grpImage, 0, 0);
             tblTop.Controls.Add(grpVehicleInfo, 1, 0);
             tblTop.Location = new Point(0, 71);
@@ -529,7 +529,7 @@ namespace VehicleWeightMeasurementSystemDemo
             tblTop.Name = "tblTop";
             tblTop.RowCount = 1;
             tblTop.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tblTop.Size = new Size(1160, 459);
+            tblTop.Size = new Size(1160, 390);
             tblTop.TabIndex = 12;
             // 
             // MainForm
