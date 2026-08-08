@@ -292,7 +292,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 x.Timestamp <= to.Date);
 
 
-            if (lineId.HasValue)
+            if (lineId.HasValue && lineId != 0)
             {
                 query = query.Where(x => x.LineId == lineId);
             }

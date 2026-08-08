@@ -46,6 +46,38 @@ namespace VehicleWeightMeasurementSystemDemo
 
             ConfigureGrid();
             Style();
+
+            _ = LoadLineAsync();
+        }
+
+        private async Task LoadLineAsync()
+        {
+            try
+            {
+                var lineIds = await _repo.GetActiveLineIdsAsync();
+
+                if (cmbLine.IsDisposed)
+                    return;
+
+                // گزینه‌ی اول = همه خطوط (با 0 نشان داده می‌شود)
+                cmbLine.Items.Add(0);
+                foreach (var id in lineIds)
+                    cmbLine.Items.Add(id);
+
+                cmbLine.SelectedIndex = 0;
+
+                cmbLine.SelectedValueChanged += async (s, e) =>
+                {
+                    if (_loading) return;
+                    _currentPage = 1;
+                    await LoadPageAsync();
+                };
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Error loading lines: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void ConfigureGrid()
@@ -407,7 +439,7 @@ namespace VehicleWeightMeasurementSystemDemo
             try
             {
                 var data = await _repo.SearchAsync(
-                dtFrom.Value, dtTo.Value, cmbLine.SelectedValue as int?,
+                dtFrom.Value, dtTo.Value, cmbLine.SelectedItem as int?,
                 txtPlate.Text, (double)nudMinWeight.Value,
                 (double)nudMaxWeight.Value, chkOverweight.Checked);
 
@@ -528,7 +560,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 var (items, total) = await _repo.SearchPagedAsync(
                     dtFrom.Value,
                     dtTo.Value,
-                    cmbLine.SelectedValue as int?,
+                    cmbLine.SelectedItem as int?,
                     txtPlate.Text,
                     (double)nudMinWeight.Value,
                     (double)nudMaxWeight.Value,

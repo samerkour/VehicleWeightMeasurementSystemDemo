@@ -202,13 +202,11 @@ namespace VehicleWeightMeasurementSystemDemo
             // cmbLine
             // 
             cmbLine.FormattingEnabled = true;
-            cmbLine.Items.AddRange(new object[] { "1", "2", "3", "4" });
             cmbLine.Location = new Point(167, 89);
             cmbLine.Name = "cmbLine";
             cmbLine.Size = new Size(151, 28);
             cmbLine.TabIndex = 2;
             cmbLine.Tag = "1";
-            cmbLine.Text = "1";
             // 
             // dtTo
             // 
