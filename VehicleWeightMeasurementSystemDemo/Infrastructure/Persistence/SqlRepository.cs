@@ -258,7 +258,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await trx.RollbackAsync();
 

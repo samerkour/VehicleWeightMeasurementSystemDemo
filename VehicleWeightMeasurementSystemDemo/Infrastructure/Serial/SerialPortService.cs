@@ -6,8 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Microsoft.Extensions.Options;
-using System.IO.Ports;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
 
 namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Serial
