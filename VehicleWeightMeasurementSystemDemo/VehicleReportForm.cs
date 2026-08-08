@@ -65,13 +65,6 @@ namespace VehicleWeightMeasurementSystemDemo
                     cmbLine.Items.Add(id);
 
                 cmbLine.SelectedIndex = 0;
-
-                cmbLine.SelectedValueChanged += async (s, e) =>
-                {
-                    if (_loading) return;
-                    _currentPage = 1;
-                    await LoadPageAsync();
-                };
             }
             catch (Exception ex)
             {

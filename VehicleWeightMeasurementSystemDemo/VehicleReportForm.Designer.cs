@@ -194,10 +194,12 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // txtPlate
             // 
+            txtPlate.Font = new Font("Simplified Arabic", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             txtPlate.Location = new Point(602, 82);
             txtPlate.Name = "txtPlate";
-            txtPlate.Size = new Size(125, 27);
+            txtPlate.Size = new Size(150, 32);
             txtPlate.TabIndex = 3;
+            txtPlate.TextAlign = HorizontalAlignment.Right;
             // 
             // cmbLine
             // 

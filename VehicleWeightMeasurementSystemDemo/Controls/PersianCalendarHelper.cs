@@ -64,6 +64,39 @@ namespace VehicleWeightMeasurementSystemDemo.Controls
             return new string(chars);
         }
 
+        private const string ArabicDigits = "٠١٢٣٤٥٦٧٨٩";
+
+        /// <summary>
+        /// عادی‌سازی شماره پلاک برای جستجو: ارقام فارسی/عربی → انگلیسی، حذف RTL/LTR mark و فاصله‌های اضافی.
+        /// </summary>
+        public static string NormalizePlate(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            // حذف کاراکترهای جهت‌نمای RTL/LTR و فاصله‌های نامرئی
+            input = input.Replace("\u200F", "")
+                         .Replace("\u200E", "")
+                         .Replace("\u200B", "")
+                         .Replace("\u200C", "")
+                         .Replace("\u200D", "");
+
+            var chars = input.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                int idx = PersianDigits.IndexOf(chars[i]);
+                if (idx < 0)
+                    idx = ArabicDigits.IndexOf(chars[i]);
+                if (idx >= 0)
+                    chars[i] = EnglishDigits[idx];
+            }
+
+            // حذف/فشرده‌سازی فاصله‌ها
+            string joined = new string(chars);
+            var parts = joined.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            return string.Join(" ", parts).Trim();
+        }
+
         /// <summary>
         /// قالب‌بندی یک تاریخ میلادی به صورت شمسی: yyyy/MM/dd (و در صورت نیاز ساعت)
         /// </summary>
