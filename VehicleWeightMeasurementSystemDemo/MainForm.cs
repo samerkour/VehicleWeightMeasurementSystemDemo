@@ -497,20 +497,21 @@ namespace VehicleWeightMeasurementSystemDemo
             lblADC4.Text = $"ADC4\n{vehicle.ADC4}";
 
             // دسترسی ایمن به محورها (قبلاً برای خودروی با کمتر از ۶ محور exception می‌داد)
-            lblAxle12.Text = $"Axle12\n{AxleDistance(vehicle, 0)}";
-            lblAxle23.Text = $"Axle23\n{AxleDistance(vehicle, 1)}";
+            lblAxle12.Text = $"Axle12\n{AxleDistance(vehicle, 1)}";
+            lblAxle23.Text = $"Axle23\n{AxleDistance(vehicle, 2)}";
             lblAxle34.Text = $"Axle34\n{AxleDistance(vehicle, 3)}";
             lblAxle45.Text = $"Axle45\n{AxleDistance(vehicle, 4)}";
             lblAxle56.Text = $"Axle56\n{AxleDistance(vehicle, 5)}";
         }
 
-        private static string AxleDistance(VehicleDto vehicle, int index)
+        private static string AxleDistance(VehicleDto vehicle, int axleIndex)
         {
             var axles = vehicle.Axles;
-            if (axles == null || index < 0 || index >= axles.Count)
+            if (axles == null)
                 return "-";
 
-            return axles[index]?.DistanceDisplay ?? "-";
+            var axle = axles.FirstOrDefault(a => a.AxleIndex == axleIndex);
+            return axle?.DistanceDisplay ?? "-";
         }
 
         private decimal ScaleWeight(decimal? weight)
