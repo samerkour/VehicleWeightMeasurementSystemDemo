@@ -113,7 +113,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblCurentDate.AutoSize = true;
             lblCurentDate.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblCurentDate.ForeColor = Color.FromArgb(33, 150, 243);
-            lblCurentDate.Location = new Point(1020, 36);
+            lblCurentDate.Location = new Point(860, 36);
             lblCurentDate.Name = "lblCurentDate";
             lblCurentDate.Size = new Size(79, 23);
             lblCurentDate.TabIndex = 13;
@@ -140,11 +140,11 @@ namespace VehicleWeightMeasurementSystemDemo
             grpVehicleInfo.Controls.Add(pictureBoxVehicle);
             grpVehicleInfo.Dock = DockStyle.Fill;
             grpVehicleInfo.Font = new Font("Segoe UI Semibold", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpVehicleInfo.Location = new Point(583, 4);
+            grpVehicleInfo.Location = new Point(293, 4);
             grpVehicleInfo.Margin = new Padding(3, 4, 3, 4);
             grpVehicleInfo.Name = "grpVehicleInfo";
             grpVehicleInfo.Padding = new Padding(3, 4, 3, 4);
-            grpVehicleInfo.Size = new Size(574, 451);
+            grpVehicleInfo.Size = new Size(864, 382);
             grpVehicleInfo.TabIndex = 3;
             grpVehicleInfo.TabStop = false;
             grpVehicleInfo.Text = "Vehicle Information";
@@ -189,7 +189,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             pictureBoxPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             pictureBoxPlate.BackColor = Color.Transparent;
-            pictureBoxPlate.Location = new Point(216, 253);
+            pictureBoxPlate.Location = new Point(506, 253);
             pictureBoxPlate.Margin = new Padding(3, 4, 3, 4);
             pictureBoxPlate.Name = "pictureBoxPlate";
             pictureBoxPlate.Size = new Size(174, 59);
@@ -282,7 +282,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             lblDetectedPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblDetectedPlate.AutoSize = true;
-            lblDetectedPlate.Location = new Point(204, 226);
+            lblDetectedPlate.Location = new Point(494, 226);
             lblDetectedPlate.Name = "lblDetectedPlate";
             lblDetectedPlate.Size = new Size(180, 23);
             lblDetectedPlate.TabIndex = 1;
@@ -292,7 +292,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             pictureBoxVehicle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             pictureBoxVehicle.BorderStyle = BorderStyle.FixedSingle;
-            pictureBoxVehicle.Location = new Point(204, 15);
+            pictureBoxVehicle.Location = new Point(494, 15);
             pictureBoxVehicle.Margin = new Padding(3, 4, 3, 4);
             pictureBoxVehicle.Name = "pictureBoxVehicle";
             pictureBoxVehicle.Size = new Size(350, 274);
@@ -309,7 +309,7 @@ namespace VehicleWeightMeasurementSystemDemo
             grpImage.Margin = new Padding(3, 4, 3, 4);
             grpImage.Name = "grpImage";
             grpImage.Padding = new Padding(3, 4, 3, 4);
-            grpImage.Size = new Size(574, 451);
+            grpImage.Size = new Size(284, 382);
             grpImage.TabIndex = 4;
             grpImage.TabStop = false;
             grpImage.Text = "Vehicle Camera OverView";
@@ -320,7 +320,7 @@ namespace VehicleWeightMeasurementSystemDemo
             picCam1.Dock = DockStyle.Fill;
             picCam1.Location = new Point(3, 27);
             picCam1.Name = "picCam1";
-            picCam1.Size = new Size(568, 420);
+            picCam1.Size = new Size(278, 351);
             picCam1.SizeMode = PictureBoxSizeMode.StretchImage;
             picCam1.TabIndex = 0;
             picCam1.TabStop = false;
@@ -366,9 +366,9 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSelectedPlate.AutoSize = true;
             lblSelectedPlate.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblSelectedPlate.ForeColor = Color.FromArgb(33, 150, 243);
-            lblSelectedPlate.Location = new Point(1010, 467);
+            lblSelectedPlate.Location = new Point(860, 467);
             lblSelectedPlate.Name = "lblSelectedPlate";
-            lblSelectedPlate.Size = new Size(140, 23);
+            lblSelectedPlate.Size = new Size(81, 23);
             lblSelectedPlate.TabIndex = 14;
             lblSelectedPlate.Text = "Plate: ---";
             lblSelectedPlate.TextAlign = ContentAlignment.MiddleRight;
