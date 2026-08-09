@@ -19,6 +19,36 @@ Extracted from: «راهنمای فراخوانی وبسرویس ارسال اط
 
 ---
 
+## 0. health — بررسی دسترسی به وبسرویس (قبل از دریافت نام کاربری)
+
+Checks network + service access. No authentication needed; call it before Login. Returns `Result=200` when OK.
+
+SOAPAction: `health`
+
+```bash
+curl --location "http://10.30.197.140:8080/" \
+--header "Content-Type: text/xml; charset=utf-8" \
+--header "SOAPAction: health" \
+--data-raw '<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <tem:health/>
+   </soapenv:Body>
+</soapenv:Envelope>'
+```
+
+Verified live response (2026-08-08):
+```xml
+<tns:healthResult>
+   <s5:ErrorCode>0</s5:ErrorCode>
+   <s5:IsSuccessful>true</s5:IsSuccessful>
+   <s5:Result>200</s5:Result>
+</tns:healthResult>
+```
+
+---
+
 ## 1. Login — get operational token
 
 SOAPAction: `Login`
