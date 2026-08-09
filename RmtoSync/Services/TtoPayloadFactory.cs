@@ -24,7 +24,7 @@ public static class TtoPayloadFactory
                                   !payload.RequiresSingleSend;
 
         payload.HasImage = !batchDeferredImages;
-        payload.PassInfoId = photo.TerminalTtoRegistered
+        payload.PassInfoId = photo.TerminalTtoRegistered == true
             ? photo.TerminalPassInfoId ?? photo.PassInfoId
             : null;
 
@@ -60,7 +60,7 @@ public static class TtoPayloadFactory
             AverageSpeed = 0,
             Allowed = TtoFieldValues.Allowed.Permitted,
             VehicleClass = options.DefaultVehicleClass,
-            WrongDirection = photo.WrongDirection ?? TtoFieldValues.WrongDirection.Correct,
+            WrongDirection = ToWrongDirection(photo.WrongDirection),
             CarClass13 = carClass13,
             SpeedType = TtoFieldValues.SpeedType.Instant,
             Reserved7 = options.Reserved7,
@@ -97,7 +97,9 @@ public static class TtoPayloadFactory
         var axles = photo.TotalAxles ?? (weight > 0 ? (byte)2 : (byte)0);
 
         var crimes = ParseCrimeCodes(photo.CrimeCodes);
-        var allowed = photo.Allowed ?? ResolveAllowed(speed, weight, crimes, options);
+        var allowed = photo.Allowed is { } isAllowed
+            ? (isAllowed ? TtoFieldValues.Allowed.Permitted : TtoFieldValues.Allowed.Violation)
+            : ResolveAllowed(speed, weight, crimes, options);
         if (crimes.Count == 0 && options.EnableAutoViolationDetection)
             crimes = BuildAutoCrimes(speed, weight, allowed, options);
 
@@ -125,7 +127,7 @@ public static class TtoPayloadFactory
             AverageSpeed = avgSpeed,
             Allowed = allowed,
             VehicleClass = vehicleClass,
-            WrongDirection = photo.WrongDirection ?? TtoFieldValues.WrongDirection.Correct,
+            WrongDirection = ToWrongDirection(photo.WrongDirection),
             CarClass13 = carClass13,
             CarClass15 = vehicleClass == TtoFieldValues.VehicleClass.Heavy ? carClass13 : null,
             SpeedType = speedType,
@@ -245,8 +247,13 @@ public static class TtoPayloadFactory
             .ToList();
     }
 
-    private static decimal? ToScorePercent(float? confidence) =>
+    private static decimal? ToScorePercent(double? confidence) =>
         confidence is > 0 and <= 1 ? Math.Round((decimal)(confidence.Value * 100), 2) : null;
+
+    private static long ToWrongDirection(bool? wrongDirection) =>
+        wrongDirection == true
+            ? TtoFieldValues.WrongDirection.Opposite
+            : TtoFieldValues.WrongDirection.Correct;
 
     private static long[] BuildAxleWeights(CameraPhotoRecord photo) =>
     [

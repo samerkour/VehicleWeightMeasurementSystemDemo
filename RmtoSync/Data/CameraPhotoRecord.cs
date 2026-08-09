@@ -13,17 +13,18 @@ public sealed class CameraPhotoRecord
     public string? PlateP2 { get; set; }
     public string? PlateP3 { get; set; }
     public string? PlateP4 { get; set; }
-    public float? PlateConfidence { get; set; }
+    public double? PlateConfidence { get; set; }
     public int? PlateBoxLeft { get; set; }
     public int? PlateBoxTop { get; set; }
     public int? PlateBoxWidth { get; set; }
     public int? PlateBoxHeight { get; set; }
-    public byte PlateReadStatus { get; set; }
+    public int PlateReadStatus { get; set; }
 
-    public bool TerminalTtoRegistered { get; set; }
+    public bool TerminalSent { get; set; }
+    public bool? TerminalTtoRegistered { get; set; }
     public DateTime? TerminalTtoRegisteredAt { get; set; }
     public DateTime? TerminalImageDeadlineAt { get; set; }
-    public bool TerminalImageExpired { get; set; }
+    public bool? TerminalImageExpired { get; set; }
     public DateTime? TerminalImageExpiredAt { get; set; }
     public long? TerminalPassInfoId { get; set; }
     public long? TerminalPackId { get; set; }
@@ -43,9 +44,9 @@ public sealed class CameraPhotoRecord
     public int? AxleWeight9 { get; set; }
 
     public byte? CarClass13 { get; set; }
-    public byte? Allowed { get; set; }
-    public byte? WrongDirection { get; set; }
-    public byte? SpeedType { get; set; }
+    public bool? Allowed { get; set; }
+    public bool? WrongDirection { get; set; }
+    public int? SpeedType { get; set; }
     public byte? VehicleClass { get; set; }
     public string? CrimeCodes { get; set; }
     public decimal? OcrScore { get; set; }

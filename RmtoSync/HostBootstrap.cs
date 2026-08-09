@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RmtoSync.Configuration;
@@ -38,8 +39,12 @@ public static class HostBootstrap
 
         builder.Services.AddHttpClient("Rahdari", client => client.Timeout = TimeSpan.FromMinutes(2));
 
+        var cameraConnection = builder.Configuration.GetConnectionString("FarasooCamera")
+            ?? throw new InvalidOperationException("Connection string 'FarasooCamera' is missing.");
+        builder.Services.AddDbContextFactory<RmtoSyncDbContext>(options =>
+            options.UseSqlServer(cameraConnection));
+
         builder.Services.AddSingleton<RahdariSyncStatus>();
-        builder.Services.AddSingleton<SqlQueryLoader>();
         builder.Services.AddSingleton<CameraPhotoQueueRepository>();
         builder.Services.AddSingleton<RahdariTtoClient>();
         builder.Services.AddSingleton<TtoImageService>();

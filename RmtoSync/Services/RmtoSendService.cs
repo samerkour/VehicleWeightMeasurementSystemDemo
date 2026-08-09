@@ -224,7 +224,7 @@ public sealed class RmtoSendService
 
     private async Task<bool> TryCompleteWithImagesAsync(CameraPhotoRecord photo, TtoPayload payload, CancellationToken ct)
     {
-        if (photo.TerminalImageExpired)
+        if (photo.TerminalImageExpired == true)
             return false;
 
         if (IsImageWindowExpired(photo))

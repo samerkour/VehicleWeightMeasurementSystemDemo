@@ -196,6 +196,20 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
                 string plateNo = plate?.PlateNumber ?? "";
 
+                // 🔥 Split plate into parts: format is {part3} ایران {part2} {letter} {part1}
+                // e.g. "۱۱ ایران ۳۴۵ ب ۱۲" → part1="۱۲", part2="ب", part3="۳۴۵", part4="۱۱"
+                string[] plateParts = new string?[4] { null, null, null, null };
+                string[] tokens = plateNo
+                    .Replace("\u200F", "")
+                    .Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(t => t != "ایران")
+                    .ToArray();
+                if (tokens.Length == 4)
+                {
+                    // tokens[0]=part3(۱۱), tokens[1]=part2(۳۴۵), tokens[2]=letter(ب), tokens[3]=part1(۱۲)
+                    plateParts = tokens;
+                }
+
                 var vehicle = new VehicleEntity
                 {
                     Timestamp = v.Timestamp == default ? DateTime.Now : v.Timestamp,
@@ -235,10 +249,10 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     ImportedAt = DateTime.Now,
 
                     // 🔥 Plate split SAFE
-                    PlateP1 = plateNo.Length >= 2 ? plateNo.Substring(1, 2) : null,
-                    PlateP2 = plateNo.Length >= 4 ? plateNo.Substring(4, 1) : null,
-                    PlateP3 = plateNo.Length >= 6 ? plateNo.Substring(6, 3) : null,
-                    PlateP4 = plateNo.Length > 6 ? plateNo.Substring(15, 2) : null,
+                    PlateP1 = plateParts[3],
+                    PlateP2 = plateParts[2],
+                    PlateP3 = plateParts[1],
+                    PlateP4 = plateParts[0],
 
                     PlateConfidence = plate?.Confidence,
                     PlateReadStatus = plate != null ? 1 : 0,
