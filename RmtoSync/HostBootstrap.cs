@@ -39,8 +39,8 @@ public static class HostBootstrap
 
         builder.Services.AddHttpClient("Rahdari", client => client.Timeout = TimeSpan.FromMinutes(2));
 
-        var cameraConnection = builder.Configuration.GetConnectionString("FarasooCamera")
-            ?? throw new InvalidOperationException("Connection string 'FarasooCamera' is missing.");
+        var cameraConnection = builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
         builder.Services.AddDbContextFactory<RmtoSyncDbContext>(options =>
             options.UseSqlServer(cameraConnection));
 
@@ -69,12 +69,12 @@ public static class HostBootstrap
         try
         {
             Log.Information("RmtoSync starting (Rahdari central terminal)");
-            Log.Information("FarasooCamera={Db}", TryGetDataSource(config.GetConnectionString("FarasooCamera")));
+            Log.Information("DefaultConnection={Db}", TryGetDataSource(config.GetConnectionString("DefaultConnection")));
             Log.Information("Rahdari={Url}", config[$"{RahdariOptions.SectionName}:ServiceUrl"]);
             Log.Information("AnprOnlyStation={Anpr}", config[$"{RahdariOptions.SectionName}:AnprOnlyStation"]);
 
-            var connectionString = config.GetConnectionString("FarasooCamera")
-                ?? throw new InvalidOperationException("Connection string 'FarasooCamera' is missing.");
+            var connectionString = config.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
             await DatabaseSchemaMigrator.EnsureRmtoSyncSchemaAsync(connectionString, logger: null);
             Log.Information("RmtoSync database schema checked");
 

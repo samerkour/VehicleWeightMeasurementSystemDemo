@@ -11,8 +11,8 @@ public sealed class CameraPhotoQueueRepository
 
     public CameraPhotoQueueRepository(IConfiguration configuration, IDbContextFactory<RmtoSyncDbContext> contextFactory)
     {
-        _connectionString = configuration.GetConnectionString("FarasooCamera")
-            ?? throw new InvalidOperationException("Connection string 'FarasooCamera' is missing.");
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
         _contextFactory = contextFactory;
     }
 

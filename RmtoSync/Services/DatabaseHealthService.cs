@@ -16,10 +16,10 @@ public sealed class DatabaseHealthService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var connectionString = _configuration.GetConnectionString("FarasooCamera");
+        var connectionString = _configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            _logger.LogCritical("Connection string 'FarasooCamera' is missing");
+            _logger.LogCritical("Connection string 'DefaultConnection' is missing");
             return;
         }
 
