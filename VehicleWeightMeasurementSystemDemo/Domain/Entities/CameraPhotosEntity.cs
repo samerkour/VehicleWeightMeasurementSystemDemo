@@ -44,7 +44,7 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public bool TerminalTtoRegistered { get; internal set; }
         public bool TerminalImageExpired { get; internal set; }
 
-        public string TerminalLastError { get; set; } = string.Empty;
+        public string? TerminalLastError { get; set; }
         public int? SpeedType { get; set; }
 
         public bool? Allowed { get; set; }

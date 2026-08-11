@@ -40,7 +40,7 @@ public sealed class CameraPhotoQueueRepository
                     .SetProperty(p => p.TerminalPassInfoId, passInfoId)
                     .SetProperty(p => p.TerminalPackId, packId)
                     .SetProperty(p => p.PassInfoId, passInfoId)
-                    .SetProperty(p => p.TerminalLastError, (string?)null),
+                    .SetProperty(p => p.TerminalLastError, string.Empty),
                 ct);
     }
 
@@ -53,7 +53,7 @@ public sealed class CameraPhotoQueueRepository
                 setters => setters
                     .SetProperty(p => p.TerminalSent, true)
                     .SetProperty(p => p.TerminalSentAt, sentAt)
-                    .SetProperty(p => p.TerminalLastError, (string?)null),
+                    .SetProperty(p => p.TerminalLastError, string.Empty),
                 ct);
         return affected > 0;
     }
