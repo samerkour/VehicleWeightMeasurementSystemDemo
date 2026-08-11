@@ -333,6 +333,7 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords.Location = new Point(10, 536);
             dgvRecords.Margin = new Padding(3, 4, 3, 4);
             dgvRecords.Name = "dgvRecords";
+            dgvRecords.ReadOnly = true;
             dgvRecords.RowHeadersWidth = 51;
             dgvRecords.Size = new Size(1138, 354);
             dgvRecords.TabIndex = 6;

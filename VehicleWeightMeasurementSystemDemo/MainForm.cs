@@ -50,6 +50,9 @@ namespace VehicleWeightMeasurementSystemDemo
         // تایمر به‌روزرسانی ساعت/تاریخ در lblCurentDate
         private readonly System.Windows.Forms.Timer _clockTimer = new() { Interval = 1000 };
 
+        // جلوگیری از فراخوانی مجدد هنگام Reload گرید (SetCurrentCellAddressCore)
+        private bool _isReloadingGrid;
+
         private sealed class PendingImage
         {
             public string Path { get; init; } = string.Empty;
@@ -828,12 +831,30 @@ namespace VehicleWeightMeasurementSystemDemo
                 {
                     dgvRecords.Invoke(() =>
                     {
-                        dgvRecords.DataSource = data;
+                        try
+                        {
+                            _isReloadingGrid = true;
+                            dgvRecords.DataSource = null;
+                            dgvRecords.DataSource = data;
+                        }
+                        finally
+                        {
+                            _isReloadingGrid = false;
+                        }
                     });
                 }
                 else
                 {
-                    dgvRecords.DataSource = data;
+                    _isReloadingGrid = true;
+                    try
+                    {
+                        dgvRecords.DataSource = null;
+                        dgvRecords.DataSource = data;
+                    }
+                    finally
+                    {
+                        _isReloadingGrid = false;
+                    }
                 }
             }
             catch (ObjectDisposedException) { }
@@ -864,6 +885,9 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void dgvRecords_SelectionChanged(object sender, EventArgs e)
         {
+            if (_isReloadingGrid)
+                return;
+
             flpSelectedRecord.SuspendLayout();
             flpSelectedRecord.Controls.Clear();
 
