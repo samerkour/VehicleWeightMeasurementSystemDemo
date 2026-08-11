@@ -6,6 +6,8 @@ using RmtoSync.Configuration;
 using RmtoSync.Data;
 using RmtoSync.Services;
 using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.MSSqlServer;
 
 namespace RmtoSync;
 
@@ -23,17 +25,60 @@ public static class HostBootstrap
             .AddEnvironmentVariables()
             .AddCommandLine(args);
 
-        var logPath = builder.Configuration["Logging:LogPath"] ?? "logs\\rmto-sync-.log";
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+        var fileLevel = Enum.TryParse<LogEventLevel>(
+            builder.Configuration["Serilog:FileLevel"], true, out var fLevel)
+            ? fLevel : LogEventLevel.Information;
+
+        var sqlLevel = Enum.TryParse<LogEventLevel>(
+            builder.Configuration["Serilog:SqlLevel"], true, out var sLevel)
+            ? sLevel : LogEventLevel.Error;
+
+        var minLevel = Enum.TryParse<LogEventLevel>(
+            builder.Configuration["Serilog:MinimumLevel"], true, out var level)
+            ? level : LogEventLevel.Information;
+
+        var databaseReady = !string.IsNullOrWhiteSpace(connectionString) && IsDatabaseAvailable(connectionString);
+
+        var columnOptions = new ColumnOptions();
+        columnOptions.Store.Add(StandardColumn.LogEvent);
+
+        var logConfiguration = new LoggerConfiguration()
+            .MinimumLevel.Is(minLevel)
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("System", LogEventLevel.Warning)
             .WriteTo.Console()
             .WriteTo.File(
-                Path.Combine(AppContext.BaseDirectory, logPath),
+                Path.Combine(AppContext.BaseDirectory, builder.Configuration["Logging:LogPath"] ?? "logs\\rmto-sync-.log"),
                 rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 14)
-            .CreateLogger();
+                retainedFileCountLimit: 14,
+                restrictedToMinimumLevel: fileLevel);
 
-        builder.Services.AddSerilog();
+        if (databaseReady)
+        {
+            try
+            {
+                logConfiguration.WriteTo.MSSqlServer(
+                    connectionString: connectionString,
+                    sinkOptions: new MSSqlServerSinkOptions
+                    {
+                        TableName = "Logs",
+                        AutoCreateSqlTable = true
+                    },
+                    columnOptions: columnOptions,
+                    restrictedToMinimumLevel: sqlLevel);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Startup] SQL logging unavailable; continuing with file-only logging. {ex.Message}");
+            }
+        }
+
+        Log.Logger = logConfiguration.CreateLogger();
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog();
         builder.Services.Configure<RmtoSyncOptions>(builder.Configuration.GetSection(RmtoSyncOptions.SectionName));
         builder.Services.Configure<RahdariOptions>(builder.Configuration.GetSection(RahdariOptions.SectionName));
 
@@ -161,6 +206,20 @@ public static class HostBootstrap
         catch
         {
             return "(invalid connection string)";
+        }
+    }
+
+    private static bool IsDatabaseAvailable(string connectionString)
+    {
+        try
+        {
+            using var connection = new SqlConnection(connectionString);
+            connection.Open();
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 }
