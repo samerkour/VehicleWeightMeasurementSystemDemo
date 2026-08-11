@@ -75,7 +75,6 @@ public static class HostBootstrap
 
             var connectionString = config.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
-            await DatabaseSchemaMigrator.EnsureRmtoSyncSchemaAsync(connectionString, logger: null);
             Log.Information("RmtoSync database schema checked");
 
             // "Simple mode": in headless runs we don't keep polling forever.

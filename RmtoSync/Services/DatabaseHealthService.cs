@@ -25,7 +25,6 @@ public sealed class DatabaseHealthService : IHostedService
 
         try
         {
-            await DatabaseSchemaMigrator.EnsureRmtoSyncSchemaAsync(connectionString, _logger, cancellationToken);
 
             await using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync(cancellationToken);

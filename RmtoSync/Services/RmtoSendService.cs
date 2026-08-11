@@ -36,11 +36,6 @@ public sealed class RmtoSendService
 
     public async Task<int> RunCycleAsync(CancellationToken ct)
     {
-        await DatabaseSchemaMigrator.EnsureRmtoSyncSchemaAsync(
-            _queue.ConnectionString,
-            _logger,
-            ct);
-
         await ExpireOverdueImageWindowsAsync(ct);
 
         var processed = 0;

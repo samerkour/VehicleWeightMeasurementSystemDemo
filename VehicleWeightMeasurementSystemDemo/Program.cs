@@ -29,6 +29,30 @@ namespace VehicleWeightMeasurementSystemDemo
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+            // =========================
+            // 🔥 ENSURE DATABASE EXISTS
+            // =========================
+            // Apply EF migrations at startup so a missing/stale database is
+            // recreated (tables, seed data and vw_CameraFullData) before logging.
+            var databaseReady = false;
+            try
+            {
+                var dbOptions = new DbContextOptionsBuilder<AppDbContext>()
+                    .UseSqlServer(connectionString)
+                    .Options;
+                using (var db = new AppDbContext(dbOptions))
+                {
+                    db.Database.Migrate();
+                }
+                databaseReady = true;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Startup] Database unavailable; continuing with file-only logging. {ex.Message}");
+            }
+
             // =========================
             // 🔥 SERILOG CONFIG HERE
             // =========================
@@ -49,35 +73,42 @@ namespace VehicleWeightMeasurementSystemDemo
                 builder.Configuration["Serilog:MinimumLevel"], true, out var level)
                 ? level : LogEventLevel.Information;
 
+            var logConfiguration = new LoggerConfiguration()
 
+            // ✅ 👉 ADD IT HERE (FIRST THING)
+            .MinimumLevel.Is(minLevel)
 
-            Log.Logger = new LoggerConfiguration()
+            // 🔥 reduce noise
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("System", LogEventLevel.Warning)
 
-                // ✅ 👉 ADD IT HERE (FIRST THING)
-                .MinimumLevel.Is(minLevel)
+            // 🔥 file logs (all)
+            .WriteTo.File("logs/log.txt",
+            rollingInterval: RollingInterval.Day,
+            restrictedToMinimumLevel: fileLevel);
 
-                // 🔥 reduce noise
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .MinimumLevel.Override("System", LogEventLevel.Warning)
+            // 🔥 SQL logs (only errors) - guarded so a dead database never crashes startup
+            if (databaseReady)
+            {
+                try
+                {
+                    logConfiguration.WriteTo.MSSqlServer(
+                        connectionString: connectionString,
+                        sinkOptions: new MSSqlServerSinkOptions
+                        {
+                            TableName = "Logs",
+                            AutoCreateSqlTable = true
+                        },
+                        columnOptions: columnOptions,
+                        restrictedToMinimumLevel: sqlLevel);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[Startup] SQL logging unavailable; continuing with file-only logging. {ex.Message}");
+                }
+            }
 
-
-                // 🔥 file logs (all)
-                .WriteTo.File("logs/log.txt",
-                rollingInterval: RollingInterval.Day,
-                restrictedToMinimumLevel: fileLevel)
-
-                // 🔥 SQL logs (only errors)
-                .WriteTo.MSSqlServer(
-                    connectionString: builder.Configuration.GetConnectionString("DefaultConnection"),
-                    sinkOptions: new MSSqlServerSinkOptions
-                    {
-                        TableName = "Logs",
-                        AutoCreateSqlTable = true
-                    },
-                    columnOptions: columnOptions,
-                    restrictedToMinimumLevel: sqlLevel
-                )
-                .CreateLogger();
+            Log.Logger = logConfiguration.CreateLogger();
 
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(); // 🔥 IMPORTANT

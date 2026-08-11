@@ -38,6 +38,14 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
             builder.HasIndex(p => p.CapturedAt);
             builder.HasIndex(p => new { p.TerminalSent, p.TerminalTtoRegistered, p.TerminalImageExpired });
 
+            builder.HasIndex(p => new { p.TerminalImageDeadlineAt, p.Id })
+                .HasDatabaseName("IX_CameraPhotos_TerminalImagePending")
+                .HasFilter("[TerminalSent] = 0 AND [TerminalTtoRegistered] = 1");
+
+            builder.HasIndex(p => new { p.PlateReadStatus, p.Id })
+                .HasDatabaseName("IX_CameraPhotos_TerminalTtoPending")
+                .HasFilter("[TerminalSent] = 0 AND [TerminalTtoRegistered] = 0");
+
             builder.HasData(
                 new CameraPhotosEntity
                 {
