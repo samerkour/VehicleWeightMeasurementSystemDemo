@@ -79,7 +79,7 @@ public sealed class CameraPhotoRecord
             : LineId;
 
     public string PlateNoCompact =>
-        $"{PlateP1?.Trim()}{PlateP2?.Trim()}{PlateP3?.Trim()}{PlateP4?.Trim()}";
+        $"{PlateP4?.Trim()}ایران{PlateP3?.Trim()}{PlateP2?.Trim()}{PlateP1?.Trim()}";
 
     public bool HasPlate =>
         !string.IsNullOrWhiteSpace(PlateP1) &&
