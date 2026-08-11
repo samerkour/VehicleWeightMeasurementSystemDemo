@@ -230,7 +230,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     Axles = v.Axles.Select(a => new AxleEntity
                     {
                         AxleIndex = a.AxleIndex,
-                        Weight = a.Weight,
+                        Weight = a.Weight ?? 0,
                         TimeMs = a.TimeMs == 0 ? null : a.TimeMs,
                         Distance = a.Distance == 0 ? null : a.Distance,
                         LengthToNext = a.Distance == 0 ? null : a.Distance

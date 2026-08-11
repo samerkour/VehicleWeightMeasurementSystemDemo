@@ -10,13 +10,13 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
     {
         public int Id { get; set; }
 
-        public string LineCode { get; set; }
-        public string LineName { get; set; }
+        public string LineCode { get; set; } = string.Empty;
+        public string LineName { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        public List<VehicleEntity> Vehicles { get; set; }
+        public List<VehicleEntity> Vehicles { get; set; } = new();
     }
 }

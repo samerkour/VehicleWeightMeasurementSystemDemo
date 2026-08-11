@@ -15,7 +15,7 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
 
         public int AxleIndex { get; set; }
 
-        public double? Weight { get; set; }
+        public double Weight { get; set; }
 
         public double? TimeMs { get; set; }
         public double? Distance { get; set; }
