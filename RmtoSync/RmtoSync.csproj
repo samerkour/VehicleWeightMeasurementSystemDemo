@@ -31,8 +31,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Farasoo.AppGuard\Farasoo.AppGuard.csproj" />
-  </ItemGroup>
-
 </Project>

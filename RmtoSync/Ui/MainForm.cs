@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Farasoo.AppGuard;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RmtoSync.Its;
@@ -156,8 +155,8 @@ public sealed class MainForm : Form
                 }
             }
 
-            if (!e.Cancel)
-                AppCrashGuard.MarkNormalShutdown();
+            //if (!e.Cancel)
+            //    AppCrashGuard.MarkNormalShutdown();
         };
 
         Load += async (_, _) =>

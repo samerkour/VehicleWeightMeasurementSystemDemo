@@ -1,27 +1,27 @@
 using RmtoSync.Ui;
 using RmtoSync;
-using Farasoo.AppGuard;
+//using Farasoo.AppGuard;
 
-AppCrashGuard.Configure(new AppCrashGuardOptions
-{
-    AppId = "RmtoSync",
-    MainWindowTitle = "Rmto Sync"
-});
+//AppCrashGuard.Configure(new AppCrashGuardOptions
+//{
+//    AppId = "RmtoSync",
+//    MainWindowTitle = "Rmto Sync"
+//});
 
-if (AppCrashGuard.IsWatchdogMode(args))
-{
-    AppCrashGuard.RunWatchdogLoop(args);
-    return;
-}
+//if (AppCrashGuard.IsWatchdogMode(args))
+//{
+//    AppCrashGuard.RunWatchdogLoop(args);
+//    return;
+//}
 
-var guarded = AppCrashGuard.ShouldGuardProcess(args);
-if (guarded)
-{
-    AppCrashGuard.Initialize();
-    if (!AppCrashGuard.TryAcquireWorkerInstance())
-        Environment.Exit(AppCrashGuard.ExitCodeAlreadyRunning);
-    AppCrashGuard.EnsureWatchdogProcess();
-}
+//var guarded = AppCrashGuard.ShouldGuardProcess(args);
+//if (guarded)
+//{
+//    AppCrashGuard.Initialize();
+//    if (!AppCrashGuard.TryAcquireWorkerInstance())
+//        Environment.Exit(AppCrashGuard.ExitCodeAlreadyRunning);
+//    AppCrashGuard.EnsureWatchdogProcess();
+//}
 
 try
 {
@@ -37,14 +37,16 @@ try
     ApplicationConfiguration.Initialize();
     Application.Run(new MainForm(args));
 }
-catch (Exception ex) when (guarded)
-{
-    AppCrashGuard.LogException(ex, "Main");
-    AppCrashGuard.Log("Fatal startup/run error: " + ex.Message);
-    Environment.Exit(1);
-}
-finally
-{
-    if (guarded)
-        AppCrashGuard.ReleaseWorkerInstance();
-}
+catch (Exception ex)
+{ }
+//catch (Exception ex) when (guarded)
+//{
+//    AppCrashGuard.LogException(ex, "Main");
+//    AppCrashGuard.Log("Fatal startup/run error: " + ex.Message);
+//    Environment.Exit(1);
+//}
+//finally
+//{
+//    if (guarded)
+//        AppCrashGuard.ReleaseWorkerInstance();
+//}

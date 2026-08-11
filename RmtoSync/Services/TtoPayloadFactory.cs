@@ -40,10 +40,9 @@ public static class TtoPayloadFactory
             : options.DefaultCarClass13;
         var (passDateTime, receiveDateTime) = NormalizePassAndReceiveDates(photo.PassDatetime, photo.ImportedAt);
 
-        // ── Stub sensor values: فعلاً فقط دوربین/پلاک‌خوان داریم ──────────────────────
-        // رادار سرعت و باسکول (WIM) نصب نشده؛ مقادیر زیر ساختگی‌اند تا سامانه مرکزی رکورد را
-        // بپذیرد. speedType=1 (لحظه‌ای) عمداً انتخاب شده — speedType=2/3 بدون سرعت میانگین
-        // واقعی خطای ITS 124 می‌دهد. بعد از نصب سنسور: AnprOnlyStation=false و داده واقعی SQL.
+        // ── Maps incoming DB fields one-to-one (Vehicles table) ────────────────────
+        // VehicleSpeed → Vehicles.Speed, AverageSpeed → Vehicles.AverageSpeed,
+        // TotalWeight → Vehicles.TotalWeight. Fall back to stub speed only when missing.
         var fakeSpeed = options.FakeInstantSpeedKmh > 0 ? options.FakeInstantSpeedKmh : 60;
 
         return new TtoPayload
@@ -56,8 +55,8 @@ public static class TtoPayloadFactory
             ReceiveDateTime = receiveDateTime,
             Plate = plate,
             LineNumber = photo.LineNumber,
-            VehicleSpeed = fakeSpeed,
-            AverageSpeed = 0,
+            VehicleSpeed = photo.VehicleSpeed ?? fakeSpeed,
+            AverageSpeed = photo.AverageSpeed ?? 0,
             Allowed = TtoFieldValues.Allowed.Permitted,
             VehicleClass = options.DefaultVehicleClass,
             WrongDirection = ToWrongDirection(photo.WrongDirection),
@@ -71,8 +70,8 @@ public static class TtoPayloadFactory
             CrimeCodes = Array.Empty<long>(),
             TotalAxles = 0,
             VehicleLen = 0,
-            // وزن و محورها ساختگی صفر — باسکول نداریم
-            TotalWeight = 0,
+            // TotalWeight از داده ورودی (Vehicles.TotalWeight)
+            TotalWeight = photo.TotalWeight ?? 0,
             HeadGap = 0,
             Gap = 0,
             FirstToLastAxlesLen = 0,
