@@ -304,7 +304,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
             query = query.Where(x =>
                 x.Timestamp >= from &&
-                x.Timestamp <= to.Date);
+                x.Timestamp <= to);
 
 
             if (lineId.HasValue && lineId != 0)

@@ -36,7 +36,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                 {
                     Id = 1,
                     LineCode = "L1",
-                    LineName = "Main Line",
+                    LineName = "Line1",
                     IsActive = true,
                     CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0)
                 },
@@ -44,7 +44,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                 {
                     Id = 2,
                     LineCode = "L2",
-                    LineName = "Secondary Line",
+                    LineName = "Line2",
                     IsActive = true,
                     CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0)
                 },
@@ -52,7 +52,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                 {
                     Id = 3,
                     LineCode = "L3",
-                    LineName = "Secondary Line",
+                    LineName = "Line3",
                     IsActive = true,
                     CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0)
                 }
@@ -61,7 +61,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                 {
                     Id = 4,
                     LineCode = "L4",
-                    LineName = "Secondary Line",
+                    LineName = "Line4",
                     IsActive = true,
                     CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0)
                 }

@@ -450,7 +450,9 @@ namespace VehicleWeightMeasurementSystemDemo
                 using (SaveFileDialog sfd = new SaveFileDialog())
                 {
                     sfd.Filter = "Excel Files (*.xlsx)|*.xlsx";
-                    sfd.FileName = $"VehicleReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    var now = DateTime.Now;
+                    var pc = new System.Globalization.PersianCalendar();
+                    sfd.FileName = $"VehicleReport_{pc.GetYear(now):0000}{pc.GetMonth(now):00}{pc.GetDayOfMonth(now):00}_{now:HHmmss}.xlsx";
 
                     if (sfd.ShowDialog() == DialogResult.OK)
                     {
