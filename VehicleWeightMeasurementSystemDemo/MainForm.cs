@@ -47,6 +47,9 @@ namespace VehicleWeightMeasurementSystemDemo
         // ضریب اعمال‌شده روی مقادیر وزن قبل از نمایش (پیش‌فرض 1.5 از تنظیمات)
         private decimal _alpha = 1.5m;
 
+        // ضریب اعمال‌شده روی وزن محورها (w1..w6) قبل از نمایش (پیش‌فرض 1.0 از تنظیمات)
+        private decimal _axleAlpha = 1.0m;
+
         // تایمر به‌روزرسانی ساعت/تاریخ در lblCurentDate
         private readonly System.Windows.Forms.Timer _clockTimer = new() { Interval = 1000 };
 
@@ -292,6 +295,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 var snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
                 var ovarviewCamera = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
                 _alpha = _config.GetSection("WeightSettings").Get<WeightSettings>()?.Alpha ?? 1.5m;
+                _axleAlpha = _config.GetSection("AxleSettings").Get<AxleSettings>()?.Alpha ?? 1.0m;
 
                 _serialEnabled = serialSettings?.Enabled == true;
                 _snapshotEnabled = snapshotCameraSettings?.Enabled == true;
@@ -493,7 +497,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSpeed.Text = $"Speed: {vehicle.Speed} km/h";
             lblLine.Text = $"Line: {vehicle.LineId}";
             lblAxles.Text = $"Axles No: {vehicle.AxleCount}";
-            lblTotalWeight.Text = $"TotalWeight: {ScaleWeight(vehicle.TotalWeight)}";
+            lblTotalWeight.Text = $"TotalWeight: {vehicle.TotalWeight}";
             lblADC1.Text = $"ADC1\n{vehicle.ADC1}";
             lblADC2.Text = $"ADC2\n{vehicle.ADC2}";
             lblADC3.Text = $"ADC3\n{vehicle.ADC3}";
@@ -515,16 +519,6 @@ namespace VehicleWeightMeasurementSystemDemo
 
             var axle = axles.FirstOrDefault(a => a.AxleIndex == axleIndex);
             return axle?.DistanceDisplay ?? "-";
-        }
-
-        private decimal ScaleWeight(decimal? weight)
-        {
-            return (weight ?? 0) * _alpha;
-        }
-
-        private decimal ScaleWeight(double? weight)
-        {
-            return (decimal)(weight ?? 0) * _alpha;
         }
 
         private void UpdateImageUI(string? imagePath, PlateResultDto? plate)
@@ -619,7 +613,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 }
 
                 // رکورد حتی بدون عکس هم ذخیره می‌شود تا داده وزن گم نشود
-                await _repo.SaveAsync(vehicle, imagePath, plate);
+                await _repo.SaveAsync(vehicle, imagePath, plate, _axleAlpha, _alpha);
 
                 await LoadGrid();
 
@@ -776,27 +770,6 @@ namespace VehicleWeightMeasurementSystemDemo
             return null;
         }
 
-        private void ScaleWeightList(List<VehicleDto> data)
-        {
-            if (data == null) return;
-
-            foreach (var v in data)
-            {
-                v.AxleWeight1 = ScaleWeightNullable(v.AxleWeight1);
-                v.AxleWeight2 = ScaleWeightNullable(v.AxleWeight2);
-                v.AxleWeight3 = ScaleWeightNullable(v.AxleWeight3);
-                v.AxleWeight4 = ScaleWeightNullable(v.AxleWeight4);
-                v.AxleWeight5 = ScaleWeightNullable(v.AxleWeight5);
-                v.AxleWeight6 = ScaleWeightNullable(v.AxleWeight6);
-                v.TotalWeight = ScaleWeightNullable(v.TotalWeight);
-            }
-        }
-
-        private double? ScaleWeightNullable(double? weight)
-        {
-            return weight.HasValue ? (double?)((decimal)weight.Value * _alpha) : null;
-        }
-
         private async Task LoadGrid()
         {
             if (_shuttingDown)
@@ -822,7 +795,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 }
 
                 var data = await _repo.GetAllAsync();
-                ScaleWeightList(data);
 
                 if (dgvRecords.IsDisposed || !dgvRecords.IsHandleCreated)
                     return;
@@ -1304,6 +1276,35 @@ namespace VehicleWeightMeasurementSystemDemo
                 "Weight Settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private void axleSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var current = _config.GetSection("AxleSettings").Get<AxleSettings>();
+            if (current == null)
+            {
+                MessageBox.Show("AxleSettings not found in configuration.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var form = new AxleSettingsForm(current);
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            if (!SaveConfigSection("AxleSettings",
+                new System.Text.Json.Nodes.JsonObject { ["Alpha"] = form.Alpha }))
+            {
+                MessageBox.Show("Failed to save axle settings.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _axleAlpha = form.Alpha;
+
+            MessageBox.Show(this,
+                "Axle settings saved. Axle weights are now multiplied by Alpha.",
+                "Axle Settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         private void ApplySerialSettings(SerialPortSettings settings)
         {
             try
@@ -1328,7 +1329,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (var form = new VehicleReportForm(_repo, _alpha))
+            using (var form = new VehicleReportForm(_repo))
             {
                 form.ShowDialog(this);
             }

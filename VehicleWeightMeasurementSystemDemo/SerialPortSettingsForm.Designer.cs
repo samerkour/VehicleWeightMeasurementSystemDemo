@@ -191,6 +191,8 @@ namespace VehicleWeightMeasurementSystemDemo
             AutoScaleMode = AutoScaleMode.Font;
             CancelButton = btnCancel;
             ClientSize = new Size(444, 432);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
             Controls.Add(btnCancel);
             Controls.Add(btnSave);
             Controls.Add(lblHint);

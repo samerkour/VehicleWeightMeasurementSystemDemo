@@ -181,7 +181,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
         public async Task SaveAsync(
             VehicleDto v,
             string imagePath,
-            PlateResultDto plate)
+            PlateResultDto plate,
+            decimal axleAlpha = 1.0m,
+            decimal weightAlpha = 1.5m)
         {
             await using var _context = await CreateContextAsync();
 
@@ -219,7 +221,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     LineId = v.LineId,
 
                     AxleCount = v.AxleCount,
-                    TotalWeight = v.TotalWeight,
+                    TotalWeight = v.TotalWeight == null ? null : (double?)((decimal)v.TotalWeight.Value * weightAlpha),
                     AverageSpeed = v.Speed,
 
                     ADC1 = v.ADC1,
@@ -230,10 +232,10 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     Axles = v.Axles.Select(a => new AxleEntity
                     {
                         AxleIndex = a.AxleIndex,
-                        Weight = a.Weight ?? 0,
+                        Weight = a.Weight.HasValue ? (double)((decimal)a.Weight.Value * weightAlpha) : 0,
                         TimeMs = a.TimeMs == 0 ? null : a.TimeMs,
-                        Distance = a.Distance == 0 ? null : a.Distance,
-                        LengthToNext = a.Distance == 0 ? null : a.Distance
+                        Distance = a.Distance == 0 ? null : (double?)(a.Distance * (double)axleAlpha),
+                        LengthToNext = a.Distance == 0 ? null : (double?)(a.Distance * (double)axleAlpha)
                     }).ToList()
                 };
 

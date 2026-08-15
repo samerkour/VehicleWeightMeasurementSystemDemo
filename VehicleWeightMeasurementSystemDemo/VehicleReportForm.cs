@@ -28,16 +28,14 @@ namespace VehicleWeightMeasurementSystemDemo
 
 
         public SqlRepository _repo { get; }
-        private readonly decimal _alpha;
 
-        public VehicleReportForm(SqlRepository repo, decimal alpha = 1.5m)
+        public VehicleReportForm(SqlRepository repo)
         {
             InitializeComponent();
             grpFilters.BringToFront();
             _pager.BringToFront();
             dgvVehicles.SendToBack();
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
-            _alpha = alpha;
 
             _cmbPageSize.SelectedIndex = 0;
 
@@ -276,29 +274,6 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
-        private void ScaleTotalWeights(List<VehicleReportDto> items)
-        {
-            if (items == null) return;
-
-            foreach (var item in items)
-            {
-                if (item.TotalWeight.HasValue)
-                    item.TotalWeight = (double?)((decimal)item.TotalWeight.Value * _alpha);
-
-                item.AxleWeight1 = ScaleWeightNullable(item.AxleWeight1);
-                item.AxleWeight2 = ScaleWeightNullable(item.AxleWeight2);
-                item.AxleWeight3 = ScaleWeightNullable(item.AxleWeight3);
-                item.AxleWeight4 = ScaleWeightNullable(item.AxleWeight4);
-                item.AxleWeight5 = ScaleWeightNullable(item.AxleWeight5);
-                item.AxleWeight6 = ScaleWeightNullable(item.AxleWeight6);
-            }
-        }
-
-        private double? ScaleWeightNullable(double? weight)
-        {
-            return weight.HasValue ? (double?)((decimal)weight.Value * _alpha) : null;
-        }
-
         private void Style()
         {
             this.BackColor = UITheme.Background;
@@ -468,8 +443,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 txtPlate.Text, (double)nudMinWeight.Value,
                 (double)nudMaxWeight.Value, chkOverweight.Checked);
 
-                ScaleTotalWeights(data);
-
                 if (data.Count == 0)
                 {
                     MessageBox.Show(this, "No Record Found.", "Info",
@@ -613,8 +586,6 @@ namespace VehicleWeightMeasurementSystemDemo
                     await LoadPageAsync();
                     return;
                 }
-
-                ScaleTotalWeights(items);
 
                 dgvVehicles.DataSource = _gridSource;
                 _gridSource.DataSource = items;

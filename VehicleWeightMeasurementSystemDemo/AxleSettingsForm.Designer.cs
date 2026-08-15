@@ -1,6 +1,6 @@
 namespace VehicleWeightMeasurementSystemDemo
 {
-    partial class WeightSettingsForm
+    partial class AxleSettingsForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -17,27 +17,27 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void InitializeComponent()
         {
-            grpWeight = new GroupBox();
+            grpAxle = new GroupBox();
             lblAlpha = new Label();
             nudAlpha = new NumericUpDown();
             lblHint = new Label();
             btnSave = new Button();
             btnCancel = new Button();
-            grpWeight.SuspendLayout();
+            grpAxle.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nudAlpha).BeginInit();
             SuspendLayout();
             // 
-            // grpWeight
+            // grpAxle
             // 
-            grpWeight.Controls.Add(lblAlpha);
-            grpWeight.Controls.Add(nudAlpha);
-            grpWeight.Location = new Point(12, 12);
-            grpWeight.Name = "grpWeight";
-            grpWeight.Padding = new Padding(14);
-            grpWeight.Size = new Size(420, 110);
-            grpWeight.TabIndex = 0;
-            grpWeight.TabStop = false;
-            grpWeight.Text = "Weight Coefficient";
+            grpAxle.Controls.Add(lblAlpha);
+            grpAxle.Controls.Add(nudAlpha);
+            grpAxle.Location = new Point(12, 12);
+            grpAxle.Name = "grpAxle";
+            grpAxle.Padding = new Padding(14);
+            grpAxle.Size = new Size(420, 110);
+            grpAxle.TabIndex = 0;
+            grpAxle.TabStop = false;
+            grpAxle.Text = "Axle Coefficient";
             // 
             // lblAlpha
             // 
@@ -58,7 +58,7 @@ namespace VehicleWeightMeasurementSystemDemo
             nudAlpha.Name = "nudAlpha";
             nudAlpha.Size = new Size(200, 28);
             nudAlpha.TabIndex = 1;
-            nudAlpha.Value = new decimal(new int[] { 15, 0, 0, 65536 });
+            nudAlpha.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // lblHint
             // 
@@ -67,7 +67,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblHint.Name = "lblHint";
             lblHint.Size = new Size(420, 80);
             lblHint.TabIndex = 2;
-            lblHint.Text = "All axle weights (w1..w6) and total weight are\nmultiplied by Alpha before display.\nChanges take effect after restarting the monitoring system.";
+            lblHint.Text = "All axle weights (w1..w6) are\nmultiplied by Alpha before display.\nChanges take effect after restarting the monitoring system.";
             // 
             // btnSave
             // 
@@ -89,7 +89,7 @@ namespace VehicleWeightMeasurementSystemDemo
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = true;
             // 
-            // WeightSettingsForm
+            // AxleSettingsForm
             // 
             AcceptButton = btnSave;
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -101,19 +101,19 @@ namespace VehicleWeightMeasurementSystemDemo
             Controls.Add(btnCancel);
             Controls.Add(btnSave);
             Controls.Add(lblHint);
-            Controls.Add(grpWeight);
-            Name = "WeightSettingsForm";
+            Controls.Add(grpAxle);
+            Name = "AxleSettingsForm";
             StartPosition = FormStartPosition.CenterParent;
-            Text = "Weight Settings";
-            grpWeight.ResumeLayout(false);
-            grpWeight.PerformLayout();
+            Text = "Axle Settings";
+            grpAxle.ResumeLayout(false);
+            grpAxle.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)nudAlpha).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
 
-        private GroupBox grpWeight;
+        private GroupBox grpAxle;
         private Label lblAlpha;
         private NumericUpDown nudAlpha;
         private Label lblHint;
