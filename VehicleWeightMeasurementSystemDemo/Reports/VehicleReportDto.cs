@@ -20,6 +20,11 @@ namespace VehicleWeightMeasurementSystemDemo.Reports
 
         public int? AxleCount { get; set; }
 
+        public string? ADC1 { get; set; }
+        public string? ADC2 { get; set; }
+        public string? ADC3 { get; set; }
+        public string? ADC4 { get; set; }
+
         public bool Overweight { get; set; }
 
         public double? AxleWeight1 { get; set; }

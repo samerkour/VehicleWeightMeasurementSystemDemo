@@ -370,6 +370,11 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 AxleCount = x.AxleCount,
                 Overweight = x.TotalOverWeight > 0,
 
+                ADC1 = x.ADC1,
+                ADC2 = x.ADC2,
+                ADC3 = x.ADC3,
+                ADC4 = x.ADC4,
+
                 AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
                 AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
                 AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),

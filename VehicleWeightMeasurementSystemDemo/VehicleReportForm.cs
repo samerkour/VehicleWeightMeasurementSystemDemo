@@ -221,6 +221,38 @@ namespace VehicleWeightMeasurementSystemDemo
 
             dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
             {
+                Name = "ADC1",
+                HeaderText = "ADC1",
+                DataPropertyName = "ADC1",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ADC2",
+                HeaderText = "ADC2",
+                DataPropertyName = "ADC2",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ADC3",
+                HeaderText = "ADC3",
+                DataPropertyName = "ADC3",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ADC4",
+                HeaderText = "ADC4",
+                DataPropertyName = "ADC4",
+                FillWeight = 15
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
+            {
                 Name = "Timestamp",
                 HeaderText = "Time",
                 DataPropertyName = "Timestamp",
@@ -497,6 +529,10 @@ namespace VehicleWeightMeasurementSystemDemo
             dt.Columns.Add("W4(kg)");
             dt.Columns.Add("W5(kg)");
             dt.Columns.Add("W6(kg)");
+            dt.Columns.Add("ADC1");
+            dt.Columns.Add("ADC2");
+            dt.Columns.Add("ADC3");
+            dt.Columns.Add("ADC4");
             dt.Columns.Add("TotalWeight");
             dt.Columns.Add("Axle12(m)");
             dt.Columns.Add("Axle23(m)");
@@ -519,6 +555,10 @@ namespace VehicleWeightMeasurementSystemDemo
                     v.AxleWeight4,
                     v.AxleWeight5,
                     v.AxleWeight6,
+                    v.ADC1,
+                    v.ADC2,
+                    v.ADC3,
+                    v.ADC4,
                     v.TotalWeight,
                     v.Axle12,
                     v.Axle23,
