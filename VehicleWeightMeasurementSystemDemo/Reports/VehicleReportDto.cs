@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Text;
 
 namespace VehicleWeightMeasurementSystemDemo.Reports
@@ -11,6 +12,8 @@ namespace VehicleWeightMeasurementSystemDemo.Reports
         public DateTime Timestamp { get; set; }
 
         public string PlateNumber { get; set; }
+
+        public System.Drawing.Image? PlateImage { get; set; }
 
         public string LineName { get; set; }
 

@@ -4,8 +4,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using Serilog;
+using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
 using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
 using VehicleWeightMeasurementSystemDemo.Reports;
@@ -28,14 +32,16 @@ namespace VehicleWeightMeasurementSystemDemo
 
 
         public SqlRepository _repo { get; }
+        private readonly IPlateRecognitionService _plateService;
 
-        public VehicleReportForm(SqlRepository repo)
+        public VehicleReportForm(SqlRepository repo, IPlateRecognitionService plateService)
         {
             InitializeComponent();
             grpFilters.BringToFront();
             _pager.BringToFront();
             dgvVehicles.SendToBack();
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _plateService = plateService ?? throw new ArgumentNullException(nameof(plateService));
 
             _cmbPageSize.SelectedIndex = 0;
 
@@ -82,6 +88,15 @@ namespace VehicleWeightMeasurementSystemDemo
                 HeaderText = "Seq",
                 DataPropertyName = "Id",
                 FillWeight = 12
+            });
+
+            dgvVehicles.Columns.Add(new DataGridViewImageColumn
+            {
+                Name = "PlateImage",
+                HeaderText = "Plate Image",
+                DataPropertyName = "PlateImage",
+                FillWeight = 18,
+                ImageLayout = DataGridViewImageCellLayout.Zoom
             });
 
             dgvVehicles.Columns.Add(new DataGridViewTextBoxColumn
@@ -465,8 +480,63 @@ namespace VehicleWeightMeasurementSystemDemo
 
                         using (var wb = new XLWorkbook())
                         {
-                            wb.Worksheets.Add(dt, "Vehicles");
-                            wb.SaveAs(filePath);
+                            var ws = wb.Worksheets.Add(dt, "Vehicles");
+
+                            // اندازه ستون تصویر و ارتفاع ردیف‌ها
+                            ws.Column(2).Width = 24;
+
+                            // 🔥 افزودن تصویر کراپ پلاک هر خودرو در سلول PlateImage
+                            List<Bitmap?> plateImages = null;
+
+                            try
+                            {
+                                plateImages = await LoadPlateImagesAsync(data);
+
+                                for (int i = 0; i < data.Count; i++)
+                                {
+                                    var image = plateImages[i];
+                                    if (image == null)
+                                        continue;
+
+                                    using var ms = new MemoryStream();
+                                    image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                                    ms.Position = 0;
+
+                                    // ارتفاع ردیف متناسب با تصویر
+                                    ws.Row(i + 2).Height = 40;
+
+                                    var cell = ws.Cell(i + 2, 2);
+                                    var picture = ws.AddPicture(ms).MoveTo(cell);
+
+                                    // تطبیق تصویر با اندازه سلول (حفظ نسبت ابعاد)
+                                    double cellWidthPx = (ws.Column(cell.Address.ColumnNumber).Width * 7 + 5) * 0.5;
+                                    double cellHeightPx = (ws.Row(cell.Address.RowNumber).Height * 96 / 72.0) * 0.5;
+
+                                    double cellRatio = cellWidthPx / cellHeightPx;
+                                    double imgRatio = (double)image.Width / image.Height;
+
+                                    if (imgRatio >= cellRatio)
+                                    {
+                                        picture.Width = (int)cellWidthPx;
+                                        picture.Height = (int)(cellWidthPx / imgRatio);
+                                    }
+                                    else
+                                    {
+                                        picture.Height = (int)cellHeightPx;
+                                        picture.Width = (int)(cellHeightPx * imgRatio);
+                                    }
+                                }
+
+                                wb.SaveAs(filePath);
+                            }
+                            finally
+                            {
+                                if (plateImages != null)
+                                {
+                                    foreach (var img in plateImages)
+                                        img?.Dispose();
+                                }
+                            }
                         }
 
                         MessageBox.Show("Export completed successfully.", "Success",
@@ -487,11 +557,39 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        private async Task<List<Bitmap?>> LoadPlateImagesAsync(List<VehicleReportDto> data)
+        {
+            var images = new List<Bitmap?>(data.Count);
+
+            foreach (var item in data)
+            {
+                Bitmap? cropped = null;
+
+                try
+                {
+                    var photoPath = await _repo.GetVehiclePhotoPathAsync(item.Id);
+                    if (!string.IsNullOrWhiteSpace(photoPath) && File.Exists(photoPath))
+                    {
+                        var plate = await Task.Run(() => _plateService.Extract(photoPath));
+                        cropped = plate?.PlateImage;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning("Failed to load plate image for vehicle {Id}: {Message}", item.Id, ex.Message);
+                }
+
+                images.Add(cropped);
+            }
+
+            return images;
+        }
+
         public DataTable ToDataTable(List<VehicleReportDto> list)
         {
             var dt = new DataTable();
-
             dt.Columns.Add("Seq");
+            dt.Columns.Add("PlateImage");
             dt.Columns.Add("Plate");
             dt.Columns.Add("Speed");
             dt.Columns.Add("Line");
@@ -518,6 +616,7 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 dt.Rows.Add(
                     v.Id,
+                    "",
                     v.PlateNumber,
                     v.Speed,
                     v.LineName,
@@ -577,6 +676,27 @@ namespace VehicleWeightMeasurementSystemDemo
                     _pageSize);
 
                 _totalCount = total;
+
+                // 🔥 بارگذاری تصویر کراپ پلاک هر ردیف
+                for (int i = 0; i < items.Count; i++)
+                {
+                    if (_loading == false)
+                        break;
+
+                    try
+                    {
+                        var photoPath = await _repo.GetVehiclePhotoPathAsync(items[i].Id);
+                        if (!string.IsNullOrWhiteSpace(photoPath) && File.Exists(photoPath))
+                        {
+                            var plate = await Task.Run(() => _plateService.Extract(photoPath));
+                            items[i].PlateImage = plate?.PlateImage;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("Failed to load plate image for vehicle {Id}: {Message}", items[i].Id, ex.Message);
+                    }
+                }
 
                 // اگر صفحه فعلی بعد از تغییر فیلتر خارج از محدوده شد
                 if (items.Count == 0 && _currentPage > TotalPages)

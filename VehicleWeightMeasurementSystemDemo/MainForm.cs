@@ -1383,7 +1383,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (var form = new VehicleReportForm(_repo))
+            using (var form = new VehicleReportForm(_repo, _plateService))
             {
                 form.ShowDialog(this);
             }
