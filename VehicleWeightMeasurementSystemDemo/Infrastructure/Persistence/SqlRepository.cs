@@ -285,6 +285,17 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             }
         }
 
+        public async Task<string?> GetVehiclePhotoPathAsync(int vehicleId)
+        {
+            await using var _context = await CreateContextAsync();
+
+            return await _context.CameraPhotos
+                .Where(p => p.VehicleId == vehicleId)
+                .OrderByDescending(p => p.Id)
+                .Select(p => p.FullPath)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<List<VehicleReportDto>> SearchAsync(
             DateTime from,
             DateTime to,

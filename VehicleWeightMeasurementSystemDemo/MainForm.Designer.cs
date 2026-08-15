@@ -58,6 +58,7 @@ namespace VehicleWeightMeasurementSystemDemo
             lblRecordsTitle = new Label();
             lblRecordCounts = new Label();
             lblSelectedPlate = new Label();
+            pictureBoxSelectedPlate = new PictureBox();
             pnlSelectedRecord = new Panel();
             flpSelectedRecord = new FlowLayoutPanel();
             menuStrip1 = new MenuStrip();
@@ -84,6 +85,7 @@ namespace VehicleWeightMeasurementSystemDemo
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxSelectedPlate).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
             pnlSelectedRecord.SuspendLayout();
             menuStrip1.SuspendLayout();
@@ -374,6 +376,20 @@ namespace VehicleWeightMeasurementSystemDemo
             lblSelectedPlate.TabIndex = 14;
             lblSelectedPlate.Text = "Plate: ---";
             lblSelectedPlate.TextAlign = ContentAlignment.MiddleRight;
+            lblSelectedPlate.Visible = false;
+            // 
+            // pictureBoxSelectedPlate
+            // 
+            pictureBoxSelectedPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            pictureBoxSelectedPlate.BorderStyle = BorderStyle.FixedSingle;
+            pictureBoxSelectedPlate.Location = new Point(858, 458);
+            pictureBoxSelectedPlate.Margin = new Padding(3, 4, 3, 4);
+            pictureBoxSelectedPlate.Name = "pictureBoxSelectedPlate";
+            pictureBoxSelectedPlate.Size = new Size(120, 40);
+            pictureBoxSelectedPlate.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBoxSelectedPlate.TabIndex = 18;
+            pictureBoxSelectedPlate.TabStop = false;
+            pictureBoxSelectedPlate.Visible = false;
             // 
             // pnlSelectedRecord
             // 
@@ -549,6 +565,7 @@ namespace VehicleWeightMeasurementSystemDemo
             Controls.Add(lblRecordsTitle);
             Controls.Add(lblRecordCounts);
             Controls.Add(lblSelectedPlate);
+            Controls.Add(pictureBoxSelectedPlate);
             Controls.Add(pnlSelectedRecord);
             Controls.Add(dgvRecords);
             Controls.Add(tblTop);
@@ -570,6 +587,7 @@ namespace VehicleWeightMeasurementSystemDemo
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
             grpImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxSelectedPlate).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
             pnlSelectedRecord.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
@@ -598,6 +616,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private Label lblRecordsTitle;
         private Label lblRecordCounts;
         private Label lblSelectedPlate;
+        private PictureBox pictureBoxSelectedPlate;
         private Panel pnlSelectedRecord;
         private FlowLayoutPanel flpSelectedRecord;
         private TableLayoutPanel tblTop;

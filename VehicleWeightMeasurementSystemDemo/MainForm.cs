@@ -855,7 +855,7 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
-        private void dgvRecords_SelectionChanged(object sender, EventArgs e)
+        private async void dgvRecords_SelectionChanged(object sender, EventArgs e)
         {
             if (_isReloadingGrid)
                 return;
@@ -869,6 +869,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 flpSelectedRecord.ResumeLayout();
 
                 lblSelectedPlate.Text = "Plate: ---";
+                ClearSelectedPlate();
                 return;
             }
 
@@ -882,6 +883,9 @@ namespace VehicleWeightMeasurementSystemDemo
 
             lblSelectedPlate.Text = $"Plate: {plateValue ?? "---"}";
 
+            // 🔥 نمایش کراپ پلاک خودرو به‌جای فقط متن
+            await LoadSelectedPlateAsync(row);
+
             foreach (DataGridViewColumn col in dgvRecords.Columns)
             {
                 if (!col.Visible)
@@ -892,6 +896,56 @@ namespace VehicleWeightMeasurementSystemDemo
             }
 
             flpSelectedRecord.ResumeLayout();
+        }
+
+        private void ClearSelectedPlate()
+        {
+            if (pictureBoxSelectedPlate == null || pictureBoxSelectedPlate.IsDisposed)
+                return;
+
+            var old = pictureBoxSelectedPlate.Image;
+            pictureBoxSelectedPlate.Image = null;
+            pictureBoxSelectedPlate.Visible = false;
+            old?.Dispose();
+        }
+
+        private async Task LoadSelectedPlateAsync(DataGridViewRow row)
+        {
+            if (!int.TryParse(row.Cells["Id"].Value?.ToString(), out int vehicleId))
+            {
+                ClearSelectedPlate();
+                return;
+            }
+
+            try
+            {
+                var photoPath = await _repo.GetVehiclePhotoPathAsync(vehicleId);
+                if (string.IsNullOrWhiteSpace(photoPath) || !File.Exists(photoPath))
+                {
+                    ClearSelectedPlate();
+                    return;
+                }
+
+                // کراپ پلاک از تصویر ذخیره‌شده
+                var plate = await Task.Run(() => _plateService.Extract(photoPath));
+                var cropped = plate?.PlateImage;
+
+                if (pictureBoxSelectedPlate.IsDisposed)
+                {
+                    cropped?.Dispose();
+                    return;
+                }
+
+                var old = pictureBoxSelectedPlate.Image;
+                pictureBoxSelectedPlate.Image = cropped;
+                pictureBoxSelectedPlate.Visible = cropped != null;
+                old?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("Failed to load selected plate for vehicle {Id}: {Message}", vehicleId, ex.Message);
+                ClearSelectedPlate();
+            }
         }
 
         private static Label BuildCell(string text, Color backColor)
