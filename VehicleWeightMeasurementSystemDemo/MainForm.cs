@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System.ComponentModel;
 using System.Net;
@@ -38,6 +39,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private IPlateRecognitionService _plateService;
         private IConfiguration _config;
         private SqlRepository _repo;
+        private readonly IServiceProvider _services;
 
         // تنظیمات نگه‌داشته‌شده برای Start/Stop از منو
         private OverviewCameraSettings? _overviewSettings;
@@ -258,12 +260,14 @@ namespace VehicleWeightMeasurementSystemDemo
             SqlRepository repo,
             IPlateRecognitionService plateService,
             SerialPortService serialService,
-            CameraWatcherService cameraWatcher
+            CameraWatcherService cameraWatcher,
+            IServiceProvider services
             )
             : this()
         {
             _config = config;
             _repo = repo;
+            _services = services;
 
             _plateService = plateService;
 
@@ -1383,7 +1387,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void VehicleReportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (var form = new VehicleReportForm(_repo, _plateService))
+            using (var form = _services.GetRequiredService<VehicleReportForm>())
             {
                 form.ShowDialog(this);
             }

@@ -146,6 +146,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
 
             builder.Services.AddTransient<MainForm>();
+            builder.Services.AddTransient<VehicleReportForm>();
 
 
             var app = builder.Build();
