@@ -77,7 +77,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
                 {
                     PlateNumber = FormatIranianPlate(plate.plate_string_unicode_indices),
                     Confidence = plate.confidence,
-                    Country = countries[plate.country]
+                    Country = countries[plate.country],
+                    Direction = plate.direction
                 };
 
                 // در صورت وجود چند پلاک، مطمئن‌ترین نتیجه را برمی‌گردانیم

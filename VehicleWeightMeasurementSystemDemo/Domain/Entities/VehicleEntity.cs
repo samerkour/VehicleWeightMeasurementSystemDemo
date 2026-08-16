@@ -43,7 +43,7 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public double? Latitude { get; set; }
 
         public double? VehicleLen { get; set; }
-        public double? TotalOverWeight { get; set; }
+        public double TotalOverWeight { get; set; }
 
         public string? WimRawLine { get; set; }
 

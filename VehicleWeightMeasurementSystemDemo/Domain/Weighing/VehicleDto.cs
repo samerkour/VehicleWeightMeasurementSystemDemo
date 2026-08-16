@@ -53,6 +53,19 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Weighing
         public double? Axle56 { get; set; }
 
 
+        // 🔥 Fields saved to [Vehicles] table (per comprehensive-system web service)
+        public double? PlateConfidence { get; set; }
+        public int? PlateReadStatus { get; set; }
+        public DateTime? PlateReadAt { get; set; }
+        public bool? Allowed { get; set; }
+        public bool? WrongDirection { get; set; }
+        public int? VehicleClass { get; set; }
+        public double? Longitude { get; set; }
+        public double? Latitude { get; set; }
+        public double? VehicleLen { get; set; }
+        public double TotalOverWeight { get; set; }
+
+
         // 🔥 THIS IS THE IMPORTANT PART
         public string AxlesSummary
         {

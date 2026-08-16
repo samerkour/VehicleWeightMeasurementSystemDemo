@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Serilog;
 using System.ComponentModel;
 using System.Net;
@@ -40,6 +41,8 @@ namespace VehicleWeightMeasurementSystemDemo
         private IConfiguration _config;
         private SqlRepository _repo;
         private readonly IServiceProvider _services;
+        private IGeoLocationService _geoLocation;
+        private VehicleClassificationSettings _classificationSettings;
 
         // تنظیمات نگه‌داشته‌شده برای Start/Stop از منو
         private OverviewCameraSettings? _overviewSettings;
@@ -261,13 +264,17 @@ namespace VehicleWeightMeasurementSystemDemo
             IPlateRecognitionService plateService,
             SerialPortService serialService,
             CameraWatcherService cameraWatcher,
-            IServiceProvider services
+            IServiceProvider services,
+            IGeoLocationService geoLocation,
+            IOptions<VehicleClassificationSettings> classificationSettings
             )
             : this()
         {
             _config = config;
             _repo = repo;
             _services = services;
+            _geoLocation = geoLocation;
+            _classificationSettings = classificationSettings.Value;
 
             _plateService = plateService;
 
@@ -616,6 +623,9 @@ namespace VehicleWeightMeasurementSystemDemo
                     Log.Warning("⚠️ Image not ready: {Path}", imagePath);
                 }
 
+                // 🔥 3. تکمیل فیلدهای جامع (کلاس/مجازبودن/طول/اضافه‌بار/موقعیت)
+                await PopulateComprehensiveFieldsAsync(vehicle, plate);
+
                 // رکورد حتی بدون عکس هم ذخیره می‌شود تا داده وزن گم نشود
                 await _repo.SaveAsync(vehicle, imagePath, plate, _axleAlpha, _alpha);
 
@@ -627,6 +637,54 @@ namespace VehicleWeightMeasurementSystemDemo
             catch (Exception ex)
             {
                 Log.Error(ex, "Error processing serial data: {Raw}", raw);
+            }
+        }
+
+        /// <summary>
+        /// تکمیل فیلدهای جامع (CarClass13 و هم‌خانواده) قبل از ذخیره در [Vehicles].
+        /// </summary>
+        private async Task PopulateComprehensiveFieldsAsync(VehicleDto vehicle, PlateResultDto plate)
+        {
+            try
+            {
+                bool plateRead = plate != null &&
+                                 !string.IsNullOrEmpty(plate.PlateNumber) &&
+                                 plate.PlateNumber != "---" &&
+                                 plate.Confidence >= (_classificationSettings?.MinConfidence ?? 0.65f);
+
+                vehicle.PlateConfidence = plate?.Confidence;
+                vehicle.PlateReadStatus = plateRead ? 1 : 0;
+                vehicle.PlateReadAt = plateRead ? DateTime.Now : (DateTime?)null;
+
+                vehicle.VehicleLen = VehicleClassifier.ComputeVehicleLength(vehicle);
+                vehicle.VehicleClass = VehicleClassifier.Classify(vehicle, _classificationSettings);
+
+                // 🔥 Overweight: تفاوت وزن واقعی با حداکثر وزن مجاز کلاس
+                if (vehicle.VehicleClass.HasValue && vehicle.TotalWeight.HasValue)
+                {
+                    if (_classificationSettings.MaxAllowedWeightByClass.TryGetValue(vehicle.VehicleClass.Value, out var maxAllowed))
+                        vehicle.TotalOverWeight = Math.Max(0, vehicle.TotalWeight.Value - maxAllowed);
+                }
+
+                // 🔥 WrongDirection: جهت گزارش‌شده دوربین با جهت مورد انتظار ناسازگار است
+                var expected = _classificationSettings?.ExpectedDirection ?? 1;
+                vehicle.WrongDirection = (plate?.Direction ?? 0) != 0 &&
+                                         (plate?.Direction != expected);
+
+                // 🔥 Allowed: پلاک خوانده‌شده و وزن در محدوده مجاز
+                vehicle.Allowed = plateRead && (vehicle.TotalOverWeight) <= 0;
+
+                // 🔥 موقعیت جغرافیایی ایستگاه (فقط یک‌بار برداشت)
+                if ((vehicle.Latitude == null || vehicle.Longitude == null) && _geoLocation != null)
+                {
+                    var geo = await _geoLocation.GetPositionAsync();
+                    vehicle.Latitude = geo?.Latitude;
+                    vehicle.Longitude = geo?.Longitude;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to populate comprehensive vehicle fields");
             }
         }
 

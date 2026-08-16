@@ -229,6 +229,18 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     ADC3 = v.ADC3,
                     ADC4 = v.ADC4,
 
+                    // 🔥 فیلدهای جامع (CarClass13 و هم‌خانواده)
+                    PlateConfidence = v.PlateConfidence ?? plate?.Confidence,
+                    PlateReadStatus = v.PlateReadStatus ?? (plate != null && !string.IsNullOrEmpty(plate.PlateNumber) ? 1 : 0),
+                    PlateReadAt = v.PlateReadAt,
+                    Allowed = v.Allowed,
+                    WrongDirection = v.WrongDirection,
+                    VehicleClass = v.VehicleClass,
+                    Longitude = v.Longitude,
+                    Latitude = v.Latitude,
+                    VehicleLen = v.VehicleLen,
+                    TotalOverWeight = v.TotalOverWeight,
+
                     Axles = v.Axles.Select(a => new AxleEntity
                     {
                         AxleIndex = a.AxleIndex,

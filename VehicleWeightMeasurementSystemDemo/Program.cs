@@ -3,11 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
+using VehicleWeightMeasurementSystemDemo.Infrastructure;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Serial;
@@ -125,6 +127,12 @@ namespace VehicleWeightMeasurementSystemDemo
             builder.Services.AddSingleton<IPlateRecognitionEngine, SatpaRecognitionEngine>();
             builder.Services.AddSingleton<IPlateImageProcessor, PlateImageProcessor>();
             builder.Services.AddSingleton<IPlateRecognitionService, PlateRecognitionService>();
+
+            builder.Services.AddSingleton<IGeoLocationService, WindowsGeoLocationService>();
+
+            // 🔹 Bind classification config
+            builder.Services.Configure<VehicleClassificationSettings>(
+                builder.Configuration.GetSection("VehicleClassification"));
 
 
             // 🔹 Bind config
