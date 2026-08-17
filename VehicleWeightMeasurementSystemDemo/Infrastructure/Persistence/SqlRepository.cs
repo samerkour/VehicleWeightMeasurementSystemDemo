@@ -221,7 +221,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     LineId = v.LineId,
 
                     AxleCount = v.AxleCount,
-                    TotalWeight = v.TotalWeight == null ? null : (double?)((decimal)v.TotalWeight.Value * weightAlpha),
+                    TotalWeight = v.TotalWeight == null ? null : (double?)(int)Math.Round((decimal)v.TotalWeight.Value * weightAlpha),
                     AverageSpeed = v.Speed,
 
                     ADC1 = v.ADC1,
@@ -244,7 +244,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     Axles = v.Axles.Select(a => new AxleEntity
                     {
                         AxleIndex = a.AxleIndex,
-                        Weight = a.Weight.HasValue ? (double)((decimal)a.Weight.Value * weightAlpha) : 0,
+                        Weight = a.Weight.HasValue ? (int)Math.Round((decimal)a.Weight.Value * weightAlpha) : 0,
                         TimeMs = a.TimeMs == 0 ? null : a.TimeMs,
                         Distance = a.Distance == 0 ? null : (double?)(a.Distance * (double)axleAlpha),
                         LengthToNext = a.Distance == 0 ? null : (double?)(a.Distance * (double)axleAlpha)
