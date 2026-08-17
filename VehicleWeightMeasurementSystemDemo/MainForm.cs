@@ -104,7 +104,7 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 Name = "LineName",
                 HeaderText = "Line",
-                DataPropertyName = "LineId",
+                DataPropertyName = "LineName",
                 FillWeight = 10
             });
 
@@ -856,7 +856,17 @@ namespace VehicleWeightMeasurementSystemDemo
                     lblRecordCounts.Text = $"(HasPlate {hasPlate} / Total {total})";
                 }
 
-                var data = await _repo.GetAllAsync();
+var result = await _repo.SearchAsync(
+                    from: DateTime.MinValue,
+                    to: DateTime.Now,
+                    lineId: null,
+                    plate: string.Empty,
+                    minWeight: null,
+                    maxWeight: null,
+                    overweight: false,
+                    page: 1,
+                    pageSize: 100);
+                var data = result.Items;
 
                 if (dgvRecords.IsDisposed || !dgvRecords.IsHandleCreated)
                     return;

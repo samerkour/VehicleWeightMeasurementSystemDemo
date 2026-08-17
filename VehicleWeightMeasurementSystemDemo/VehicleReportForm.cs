@@ -453,10 +453,12 @@ namespace VehicleWeightMeasurementSystemDemo
 
             try
             {
-                var data = await _repo.SearchAsync(
+                var result = await _repo.SearchAsync(
                 dtFrom.Value, dtTo.Value, cmbLine.SelectedItem as int?,
                 txtPlate.Text, (double)nudMinWeight.Value,
-                (double)nudMaxWeight.Value, chkOverweight.Checked);
+                (double)nudMaxWeight.Value, chkOverweight.Checked,
+                page: 1, pageSize: int.MaxValue);
+                var data = result.Items;
 
                 if (data.Count == 0)
                 {
@@ -664,7 +666,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
             try
             {
-                var (items, total) = await _repo.SearchPagedAsync(
+                var (items, total) = await _repo.SearchAsync(
                     dtFrom.Value,
                     dtTo.Value,
                     cmbLine.SelectedItem as int?,

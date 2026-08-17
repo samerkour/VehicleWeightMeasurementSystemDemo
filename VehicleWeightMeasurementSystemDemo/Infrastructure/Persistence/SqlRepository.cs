@@ -74,82 +74,6 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
         //    return (items, total);
         //}
 
-        public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchPagedAsync(
-            DateTime from, DateTime to, int? lineId, string plate,
-            double? minWeight, double? maxWeight, bool overweight,
-            int page, int pageSize)
-        {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 50;
-
-            // بدون Skip/Take در دیتابیس
-            var all = await SearchAsync(from, to, lineId, plate, minWeight, maxWeight, overweight);
-
-            var items = all
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            return (items, all.Count);
-        }
-
-
-        public async Task<List<VehicleDto>> GetAllAsync()
-        {
-            await using var _context = await CreateContextAsync();
-
-            return await _context.Vehicles
-                .AsNoTracking()
-                .Include(v => v.Axles)   // 🔥 IMPORTANT
-                .OrderByDescending(v => v.Timestamp)
-                .Take(200)
-                .Select(v => new VehicleDto
-                    {
-                        Id = v.Id,
-                        Timestamp = v.Timestamp,
-                        PlateNumber = v.PlateNumber,
-                        Speed = v.Speed,
-                        AxleCount = v.AxleCount,
-                        TotalWeight = v.Axles.Sum(a => a.Weight),
-
-                        LineId = v.LineId ?? 0,
-                        LineName = v.Line.LineName,
-
-                        ADC1 = v.ADC1,
-                        ADC2 = v.ADC2,
-                        ADC3 = v.ADC3,
-                        ADC4 = v.ADC4,
-
-
-                        // 🔥 MAP AXLES
-                        AxleWeight1 = v.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight2 = v.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight3 = v.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight4 = v.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight5 = v.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight6 = v.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
-
-
-                        Axle12 = v.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle23 = v.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle34 = v.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle45 = v.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle56 = v.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-
-                        // 🔥 ADD THIS
-                        Axles = v.Axles
-                                    .OrderBy(a => a.AxleIndex)
-                                    .Select(a => new AxleDto
-                                        {
-                                            AxleIndex = a.AxleIndex,
-                                            Weight = a.Weight,
-                                            TimeMs = a.TimeMs ?? 0,
-                                            Distance = a.Distance ?? 0
-                                        }).ToList()
-                                })
-                                .ToListAsync();
-        }
-
         public async Task<List<int>> GetActiveLineIdsAsync()
         {
             await using var _context = await CreateContextAsync();
@@ -308,15 +232,20 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<List<VehicleReportDto>> SearchAsync(
+        public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchAsync(
             DateTime from,
             DateTime to,
             int? lineId,
             string plate,
             double? minWeight,
             double? maxWeight,
-            bool overweight)
+            bool overweight,
+            int page = 1,
+            int pageSize = 100)
         {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 100;
+
             await using var _context = await CreateContextAsync();
 
             var query = _context.Vehicles
@@ -382,7 +311,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             }
 
 
-            return await query
+            var all = await query
             .OrderByDescending(x => x.Timestamp)
             .Select(x => new VehicleReportDto
             {
@@ -415,6 +344,12 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             })
             .ToListAsync();
 
+            var items = all
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return (items, all.Count);
         }
 
     }
