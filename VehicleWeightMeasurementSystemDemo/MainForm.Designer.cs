@@ -75,6 +75,7 @@ namespace VehicleWeightMeasurementSystemDemo
             overviewCameraSettingsToolStripMenuItem = new ToolStripMenuItem();
             weightSettingsToolStripMenuItem = new ToolStripMenuItem();
             axleSettingsToolStripMenuItem = new ToolStripMenuItem();
+            vehicleClassificationSettingsToolStripMenuItem = new ToolStripMenuItem();
             databaseSettingsToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
@@ -475,7 +476,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // 
             // settingsToolStripMenuItem
             // 
-            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, overviewCameraSettingsToolStripMenuItem, weightSettingsToolStripMenuItem, axleSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { serialPortSettingsToolStripMenuItem, cameraSettingsToolStripMenuItem, overviewCameraSettingsToolStripMenuItem, weightSettingsToolStripMenuItem, axleSettingsToolStripMenuItem, vehicleClassificationSettingsToolStripMenuItem, databaseSettingsToolStripMenuItem });
             settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             settingsToolStripMenuItem.Size = new Size(76, 24);
             settingsToolStripMenuItem.Text = "Settings";
@@ -514,6 +515,13 @@ namespace VehicleWeightMeasurementSystemDemo
             axleSettingsToolStripMenuItem.Size = new Size(265, 26);
             axleSettingsToolStripMenuItem.Text = "Axle Settings";
             axleSettingsToolStripMenuItem.Click += axleSettingsToolStripMenuItem_Click;
+            // 
+            // vehicleClassificationSettingsToolStripMenuItem
+            // 
+            vehicleClassificationSettingsToolStripMenuItem.Name = "vehicleClassificationSettingsToolStripMenuItem";
+            vehicleClassificationSettingsToolStripMenuItem.Size = new Size(265, 26);
+            vehicleClassificationSettingsToolStripMenuItem.Text = "Vehicle Classification";
+            vehicleClassificationSettingsToolStripMenuItem.Click += vehicleClassificationSettingsToolStripMenuItem_Click;
             // 
             // databaseSettingsToolStripMenuItem
             // 
@@ -635,6 +643,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private ToolStripMenuItem databaseSettingsToolStripMenuItem;
         private ToolStripMenuItem weightSettingsToolStripMenuItem;
         private ToolStripMenuItem axleSettingsToolStripMenuItem;
+        private ToolStripMenuItem vehicleClassificationSettingsToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
 
         private PictureBox picCam1;

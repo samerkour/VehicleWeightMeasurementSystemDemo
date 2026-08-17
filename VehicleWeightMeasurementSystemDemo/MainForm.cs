@@ -1421,6 +1421,52 @@ namespace VehicleWeightMeasurementSystemDemo
                 "Axle Settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private void vehicleClassificationSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var current = _config.GetSection("VehicleClassification").Get<VehicleClassificationSettings>();
+            if (current == null)
+            {
+                MessageBox.Show("VehicleClassification not found in configuration.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var form = new VehicleClassificationSettingsForm(current);
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            var updated = form.Settings;
+
+            var weights = new System.Text.Json.Nodes.JsonObject();
+            foreach (var kvp in updated.MaxAllowedWeightByClass)
+                weights[kvp.Key.ToString()] = kvp.Value;
+
+            var section = new System.Text.Json.Nodes.JsonObject
+            {
+                ["SedanMaxWeight"] = updated.SedanMaxWeight,
+                ["PickupMaxWeight"] = updated.PickupMaxWeight,
+                ["LightTruckMaxWeight"] = updated.LightTruckMaxWeight,
+                ["Truck3MaxWeight"] = updated.Truck3MaxWeight,
+                ["Truck4MaxWeight"] = updated.Truck4MaxWeight,
+                ["ExpectedDirection"] = updated.ExpectedDirection,
+                ["MinConfidence"] = updated.MinConfidence,
+                ["MaxAllowedWeightByClass"] = weights
+            };
+
+            if (!SaveConfigSection("VehicleClassification", section))
+            {
+                MessageBox.Show("Failed to save vehicle classification settings.",
+                    "Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _classificationSettings = updated;
+
+            MessageBox.Show(this,
+                "Vehicle classification settings saved. Changes take effect for new records.",
+                "Vehicle Classification", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         private void ApplySerialSettings(SerialPortSettings settings)
         {
             try
