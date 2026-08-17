@@ -856,7 +856,7 @@ namespace VehicleWeightMeasurementSystemDemo
                     lblRecordCounts.Text = $"(HasPlate {hasPlate} / Total {total})";
                 }
 
-var result = await _repo.SearchAsync(
+                var result = await _repo.SearchAsync(
                     from: DateTime.MinValue,
                     to: DateTime.Now,
                     lineId: null,
