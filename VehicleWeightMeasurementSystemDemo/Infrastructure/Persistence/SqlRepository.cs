@@ -102,7 +102,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .AsNoTracking()
                 .Include(v => v.Axles)   // 🔥 IMPORTANT
                 .OrderByDescending(v => v.Timestamp)
-                .Take(100)
+                .Take(200)
                 .Select(v => new VehicleDto
                     {
                         Id = v.Id,
