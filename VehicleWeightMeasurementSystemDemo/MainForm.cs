@@ -12,6 +12,7 @@ using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Serial;
+using VehicleWeightMeasurementSystemDemo.Reports;
 using VehicleWeightMeasurementSystemDemo.Theming;
 
 namespace VehicleWeightMeasurementSystemDemo
@@ -60,6 +61,10 @@ namespace VehicleWeightMeasurementSystemDemo
 
         // جلوگیری از فراخوانی مجدد هنگام Reload گرید (SetCurrentCellAddressCore)
         private bool _isReloadingGrid;
+
+        // SATPA (native) و پره‌پایپل پردازش خودرو thread-safe نیستند؛
+        // یک درگاه واحد همه فریم‌های سریال را سری می‌کند تا تصویر به‌تصویر پردازش شوند.
+        private readonly SemaphoreSlim _processingGate = new(1, 1);
 
         private sealed class PendingImage
         {
@@ -484,11 +489,23 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 try
                 {
-                    pic.Invoke(() =>
+                    // BeginInvoke → بدون بلوکه کردن ترد استریم دوربین وقتی UI مشغول است
+                    pic.BeginInvoke(() =>
                     {
-                        var old = pic.Image;
-                        pic.Image = newImage;
-                        old?.Dispose();
+                        try
+                        {
+                            if (pic.IsDisposed || !pic.IsHandleCreated)
+                            {
+                                newImage.Dispose();
+                                return;
+                            }
+
+                            var old = pic.Image;
+                            pic.Image = newImage;
+                            old?.Dispose();
+                        }
+                        catch (ObjectDisposedException) { newImage.Dispose(); }
+                        catch (InvalidOperationException) { newImage.Dispose(); }
                     });
                 }
                 catch (ObjectDisposedException) { newImage.Dispose(); }
@@ -532,37 +549,54 @@ namespace VehicleWeightMeasurementSystemDemo
             return axle?.DistanceDisplay ?? "-";
         }
 
-        private void UpdateImageUI(string? imagePath, PlateResultDto? plate)
+        /// <summary>
+        /// خواندن/دکد تصویر در ترد پس‌زمینه، فقط انتساب به PictureBox در ترد UI.
+        /// </summary>
+        private async Task ShowImageAsync(string? imagePath, PlateResultDto? plate)
         {
-            lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
+            Bitmap? bitmap = null;
 
-            if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
+            if (!string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath))
             {
-                Log.Warning("UpdateImageUI skipped, image unavailable: {Path}", imagePath);
+                bitmap = await Task.Run(() =>
+                {
+                    try
+                    {
+                        using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var ms = new MemoryStream();
+                        fs.CopyTo(ms);
+                        ms.Position = 0;
+
+                        using var img = Image.FromStream(ms);
+                        return new Bitmap(img);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("Failed to decode image {Path}: {Message}", imagePath, ex.Message);
+                        return null;
+                    }
+                });
+            }
+
+            if (_shuttingDown || IsDisposed || Disposing)
+            {
+                bitmap?.Dispose();
                 return;
             }
 
-            try
+            await RunOnUiAsync(() =>
             {
-                using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var ms = new MemoryStream();
+                lblDetectedPlate.Text = $"Detected Plate No: {plate?.PlateNumber}";
 
-                fs.CopyTo(ms);
-                ms.Position = 0;
+                if (bitmap != null && !pictureBoxVehicle.IsDisposed && pictureBoxVehicle.IsHandleCreated)
+                {
+                    var old = pictureBoxVehicle.Image;
+                    pictureBoxVehicle.Image = bitmap;
+                    old?.Dispose();
+                }
 
-                using var img = Image.FromStream(ms);
-                var bitmap = new Bitmap(img);
-
-                var old = pictureBoxVehicle.Image;
-                pictureBoxVehicle.Image = bitmap;
-                old?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Log.Warning("Failed to display image {Path}: {Message}", imagePath, ex.Message);
-            }
-
-            UpdatePlateImageUI(plate?.PlateImage);
+                UpdatePlateImageUI(plate?.PlateImage);
+            });
         }
 
         private void UpdatePlateImageUI(Bitmap? plateImage)
@@ -590,6 +624,10 @@ namespace VehicleWeightMeasurementSystemDemo
             if (_shuttingDown)
                 return;
 
+            // درگاه واحد: فقط یک فریم در لحظه پردازش می‌شود.
+            // (SATPA native single-thread است؛ پردازش هم‌زمان چند فریم = پلاک‌های ازدست‌رفته)
+            await _processingGate.WaitAsync();
+
             try
             {
                 var vehicle = VehicleParser.Parse(raw);
@@ -616,7 +654,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 else if (await WaitForFileReadySafe(imagePath))
                 {
                     // 🔥 2. فایل آماده است → استخراج پلاک
-                    plate = _plateService.Extract(imagePath);
+                    plate = await Task.Run(() => _plateService.Extract(imagePath));
                 }
                 else
                 {
@@ -627,16 +665,26 @@ namespace VehicleWeightMeasurementSystemDemo
                 await PopulateComprehensiveFieldsAsync(vehicle, plate);
 
                 // رکورد حتی بدون عکس هم ذخیره می‌شود تا داده وزن گم نشود
-                await _repo.SaveAsync(vehicle, imagePath, plate, _axleAlpha, _alpha);
+                try
+                {
+                    await _repo.SaveAsync(vehicle, imagePath, plate, _axleAlpha, _alpha);
+                    await LoadGrid();
+                }
+                catch (Exception saveEx)
+                {
+                    Log.Error(saveEx, "Save failed, image still shown: {Raw}", raw);
+                }
 
-                await LoadGrid();
-
-                // 🔥 5. UI Image
-                await RunOnUiAsync(() => UpdateImageUI(imagePath, plate));
+                // 🔥 5. UI Image (همیشه نمایش داده شود، حتی اگر ذخیره/گرید خطا داد)
+                await ShowImageAsync(imagePath, plate);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error processing serial data: {Raw}", raw);
+            }
+            finally
+            {
+                _processingGate.Release();
             }
         }
 
@@ -839,56 +887,43 @@ namespace VehicleWeightMeasurementSystemDemo
 
             try
             {
-                var (hasPlate, total) = await _repo.GetRecordCountsAsync();
+                // 🔥 کل کوئری‌ها روی ترد پس‌زمینه اجرا شوند تا UI و استریم دوربین بلوکه نشوند
+                var (hasPlate, total, data) = await Task.Run(async () =>
+                {
+                    if (_shuttingDown)
+                        return (0, 0, new List<VehicleReportDto>());
 
-                if (_shuttingDown || lblRecordCounts.IsDisposed || !lblRecordCounts.IsHandleCreated)
+                    var (hasPlate, total) = await _repo.GetRecordCountsAsync();
+
+                    if (_shuttingDown)
+                        return (hasPlate, total, new List<VehicleReportDto>());
+
+                    var result = await _repo.SearchAsync(
+                        from: DateTime.MinValue,
+                        to: DateTime.Now,
+                        lineId: null,
+                        plate: string.Empty,
+                        minWeight: null,
+                        maxWeight: null,
+                        overweight: false,
+                        page: 1,
+                        pageSize: 100);
+
+                    return (hasPlate, total, result.Items);
+                });
+
+                if (_shuttingDown)
                     return;
 
-                if (lblRecordCounts.InvokeRequired)
+                // فقط به‌روزرسانی UI روی ترد اصلی
+                await RunOnUiAsync(() =>
                 {
-                    lblRecordCounts.Invoke(() =>
-                    {
+                    if (!lblRecordCounts.IsDisposed && lblRecordCounts.IsHandleCreated)
                         lblRecordCounts.Text = $"(HasPlate {hasPlate} / Total {total})";
-                    });
-                }
-                else
-                {
-                    lblRecordCounts.Text = $"(HasPlate {hasPlate} / Total {total})";
-                }
 
-                var result = await _repo.SearchAsync(
-                    from: DateTime.MinValue,
-                    to: DateTime.Now,
-                    lineId: null,
-                    plate: string.Empty,
-                    minWeight: null,
-                    maxWeight: null,
-                    overweight: false,
-                    page: 1,
-                    pageSize: 100);
-                var data = result.Items;
+                    if (dgvRecords.IsDisposed || !dgvRecords.IsHandleCreated)
+                        return;
 
-                if (dgvRecords.IsDisposed || !dgvRecords.IsHandleCreated)
-                    return;
-
-                if (dgvRecords.InvokeRequired)
-                {
-                    dgvRecords.Invoke(() =>
-                    {
-                        try
-                        {
-                            _isReloadingGrid = true;
-                            dgvRecords.DataSource = null;
-                            dgvRecords.DataSource = data;
-                        }
-                        finally
-                        {
-                            _isReloadingGrid = false;
-                        }
-                    });
-                }
-                else
-                {
                     _isReloadingGrid = true;
                     try
                     {
@@ -899,7 +934,7 @@ namespace VehicleWeightMeasurementSystemDemo
                     {
                         _isReloadingGrid = false;
                     }
-                }
+                });
             }
             catch (ObjectDisposedException) { }
             catch (Exception ex)

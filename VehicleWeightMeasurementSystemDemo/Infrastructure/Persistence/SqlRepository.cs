@@ -216,11 +216,11 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     CapturedAt = file?.CreationTime ?? DateTime.Now,
                     ImportedAt = DateTime.Now,
 
-                    // 🔥 Plate split SAFE
-                    PlateP1 = plateParts[3],
-                    PlateP2 = plateParts[2],
-                    PlateP3 = plateParts[1],
-                    PlateP4 = plateParts[0],
+                    // 🔥 Plate split SAFE (columns are NOT NULL → never pass null)
+                    PlateP1 = plateParts[3] ?? "-",
+                    PlateP2 = plateParts[2] ?? "-",
+                    PlateP3 = plateParts[1] ?? "-",
+                    PlateP4 = plateParts[0] ?? "-",
 
                     PlateConfidence = plate?.Confidence,
                     PlateReadStatus = plate != null ? 1 : 0,
