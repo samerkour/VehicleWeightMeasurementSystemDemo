@@ -41,4 +41,19 @@ public sealed class RahdariOptions
 
     public decimal? StationLongitude { get; set; }
     public decimal? StationLatitude { get; set; }
+
+    /// <summary>
+    /// When true, probes Rahdari service reachability (and optionally general internet via
+    /// <see cref="InternetCheckUrl"/>) before each send cycle and skips sending while unhealthy.
+    /// </summary>
+    public bool EnableHealthCheck { get; set; } = true;
+
+    /// <summary>
+    /// Optional URL used to verify general internet connectivity before sending.
+    /// Empty or whitespace skips the internet probe (service reachability is still checked).
+    /// </summary>
+    public string InternetCheckUrl { get; set; } = string.Empty;
+
+    /// <summary>Timeout (ms) for health probes.</summary>
+    public int HealthCheckTimeoutMs { get; set; } = 5000;
 }

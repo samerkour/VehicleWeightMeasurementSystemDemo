@@ -11,6 +11,8 @@ public sealed class RahdariSyncStatus
 
     public RahdariSyncEvent? LastEvent { get; private set; }
 
+    public long SentCount { get; private set; }
+
     public IReadOnlyList<RahdariSyncEvent> RecentEvents
     {
         get
@@ -21,6 +23,14 @@ public sealed class RahdariSyncStatus
     }
 
     public event Action? Changed;
+
+    public void RecordSent()
+    {
+        lock (_gate)
+            SentCount++;
+
+        Changed?.Invoke();
+    }
 
     public void RecordSuccess(string operation, string summary, long? photoId = null, long? validationCode = null)
     {

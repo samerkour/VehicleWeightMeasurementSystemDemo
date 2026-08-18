@@ -28,11 +28,11 @@ public sealed class DatabaseHealthService : IHostedService
 
             await using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync(cancellationToken);
-            _logger.LogInformation("SQL OK FarasooCamera Database={Database}", connection.Database);
+            _logger.LogInformation("Ok, SQL connetion to Database={Database}", connection.Database);
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "Cannot connect to FarasooCamera");
+            _logger.LogCritical(ex, "Cannot connect to Database");
         }
     }
 

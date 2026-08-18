@@ -14,7 +14,10 @@ public sealed class RmtoSendService
     private readonly RahdariTtoClient _rahadri;
     private readonly TtoImageService _images;
     private readonly RahdariSyncStatus _syncStatus;
+    private readonly RahdariHealthCheck _healthCheck;
     private readonly ILogger<RmtoSendService> _logger;
+    private bool _lastHealthOk = true;
+    private DateTime _lastHealthWarnUtc = DateTime.MinValue;
 
     public RmtoSendService(
         IOptions<RmtoSyncOptions> options,
@@ -23,6 +26,7 @@ public sealed class RmtoSendService
         RahdariTtoClient rahdari,
         TtoImageService images,
         RahdariSyncStatus syncStatus,
+        RahdariHealthCheck healthCheck,
         ILogger<RmtoSendService> logger)
     {
         _options = options.Value;
@@ -31,11 +35,15 @@ public sealed class RmtoSendService
         _rahadri = rahdari;
         _images = images;
         _syncStatus = syncStatus;
+        _healthCheck = healthCheck;
         _logger = logger;
     }
 
     public async Task<int> RunCycleAsync(CancellationToken ct)
     {
+        if (!await EnsureServiceHealthyAsync(ct))
+            return 0;
+
         await ExpireOverdueImageWindowsAsync(ct);
 
         var processed = 0;
@@ -217,6 +225,57 @@ public sealed class RmtoSendService
         return sent;
     }
 
+    private async Task<bool> EnsureServiceHealthyAsync(CancellationToken ct)
+    {
+        if (!_rahdariOptions.EnableHealthCheck)
+            return true;
+
+        var health = await _healthCheck.CheckAsync(ct);
+        if (health.IsHealthy)
+        {
+            if (!_lastHealthOk)
+            {
+                _logger.LogInformation(
+                    "Rahdari health check recovered — resuming sends. {Detail}",
+                    DescribeHealth(health));
+                _syncStatus.RecordSuccess(
+                    "health check",
+                    $"سرویس راهداری دوباره در دسترس است — {DescribeHealth(health)}");
+            }
+
+            _lastHealthOk = true;
+            return true;
+        }
+
+        var wasOk = _lastHealthOk;
+        _lastHealthOk = false;
+        var now = DateTime.UtcNow;
+
+        if (wasOk || now - _lastHealthWarnUtc > TimeSpan.FromMinutes(1))
+        {
+            _lastHealthWarnUtc = now;
+            _logger.LogWarning(
+                "Rahdari health check failed — skipping send cycle. {Detail}",
+                DescribeHealth(health));
+            _syncStatus.RecordFailure("health check", new RahdariResultExplanation(
+                Title: "سرویس راهداری در دسترس نیست",
+                Summary: $"ارسال در این دور متوقف شد — {DescribeHealth(health)}",
+                Operation: "health check",
+                Source: "Rahdari HealthCheck"));
+        }
+
+        return false;
+    }
+
+    private static string DescribeHealth(RahdariHealthResult health)
+    {
+        var parts = new List<string>();
+        if (health.InternetCheckConfigured)
+            parts.Add($"Internet: {health.InternetMessage}");
+        parts.Add($"Service: {health.ServiceMessage}");
+        return string.Join(" | ", parts);
+    }
+
     private async Task<bool> TryCompleteWithImagesAsync(CameraPhotoRecord photo, TtoPayload payload, CancellationToken ct)
     {
         if (photo.TerminalImageExpired == true)
@@ -263,6 +322,8 @@ public sealed class RmtoSendService
         _logger.LogInformation(
             "Sent to Rahdari terminal PhotoId={PhotoId} Plate={Plate} Ref={Ref} CarClass13={Class}",
             photo.PhotoId, photo.PlateNoCompact, reference, photo.CarClass13 ?? _rahdariOptions.DefaultCarClass13);
+
+        _syncStatus.RecordSent();
     }
 
     private async Task HandleSendFailureAsync(CameraPhotoRecord photo, Exception ex, CancellationToken ct)

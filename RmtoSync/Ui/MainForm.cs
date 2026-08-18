@@ -192,7 +192,7 @@ public sealed class MainForm : Form
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
 
-            var sql = HostBootstrap.TryGetDataSource(config.GetConnectionString("FarasooCamera"));
+            var sql = HostBootstrap.TryGetDataSource(config.GetConnectionString("DefaultConnection"));
             var rahdariUrl = config["Rahdari:ServiceUrl"] ?? "(not set)";
             var pollMs = config.GetValue("RmtoSync:PollIntervalMs", 2000);
 
@@ -200,6 +200,7 @@ public sealed class MainForm : Form
                 $"SQL Server: {sql}\r\n" +
                 $"Rahdari: {rahdariUrl}\r\n" +
                 $"Send interval: {pollMs} ms\r\n" +
+                $"Sent: {_syncStatus?.SentCount ?? 0} records\r\n" +
                 $"Status: {(_host is null ? "Stopped" : "Running")}";
         }
         catch (Exception ex)
@@ -309,7 +310,11 @@ public sealed class MainForm : Form
 
         try
         {
-            BeginInvoke(UpdateLastResultLabel);
+            BeginInvoke(() =>
+            {
+                UpdateLastResultLabel();
+                UpdateStatusText();
+            });
         }
         catch (ObjectDisposedException)
         {

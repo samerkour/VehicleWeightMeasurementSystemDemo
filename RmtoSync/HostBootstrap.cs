@@ -91,6 +91,7 @@ public static class HostBootstrap
 
         builder.Services.AddSingleton<RahdariSyncStatus>();
         builder.Services.AddSingleton<CameraPhotoQueueRepository>();
+        builder.Services.AddSingleton<RahdariHealthCheck>();
         builder.Services.AddSingleton<RahdariTtoClient>();
         builder.Services.AddSingleton<TtoImageService>();
         builder.Services.AddSingleton<RmtoSendService>();
