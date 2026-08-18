@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Printing;
@@ -17,11 +18,40 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
     {
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
+        // SQL Server 2008 R2 and below don't support OFFSET/FETCH used by EF Core Skip/Take
+        private static readonly Lazy<bool> SupportsServerSidePaging = new(DetectServerSidePaging);
+
         public SqlRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
             _contextFactory = contextFactory;
         }
 
+
+        private static bool DetectServerSidePaging()
+        {
+            try
+            {
+                var configuration = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                    .Build();
+
+                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                if (string.IsNullOrWhiteSpace(connectionString))
+                    return true;
+
+                using var conn = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT compatibility_level FROM sys.databases WHERE database_id = DB_ID()";
+                var level = cmd.ExecuteScalar();
+                return level != null && Convert.ToInt32(level) >= 110;
+            }
+            catch
+            {
+                return true;
+            }
+        }
 
         private async Task<AppDbContext> CreateContextAsync()
         {
@@ -311,45 +341,91 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             }
 
 
-            var all = await query
-            .OrderByDescending(x => x.Timestamp)
-            .Select(x => new VehicleReportDto
+            var totalCount = await query.CountAsync();
+
+            List<VehicleReportDto> items;
+
+            if (SupportsServerSidePaging.Value)
             {
-                Id = x.Id,
-                Timestamp = x.Timestamp,
-                PlateNumber = x.PlateNumber,
-                LineName = x.Line.LineName,
-                Speed = x.Speed,
-                TotalWeight = x.TotalWeight,
-                AxleCount = x.AxleCount,
-                Overweight = x.TotalOverWeight > 0,
+                // SQL Server 2012+ → paging in database (OFFSET/FETCH)
+                items = await query
+                    .OrderByDescending(x => x.Timestamp)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(x => new VehicleReportDto
+                    {
+                        Id = x.Id,
+                        Timestamp = x.Timestamp,
+                        PlateNumber = x.PlateNumber,
+                        LineName = x.Line.LineName,
+                        Speed = x.Speed,
+                        TotalWeight = x.TotalWeight,
+                        AxleCount = x.AxleCount,
+                        Overweight = x.TotalOverWeight > 0,
 
-                ADC1 = x.ADC1,
-                ADC2 = x.ADC2,
-                ADC3 = x.ADC3,
-                ADC4 = x.ADC4,
+                        ADC1 = x.ADC1,
+                        ADC2 = x.ADC2,
+                        ADC3 = x.ADC3,
+                        ADC4 = x.ADC4,
 
-                AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
-                AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
-                AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
-                AxleWeight4 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
-                AxleWeight5 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
-                AxleWeight6 = x.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight4 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight5 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight6 = x.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
 
-                Axle12 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                Axle23 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                Axle34 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                Axle45 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                Axle56 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault()
-            })
-            .ToListAsync();
+                        Axle12 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle23 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle34 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle45 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle56 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault()
+                    })
+                    .ToListAsync();
+            }
+            else
+            {
+                // SQL Server 2008 R2 → OFFSET/FETCH not supported; page in memory
+                var all = await query
+                    .OrderByDescending(x => x.Timestamp)
+                    .Select(x => new VehicleReportDto
+                    {
+                        Id = x.Id,
+                        Timestamp = x.Timestamp,
+                        PlateNumber = x.PlateNumber,
+                        LineName = x.Line.LineName,
+                        Speed = x.Speed,
+                        TotalWeight = x.TotalWeight,
+                        AxleCount = x.AxleCount,
+                        Overweight = x.TotalOverWeight > 0,
 
-            var items = all
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+                        ADC1 = x.ADC1,
+                        ADC2 = x.ADC2,
+                        ADC3 = x.ADC3,
+                        ADC4 = x.ADC4,
 
-            return (items, all.Count);
+                        AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight4 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight5 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
+                        AxleWeight6 = x.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
+
+                        Axle12 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle23 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle34 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle45 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                        Axle56 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault()
+                    })
+                    .ToListAsync();
+
+                items = all
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+            }
+
+            return (items, totalCount);
         }
 
     }
