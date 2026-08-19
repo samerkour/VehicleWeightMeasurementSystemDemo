@@ -121,6 +121,11 @@ public sealed class CameraPhotoQueueRepository
                 && (p.TerminalTtoRegistered ?? false) == ttoRegistered
                 && (p.TerminalImageExpired ?? false) == false
                 && p.PlateReadStatus == 1
+                && p.TotalWeight != 0
+                && p.AverageSpeed != 0
+                && p.VehicleSpeed != 0
+                && p.PlateConfidence != 0
+
             orderby p.PhotoId
             select new { Photo = p, LineCode = l.LineCode };
 

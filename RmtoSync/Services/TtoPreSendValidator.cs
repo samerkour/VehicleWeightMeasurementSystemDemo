@@ -11,6 +11,8 @@ public static class TtoPreSendValidator
         if (payload.ReferenceNo <= 0)
             throw new RahdariSendException(payload.ReferenceNo, "ReferenceNo is required and must be greater than zero");
 
+        PlateValidationService.AssertValid(payload.Plate, payload.ReferenceNo);
+
         var now = DateTime.Now;
         if (payload.PassDateTime > now.AddMinutes(1))
             throw new RahdariSendException(payload.ReferenceNo, "PassDateTime cannot be in the future");

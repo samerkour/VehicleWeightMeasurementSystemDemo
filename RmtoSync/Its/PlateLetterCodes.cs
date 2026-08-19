@@ -45,12 +45,19 @@ public static class PlateLetterCodes
 
     public const string UnknownCode = "00";
 
+    /// <summary>Official ITS table 1-1 — Persian plate letters → two-digit codes.</summary>
+    public static IReadOnlyDictionary<string, string> PersianLetters => PersianToCode;
+
+    /// <summary>Official ITS table 1-1 — Latin plate letters → two-digit codes (A=51 … Z=76).</summary>
+    public static IReadOnlyDictionary<string, string> LatinLetters => LatinToCode;
+
     public static string MapPersianLetter(string? letter)
     {
         if (string.IsNullOrWhiteSpace(letter))
             return UnknownCode;
 
-        return PersianToCode.TryGetValue(letter.Trim(), out var code) ? code : UnknownCode;
+        var normalized = PersianPlateNormalizer.NormalizeLetters(letter).Trim();
+        return normalized.Length > 0 && PersianToCode.TryGetValue(normalized, out var code) ? code : UnknownCode;
     }
 
     public static string MapLatinLetter(string? letter)
@@ -58,7 +65,8 @@ public static class PlateLetterCodes
         if (string.IsNullOrWhiteSpace(letter))
             return UnknownCode;
 
-        return LatinToCode.TryGetValue(letter.Trim(), out var code) ? code : UnknownCode;
+        var normalized = PersianPlateNormalizer.NormalizeLetters(letter).Trim();
+        return normalized.Length > 0 && LatinToCode.TryGetValue(normalized, out var code) ? code : UnknownCode;
     }
 
     public static bool IsFormattedLetterCode(string code) =>
