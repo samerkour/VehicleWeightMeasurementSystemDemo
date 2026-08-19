@@ -70,6 +70,9 @@ namespace VehicleWeightMeasurementSystemDemo
         // یک درگاه واحد همه فریم‌های سریال را سری می‌کند تا تصویر به‌تصویر پردازش شوند.
         private readonly SemaphoreSlim _processingGate = new(1, 1);
 
+        // مسیر تصویر اصلی رکورد انتخاب‌شده در گرید (برای باز کردن هنگام کلیک روی پلاک)
+        private string? _selectedPhotoPath;
+
         private sealed class PendingImage
         {
             public string Path { get; init; } = string.Empty;
@@ -342,6 +345,8 @@ namespace VehicleWeightMeasurementSystemDemo
             _cameraWatcher = cameraWatcher;
             _cameraWatcher.OnImageCaptured += HandleImage;
             _cameraWatcher.OnStatusChanged += HandleCameraStatus;
+
+            pictureBoxSelectedPlate.Click += PictureBoxSelectedPlate_Click;
         }
 
         private async void MainForm_Load(object sender, EventArgs e)
@@ -1010,6 +1015,8 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private void ClearSelectedPlate()
         {
+            _selectedPhotoPath = null;
+
             if (pictureBoxSelectedPlate == null || pictureBoxSelectedPlate.IsDisposed)
                 return;
 
@@ -1036,6 +1043,8 @@ namespace VehicleWeightMeasurementSystemDemo
                     return;
                 }
 
+                _selectedPhotoPath = photoPath;
+
                 // کراپ پلاک از تصویر ذخیره‌شده
                 var plate = await Task.Run(() => _plateService.Extract(photoPath));
                 var cropped = plate?.PlateImage;
@@ -1055,6 +1064,39 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 Log.Warning("Failed to load selected plate for vehicle {Id}: {Message}", vehicleId, ex.Message);
                 ClearSelectedPlate();
+            }
+        }
+
+        /// <summary>
+        /// باز کردن تصویر اصلی روی کلیک پلاک انتخاب‌شده.
+        /// </summary>
+        private void PictureBoxSelectedPlate_Click(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_selectedPhotoPath) || !File.Exists(_selectedPhotoPath))
+            {
+                MessageBox.Show(this,
+                    "Original image not found.",
+                    "Image", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                using var process = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo(_selectedPhotoPath)
+                    {
+                        UseShellExecute = true
+                    }
+                };
+                process.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to open original image {Path}", _selectedPhotoPath);
+                MessageBox.Show(this,
+                    $"Failed to open original image:\n{ex.Message}",
+                    "Image", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
