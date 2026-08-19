@@ -50,6 +50,10 @@ namespace VehicleWeightMeasurementSystemDemo
         private bool _serialEnabled;
         private bool _snapshotEnabled;
 
+        private SnapshotCameraSettings? _snapshotCameraSettings;
+
+        private SerialPortSettings? _serialSettings;
+
         // ضریب اعمال‌شده روی مقادیر وزن قبل از نمایش (پیش‌فرض 1.5 از تنظیمات)
         private decimal _alpha = 1.5m;
 
@@ -70,6 +74,54 @@ namespace VehicleWeightMeasurementSystemDemo
         {
             public string Path { get; init; } = string.Empty;
             public DateTime CapturedAtUtc { get; init; }
+        }
+
+        private void Style()
+        {
+            this.BackColor = UITheme.Background;
+            this.Font = new Font("Segoe UI", 10);
+
+            lblSerialStatus.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            lblSerialStatus.ForeColor = UITheme.Success;
+
+            lblCameraStatus.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            lblCameraStatus.ForeColor = UITheme.Success;
+
+            grpVehicleInfo.BackColor = UITheme.CardBack;
+            grpVehicleInfo.ForeColor = Color.Black;
+
+            grpImage.BackColor = UITheme.CardBack;
+            grpImage.ForeColor = Color.Black;
+
+            pictureBoxVehicle.BackColor = Color.Black;
+            pictureBoxVehicle.Padding = new Padding(5);
+
+            lblDetectedPlate.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            lblDetectedPlate.ForeColor = UITheme.Success;
+
+            StyleGrid(dgvRecords);
+
+            grpVehicleInfo.Padding = new Padding(10);
+            grpImage.Padding = new Padding(10);
+        }
+
+        private void StyleGrid(DataGridView grid)
+        {
+            grid.BackgroundColor = Color.White;
+            grid.BorderStyle = BorderStyle.None;
+            grid.EnableHeadersVisualStyles = false;
+
+            grid.ColumnHeadersDefaultCellStyle.BackColor = UITheme.HeaderBack;
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+
+            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(200, 230, 201);
+            grid.DefaultCellStyle.SelectionForeColor = Color.Black;
+
+            grid.RowTemplate.Height = 30;
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250);
+
+            grid.GridColor = UITheme.Border;
         }
 
         private void ConfigureGrid()
@@ -307,15 +359,14 @@ namespace VehicleWeightMeasurementSystemDemo
                 _clockTimer.Start();
 
                 // 🔹 1. Load configurations
-                var serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
-                var snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
-                var ovarviewCamera = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
+                _serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
+                _snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
+                _overviewSettings = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
                 _alpha = _config.GetSection("WeightSettings").Get<WeightSettings>()?.Alpha ?? 1.5m;
                 _axleAlpha = _config.GetSection("AxleSettings").Get<AxleSettings>()?.Alpha ?? 1.0m;
 
-                _serialEnabled = serialSettings?.Enabled == true;
-                _snapshotEnabled = snapshotCameraSettings?.Enabled == true;
-                _overviewSettings = ovarviewCamera;
+                _serialEnabled = _serialSettings?.Enabled == true;
+                _snapshotEnabled = _snapshotCameraSettings?.Enabled == true;
 
                 // 🔹 3. Wire events
                 if (_serialEnabled)
@@ -332,7 +383,7 @@ namespace VehicleWeightMeasurementSystemDemo
                     _plateService.AddCamera(pictureBoxVehicle);
                 }
 
-                StartOverviewCamera(ovarviewCamera);
+                StartOverviewCamera(_overviewSettings);
 
                 _systemRunning = _serialEnabled || _snapshotEnabled;
                 UpdateSystemMenuState();
@@ -345,54 +396,6 @@ namespace VehicleWeightMeasurementSystemDemo
                 MessageBox.Show($"خطا در راه‌اندازی اولیه: {ex.Message}",
                     "Startup", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void Style()
-        {
-            this.BackColor = UITheme.Background;
-            this.Font = new Font("Segoe UI", 10);
-
-            lblSerialStatus.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            lblSerialStatus.ForeColor = UITheme.Success;
-
-            lblCameraStatus.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            lblCameraStatus.ForeColor = UITheme.Success;
-
-            grpVehicleInfo.BackColor = UITheme.CardBack;
-            grpVehicleInfo.ForeColor = Color.Black;
-
-            grpImage.BackColor = UITheme.CardBack;
-            grpImage.ForeColor = Color.Black;
-
-            pictureBoxVehicle.BackColor = Color.Black;
-            pictureBoxVehicle.Padding = new Padding(5);
-
-            lblDetectedPlate.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-            lblDetectedPlate.ForeColor = UITheme.Success;
-
-            StyleGrid(dgvRecords);
-
-            grpVehicleInfo.Padding = new Padding(10);
-            grpImage.Padding = new Padding(10);
-        }
-
-        private void StyleGrid(DataGridView grid)
-        {
-            grid.BackgroundColor = Color.White;
-            grid.BorderStyle = BorderStyle.None;
-            grid.EnableHeadersVisualStyles = false;
-
-            grid.ColumnHeadersDefaultCellStyle.BackColor = UITheme.HeaderBack;
-            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-
-            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(200, 230, 201);
-            grid.DefaultCellStyle.SelectionForeColor = Color.Black;
-
-            grid.RowTemplate.Height = 30;
-            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250);
-
-            grid.GridColor = UITheme.Border;
         }
 
         private void StartOverviewCamera(OverviewCameraSettings? ovarviewCamera)
@@ -643,7 +646,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 await RunOnUiAsync(() => UpdateVehicleUI(vehicle));
 
                 // 🔥 1. صبر برای دریافت مسیر عکس
-                var imagePath = await WaitForImageReadyAsync(vehicle.LineId);
+                var imagePath = await WaitForImageReadyAsync(vehicle.LineId, _snapshotCameraSettings.ImageWaitTimeoutMs);
 
                 PlateResultDto plate = new PlateResultDto();
 
@@ -651,7 +654,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 {
                     Log.Warning("❌ No image found for Line {LineId}", vehicle.LineId);
                 }
-                else if (await WaitForFileReadySafe(imagePath))
+                else if (await WaitForFileReadySafe(imagePath, _snapshotCameraSettings.ImageLookbackMs))
                 {
                     // 🔥 2. فایل آماده است → استخراج پلاک
                     plate = await Task.Run(() => _plateService.Extract(imagePath));

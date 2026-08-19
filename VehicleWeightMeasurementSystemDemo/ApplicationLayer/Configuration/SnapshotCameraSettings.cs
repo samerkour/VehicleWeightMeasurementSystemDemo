@@ -12,7 +12,7 @@ namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration
         public string Filter { get; set; }
         public bool IncludeSubfolders { get; set; }
         public bool Enabled { get; set; }
-        public int ImageLookbackMs { get; set; } = 1500;
-        public int ImageWaitTimeoutMs { get; set; } = 2000;
+        public int ImageLookbackMs { get; set; } = 150;
+        public int ImageWaitTimeoutMs { get; set; } = 1000;
     }
 }
