@@ -181,6 +181,18 @@ namespace VehicleWeightMeasurementSystemDemo
                 var mainForm = scope.ServiceProvider.GetRequiredService<MainForm>();
 
                 Application.Run(mainForm);
+
+                // 🔥 ری‌استارت خودکار: بعد از خروج کامل (پاک‌سازی سرویس‌ها و flush لاگ‌ها)
+                if (mainForm.RestartRequested)
+                {
+                    Log.Information("Relaunching application process...");
+
+                    System.Diagnostics.Process.Start(
+                        new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath)
+                        {
+                            UseShellExecute = true
+                        });
+                }
             }
             catch (Exception ex)
             {

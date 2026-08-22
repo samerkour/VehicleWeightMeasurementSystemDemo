@@ -73,6 +73,14 @@ namespace VehicleWeightMeasurementSystemDemo
         // مسیر تصویر اصلی رکورد انتخاب‌شده در گرید (برای باز کردن هنگام کلیک روی پلاک)
         private string? _selectedPhotoPath;
 
+        // 🔥 ری‌استارت خودکار بعد از ذخیره N رکورد در این اجرا
+        private const int RestartAfterRecords = 1500;
+        private int _persistedCount;
+        private volatile bool _restartRequested;
+
+        /// <summary>Program.Main بعد از بسته‌شدن فرم، در صورت true یک نمونه جدید اجرا می‌کند.</summary>
+        public bool RestartRequested => _restartRequested;
+
         private sealed class PendingImage
         {
             public string Path { get; init; } = string.Empty;
@@ -676,11 +684,25 @@ namespace VehicleWeightMeasurementSystemDemo
                 try
                 {
                     await _repo.SaveAsync(vehicle, imagePath, plate, _axleAlpha, _alpha);
+
+                    _persistedCount++;
+
                     await LoadGrid();
                 }
                 catch (Exception saveEx)
                 {
                     Log.Error(saveEx, "Save failed, image still shown: {Raw}", raw);
+                }
+
+                // 🔥 ری‌استارت خودکار بعد از N رکورد ذخیره‌شده در این اجرا
+                if (!_restartRequested && _persistedCount >= RestartAfterRecords)
+                {
+                    _restartRequested = true;
+                    Log.Information(
+                        "Persisted {Count} records — restarting application",
+                        _persistedCount);
+
+                    await RunOnUiAsync(() => Close());
                 }
 
                 // 🔥 5. UI Image (همیشه نمایش داده شود، حتی اگر ذخیره/گرید خطا داد)
