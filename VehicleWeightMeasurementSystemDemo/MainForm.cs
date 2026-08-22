@@ -705,7 +705,6 @@ namespace VehicleWeightMeasurementSystemDemo
             {
                 bool plateRead = plate != null &&
                                  !string.IsNullOrEmpty(plate.PlateNumber) &&
-                                 plate.PlateNumber != "---" &&
                                  plate.Confidence >= (_classificationSettings?.MinConfidence ?? 0.65f);
 
                 vehicle.PlateConfidence = plate?.Confidence;
@@ -959,7 +958,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 var plateValue = row.Cells["PlateNumber"].Value?.ToString();
 
-                if (string.IsNullOrWhiteSpace(plateValue) || plateValue == "---")
+                if (string.IsNullOrWhiteSpace(plateValue))
                 {
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 235, 238); // soft red
                 }
@@ -983,7 +982,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 flpSelectedRecord.Controls.Add(BuildCell("No record selected", Color.FromArgb(108, 117, 125)));
                 flpSelectedRecord.ResumeLayout();
 
-                lblSelectedPlate.Text = "Plate: ---";
+                lblSelectedPlate.Text = "Plate:";
                 ClearSelectedPlate();
                 return;
             }
@@ -992,11 +991,11 @@ namespace VehicleWeightMeasurementSystemDemo
 
             var plateValue = row.Cells["PlateNumber"].Value?.ToString();
             var backColor =
-                string.IsNullOrWhiteSpace(plateValue) || plateValue == "---"
+                string.IsNullOrWhiteSpace(plateValue)
                     ? UITheme.Danger
                     : UITheme.Success;
 
-            lblSelectedPlate.Text = $"Plate: {plateValue ?? "---"}";
+            lblSelectedPlate.Text = $"Plate: {plateValue ?? string.Empty}";
 
             // 🔥 نمایش کراپ پلاک خودرو به‌جای فقط متن
             await LoadSelectedPlateAsync(row);

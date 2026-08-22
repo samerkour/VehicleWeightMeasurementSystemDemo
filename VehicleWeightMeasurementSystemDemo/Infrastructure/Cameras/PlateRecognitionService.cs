@@ -108,7 +108,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
         public static string FormatIranianPlate(int[] unicodeIndices)
         {
             if (unicodeIndices == null || unicodeIndices.Length != 8)
-                return "---";
+                return string.Empty;
 
             var chars = unicodeIndices
                 .Select(u => char.ConvertFromUtf32(u))

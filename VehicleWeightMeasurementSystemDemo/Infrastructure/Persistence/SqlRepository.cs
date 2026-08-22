@@ -126,8 +126,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             var hasPlate = await _context.Vehicles
                 .CountAsync(v => v.Timestamp >= dayStart && v.Timestamp < dayEnd &&
                                  v.PlateNumber != null &&
-                                 v.PlateNumber != "" &&
-                                 v.PlateNumber != "---");
+                                 v.PlateNumber != "");
 
             return (hasPlate, total);
         }
@@ -271,7 +270,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             double? maxWeight,
             bool overweight,
             int page = 1,
-            int pageSize = 100)
+            int pageSize = 100,
+            bool hasPlate = false)
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 100;
@@ -338,6 +338,13 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             {
                 query = query.Where(x =>
                    x.TotalOverWeight > 0);
+            }
+
+
+            if (hasPlate)
+            {
+                // همان شرط شمارش HasPlate در GetRecordCountsAsync
+                query = query.Where(x => !string.IsNullOrEmpty(x.PlateNumber) || !string.IsNullOrWhiteSpace (x.PlateNumber));
             }
 
 

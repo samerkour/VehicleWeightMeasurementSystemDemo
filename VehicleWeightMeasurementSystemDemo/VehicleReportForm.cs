@@ -337,7 +337,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 plateLabel, txtPlate,
                 minWeightLabel, nudMinWeight,
                 maxWeightLabel, nudMaxWeight,
-                chkOverweight, chkPlateImage,
+                chkOverweight, chkPlateImage, chkHasPlate,
                 btnSearch, btnExcel
             };
 
@@ -400,8 +400,14 @@ namespace VehicleWeightMeasurementSystemDemo
 
         private async void btnSearch_Click(object sender, EventArgs e)
         {
-
             _currentPage = 1;
+            _totalCount = 0;
+
+            // پاک‌سازی نتایج قبلی پیش از شروع جست‌وجوی جدید
+            dgvVehicles.DataSource = null;
+            dgvVehicles.Rows.Clear();
+            UpdatePagerState();
+
             await LoadPageAsync();
 
         }
@@ -467,7 +473,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 dtFrom.Value, dtTo.Value, cmbLine.SelectedItem as int?,
                 txtPlate.Text, (double)nudMinWeight.Value,
                 (double)nudMaxWeight.Value, chkOverweight.Checked,
-                page: 1, pageSize: int.MaxValue);
+                page: 1, pageSize: int.MaxValue, hasPlate: chkHasPlate.Checked);
                 var data = result.Items;
 
                 if (data.Count == 0)
@@ -685,7 +691,8 @@ namespace VehicleWeightMeasurementSystemDemo
                     (double)nudMaxWeight.Value,
                     chkOverweight.Checked,
                     _currentPage,
-                    _pageSize);
+                    _pageSize,
+                    chkHasPlate.Checked);
 
                 _totalCount = total;
 
