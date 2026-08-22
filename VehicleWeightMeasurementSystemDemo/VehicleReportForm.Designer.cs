@@ -187,9 +187,9 @@ namespace VehicleWeightMeasurementSystemDemo
             chkPlateImage.AutoSize = true;
             chkPlateImage.Location = new Point(354, 190);
             chkPlateImage.Name = "chkPlateImage";
-            chkPlateImage.Size = new Size(235, 24);
+            chkPlateImage.Size = new Size(229, 24);
             chkPlateImage.TabIndex = 15;
-            chkPlateImage.Text = "Include\\Disclude Plate Image";
+            chkPlateImage.Text = "Include\\Exclude Plate Image";
             chkPlateImage.UseVisualStyleBackColor = true;
             chkPlateImage.CheckedChanged += chkPlateImage_CheckedChanged;
             // 
