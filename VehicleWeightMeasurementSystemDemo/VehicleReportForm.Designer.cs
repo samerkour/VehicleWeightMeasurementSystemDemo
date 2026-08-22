@@ -177,30 +177,30 @@ namespace VehicleWeightMeasurementSystemDemo
             chkOverweight.AutoSize = true;
             chkOverweight.Location = new Point(167, 190);
             chkOverweight.Name = "chkOverweight";
-            chkOverweight.Size = new Size(113, 24);
+            chkOverweight.Size = new Size(173, 24);
             chkOverweight.TabIndex = 6;
-            chkOverweight.Text = "Overweight";
+            chkOverweight.Text = "Overweight Vehicles";
             chkOverweight.UseVisualStyleBackColor = true;
             // 
             // chkPlateImage
             // 
             chkPlateImage.AutoSize = true;
-            chkPlateImage.Location = new Point(300, 190);
+            chkPlateImage.Location = new Point(354, 190);
             chkPlateImage.Name = "chkPlateImage";
-            chkPlateImage.Size = new Size(114, 24);
+            chkPlateImage.Size = new Size(235, 24);
             chkPlateImage.TabIndex = 15;
-            chkPlateImage.Text = "Plate Image";
+            chkPlateImage.Text = "Include\\Disclude Plate Image";
             chkPlateImage.UseVisualStyleBackColor = true;
             chkPlateImage.CheckedChanged += chkPlateImage_CheckedChanged;
             // 
             // chkHasPlate
             // 
             chkHasPlate.AutoSize = true;
-            chkHasPlate.Location = new Point(433, 190);
+            chkHasPlate.Location = new Point(606, 190);
             chkHasPlate.Name = "chkHasPlate";
-            chkHasPlate.Size = new Size(113, 24);
+            chkHasPlate.Size = new Size(192, 24);
             chkHasPlate.TabIndex = 16;
-            chkHasPlate.Text = "Has Plate";
+            chkHasPlate.Text = "Has Plate Vehicles Only";
             chkHasPlate.UseVisualStyleBackColor = true;
             // 
             // nudMaxWeight
