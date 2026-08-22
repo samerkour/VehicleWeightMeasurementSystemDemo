@@ -337,7 +337,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 plateLabel, txtPlate,
                 minWeightLabel, nudMinWeight,
                 maxWeightLabel, nudMaxWeight,
-                chkOverweight,
+                chkOverweight, chkPlateImage,
                 btnSearch, btnExcel
             };
 
@@ -404,6 +404,16 @@ namespace VehicleWeightMeasurementSystemDemo
             _currentPage = 1;
             await LoadPageAsync();
 
+        }
+
+        private async void chkPlateImage_CheckedChanged(object sender, EventArgs e)
+        {
+            var column = dgvVehicles.Columns["PlateImage"];
+            if (column != null)
+                column.Visible = chkPlateImage.Checked;
+
+            _currentPage = 1;
+            await LoadPageAsync();
         }
 
         private void dgvVehicles_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
@@ -679,24 +689,27 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 _totalCount = total;
 
-                // 🔥 بارگذاری تصویر کراپ پلاک هر ردیف
-                for (int i = 0; i < items.Count; i++)
+                // 🔥 بارگذاری تصویر کراپ پلاک هر ردیف (فقط وقتی chkPlateImage فعال است)
+                if (chkPlateImage.Checked)
                 {
-                    if (_loading == false)
-                        break;
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        if (_loading == false)
+                            break;
 
-                    try
-                    {
-                        var photoPath = await _repo.GetVehiclePhotoPathAsync(items[i].Id);
-                        if (!string.IsNullOrWhiteSpace(photoPath) && File.Exists(photoPath))
+                        try
                         {
-                            var plate = await Task.Run(() => _plateService.Extract(photoPath));
-                            items[i].PlateImage = plate?.PlateImage;
+                            var photoPath = await _repo.GetVehiclePhotoPathAsync(items[i].Id);
+                            if (!string.IsNullOrWhiteSpace(photoPath) && File.Exists(photoPath))
+                            {
+                                var plate = await Task.Run(() => _plateService.Extract(photoPath));
+                                items[i].PlateImage = plate?.PlateImage;
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning("Failed to load plate image for vehicle {Id}: {Message}", items[i].Id, ex.Message);
+                        catch (Exception ex)
+                        {
+                            Log.Warning("Failed to load plate image for vehicle {Id}: {Message}", items[i].Id, ex.Message);
+                        }
                     }
                 }
 

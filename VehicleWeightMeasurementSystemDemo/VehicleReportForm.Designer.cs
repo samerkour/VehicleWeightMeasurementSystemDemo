@@ -44,6 +44,7 @@ namespace VehicleWeightMeasurementSystemDemo
             btnExcel = new Button();
             btnSearch = new Button();
             chkOverweight = new CheckBox();
+            chkPlateImage = new CheckBox();
             nudMaxWeight = new NumericUpDown();
             nudMinWeight = new NumericUpDown();
             txtPlate = new TextBox();
@@ -77,6 +78,7 @@ namespace VehicleWeightMeasurementSystemDemo
             grpFilters.Controls.Add(btnExcel);
             grpFilters.Controls.Add(btnSearch);
             grpFilters.Controls.Add(chkOverweight);
+            grpFilters.Controls.Add(chkPlateImage);
             grpFilters.Controls.Add(nudMaxWeight);
             grpFilters.Controls.Add(nudMinWeight);
             grpFilters.Controls.Add(txtPlate);
@@ -177,6 +179,17 @@ namespace VehicleWeightMeasurementSystemDemo
             chkOverweight.TabIndex = 6;
             chkOverweight.Text = "Overweight";
             chkOverweight.UseVisualStyleBackColor = true;
+            // 
+            // chkPlateImage
+            // 
+            chkPlateImage.AutoSize = true;
+            chkPlateImage.Location = new Point(300, 190);
+            chkPlateImage.Name = "chkPlateImage";
+            chkPlateImage.Size = new Size(114, 24);
+            chkPlateImage.TabIndex = 15;
+            chkPlateImage.Text = "Plate Image";
+            chkPlateImage.UseVisualStyleBackColor = true;
+            chkPlateImage.CheckedChanged += chkPlateImage_CheckedChanged;
             // 
             // nudMaxWeight
             // 
@@ -391,6 +404,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private VehicleWeightMeasurementSystemDemo.Controls.JalaliDateTimePicker dtTo;
         private VehicleWeightMeasurementSystemDemo.Controls.JalaliDateTimePicker dtFrom;
         private CheckBox chkOverweight;
+        private CheckBox chkPlateImage;
         private NumericUpDown nudMaxWeight;
         private NumericUpDown nudMinWeight;
         private Button btnExcel;
