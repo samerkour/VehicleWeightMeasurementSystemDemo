@@ -32,10 +32,11 @@ public sealed class TtoImageService
         var pelak = $"{photo.PlateP4}{"ایران"}{photo.PlateP3}{p2}{photo.PlateP1}";
         var passDate = photo.PassDatetime;
         var isDay = passDate.Hour is >= 6 and <= 18;
+        var speed = photo.VehicleSpeed ?? photo.AverageSpeed;
 
         using var source = Image.FromFile(photo.FullPath, useEmbeddedColorManagement: true);
         using var resized = new Bitmap(source, new Size(800, 600));
-        using var annotated = DrawOverlay(resized, pelak, photo.LineNumber.ToString(), _rahdari.StationLabel, passDate, isDay);
+        using var annotated = DrawOverlay(resized, pelak, photo.LineNumber.ToString(), speed, _rahdari.StationLabel, passDate, isDay);
 
         var limits = ImageSizeLimits.Get(ResolveColorImageKind(payload));
         return FitJpegSize(annotated, limits.MinKb!.Value, limits.MaxKb, startQuality: 75);
@@ -128,7 +129,11 @@ public sealed class TtoImageService
     }
 
     private static Bitmap DrawOverlay(
-        Image image, string pelak, string line, string station,
+        Image image, 
+        string pelak, 
+        string line,
+        int ? speed,
+        string station,
         DateTime passDate, bool isDay)
     {
         var bitmap = new Bitmap(image);
@@ -138,11 +143,13 @@ public sealed class TtoImageService
 
         using var g = Graphics.FromImage(bitmap);
         using var font = new Font("Tahoma", 14, FontStyle.Bold);
-        g.DrawString("پلاک:" + pelak, font, brush, 10f, 520f);
-        g.DrawString("لاین:" + line, font, brush, 250f, 520f);
-        g.DrawString("ایستگاه:" + station, font, brush, 350f, 520f);
+        g.DrawString("پلاک:" + pelak, font, brush, 10f, 510f);
+        g.DrawString("لاین:" + line, font, brush, 250f, 510f);
+        g.DrawString("ایستگاه:" + station, font, brush, 350f, 510f);
+        g.DrawString("سرعت لحظه ای:" + speed, font, brush, 450f, 510f);
+
         g.DrawString("تاریخ و ساعت:" + dateText, font, brush, 10f, 560f);
-        g.DrawString("نام شرکت:شرکت فراسو", font, brush, 350f, 560f);
+        g.DrawString("نام شرکت:شرکت فراسو توزین", font, brush, 450f, 560f);
         return bitmap;
     }
 

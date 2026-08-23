@@ -1,3 +1,4 @@
+using System.Globalization;
 using RmtoSync.Configuration;
 using RmtoSync.Data;
 using RmtoSync.Its;
@@ -16,6 +17,7 @@ public sealed class RmtoSendService
     private readonly RahdariSyncStatus _syncStatus;
     private readonly RahdariHealthCheck _healthCheck;
     private readonly ILogger<RmtoSendService> _logger;
+    private readonly HashSet<long> _plateIssuesLogged = new();
     private bool _lastHealthOk = true;
     private DateTime _lastHealthWarnUtc = DateTime.MinValue;
 
@@ -66,6 +68,9 @@ public sealed class RmtoSendService
         if (pending.Count == 0)
             return 0;
 
+        foreach (var photo in pending)
+            LogPlateIssues(photo);
+
         var plans = TtoSendRouter.PlanBatch(pending, _rahdariOptions);
         var singles = plans.Where(p => p.Mode == TtoSendRouter.SendMode.SingleWithImages).ToList();
         var batches = plans.Where(p => p.Mode == TtoSendRouter.SendMode.BatchThenImage).ToList();
@@ -88,6 +93,8 @@ public sealed class RmtoSendService
         {
             if (ct.IsCancellationRequested)
                 break;
+
+            LogPlateIssues(photo);
 
             try
             {
@@ -312,6 +319,31 @@ public sealed class RmtoSendService
     {
         if (_options.RequireOverviewImage && !File.Exists(photo.FullPath))
             throw new RahdariSendException(photo.PhotoId, $"Overview image missing: {photo.FullPath}");
+    }
+
+    private void LogPlateIssues(CameraPhotoRecord photo)
+    {
+        if (!_plateIssuesLogged.Add(photo.PhotoId))
+            return;
+
+        try
+        {
+            var result = PlateValidationService.Validate(photo);
+            foreach (var issue in result.Issues)
+            {
+                _logger.LogWarning(
+                    "Plate classified as {PlateType} PhotoId={PhotoId} Plate={Plate} Code={Code} — {Description}",
+                    result.Type,
+                    photo.PhotoId,
+                    photo.PlateNoCompact,
+                    issue.ErrorCode?.ToString(CultureInfo.InvariantCulture) ?? "-",
+                    issue.Description);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to evaluate plate issues PhotoId={PhotoId}", photo.PhotoId);
+        }
     }
 
     private async Task MarkSentAsync(CameraPhotoRecord photo, long reference, CancellationToken ct)
