@@ -23,7 +23,7 @@ public sealed class TtoImageService
         _sync = sync.Value;
     }
 
-    public byte[] BuildColorImage(CameraPhotoRecord photo, TtoPayload? payload = null)
+    public byte[] BuildColorImage(CameraPhotoRecord photo, TtoPayload? payload = null, byte[]? plateImage = null)
     {
         if (!File.Exists(photo.FullPath))
             throw new FileNotFoundException("Image not found", photo.FullPath);
@@ -35,13 +35,30 @@ public sealed class TtoImageService
 
         using var source = Image.FromFile(photo.FullPath, useEmbeddedColorManagement: true);
         using var resized = new Bitmap(source, new Size(800, 600));
-        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari);
+        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari, plateImage ?? BuildPlateImage(photo));
 
         var limits = ImageSizeLimits.Get(ResolveColorImageKind(payload));
         return FitJpegSize(annotated, limits.MinKb!.Value, limits.MaxKb, startQuality: 75);
     }
 
     public byte[] BuildPlateImage(CameraPhotoRecord photo)
+    {
+        if (!string.IsNullOrWhiteSpace(photo.PlateFullPath) && File.Exists(photo.PlateFullPath))
+            return EncodeSavedPlateImage(photo.PlateFullPath);
+
+        return BuildPlateImageFromOverview(photo);
+    }
+
+    /// <summary>Re-encodes the ANPR-saved plate crop to the ITS plate image limits (1–50 KB).</summary>
+    private static byte[] EncodeSavedPlateImage(string plateFullPath)
+    {
+        using var source = Image.FromFile(plateFullPath, useEmbeddedColorManagement: true);
+        var limits = ImageSizeLimits.Get(ItsImageKind.Plate);
+        return FitJpegSize(source, limits.MinKb!.Value, limits.MaxKb, startQuality: 85);
+    }
+
+    /// <summary>Legacy fallback: crops the plate region out of the overview image.</summary>
+    private byte[] BuildPlateImageFromOverview(CameraPhotoRecord photo)
     {
         if (!File.Exists(photo.FullPath))
             return Array.Empty<byte>();
@@ -127,7 +144,7 @@ public sealed class TtoImageService
         return new Rectangle(x, y, w, h);
     }
 
-    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg)
+    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg, byte[] plateImage)
     {
         const int width = 751;
         const int height = 1280;
@@ -209,11 +226,41 @@ public sealed class TtoImageService
                 LineAlignment = StringAlignment.Center
             };
 
+            var speedRect = new RectangleF(0, height - footerHeight, width, footerHeight);
+            if (plateImage.Length > 0)
+            {
+                try
+                {
+                    using var ms = new MemoryStream(plateImage);
+                    using var plateImg = Image.FromStream(ms);
+                    const float pad = 12f;
+                    float maxPlateHeight = footerHeight - 16f;
+                    float maxPlateWidth = Math.Min(width * 0.45f, 340f);
+                    float scale = Math.Min(
+                        maxPlateWidth / plateImg.Width,
+                        maxPlateHeight / plateImg.Height);
+                    int pw = Math.Max(1, (int)(plateImg.Width * scale));
+                    int ph = Math.Max(1, (int)(plateImg.Height * scale));
+                    int py = height - footerHeight + (footerHeight - ph) / 2;
+
+                    g.DrawImage(plateImg, pad, py, pw, ph);
+
+                    speedRect = new RectangleF(
+                        pad + pw + 10,
+                        height - footerHeight,
+                        width - (pad + pw + 10) - pad,
+                        footerHeight);
+                }
+                catch (ArgumentException)
+                {
+                }
+            }
+
             g.DrawString(
                 $"سرعت لحظه‌ای: {instantSpeed} km/h",
                 speedFont,
                 speedBrush,
-                new RectangleF(0, height - footerHeight, width, footerHeight),
+                speedRect,
                 sfCenter);
         }
 

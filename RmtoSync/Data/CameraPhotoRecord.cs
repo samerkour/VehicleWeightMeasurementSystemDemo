@@ -19,6 +19,9 @@ public sealed class CameraPhotoRecord
     public int? PlateBoxWidth { get; set; }
     public int? PlateBoxHeight { get; set; }
     public int PlateReadStatus { get; set; }
+    public string? PlateFileName { get; set; }
+    public string? PlateFullPath { get; set; }
+    public string? PlateRelativePath { get; set; }
 
     public bool TerminalSent { get; set; }
     public bool? TerminalTtoRegistered { get; set; }

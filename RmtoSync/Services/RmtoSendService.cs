@@ -122,8 +122,8 @@ public sealed class RmtoSendService
             try
             {
                 ValidatePhotoReady(plan.Photo);
-                var color = _images.BuildColorImage(plan.Photo, plan.Payload);
                 var plate = _images.BuildPlateImage(plan.Photo);
+                var color = _images.BuildColorImage(plan.Photo, plan.Payload, plate);
                 TtoPreSendValidator.Validate(plan.Payload, color, plate, requireImages: true);
 
                 var result = await _rahadri.SendSingleAsync(plan.Payload, color, plate, ct);
@@ -294,13 +294,13 @@ public sealed class RmtoSendService
             return false;
         }
 
-            ValidatePhotoReady(photo);
-            var color = _images.BuildColorImage(photo, payload);
-            var plate = _images.BuildPlateImage(photo);
-            SaveRahdariImages(photo, color, plate);
-            TtoPreSendValidator.Validate(payload, color, plate, requireImages: true);
+        ValidatePhotoReady(photo);
+        var plate = _images.BuildPlateImage(photo);
+        var color = _images.BuildColorImage(photo, payload, plate);
+        SaveRahdariImages(photo, color);
+        TtoPreSendValidator.Validate(payload, color, plate, requireImages: true);
 
-            var imageResult = await _rahadri.SendImageAsync(payload, color, plate, ct);
+        var imageResult = await _rahadri.SendImageAsync(payload, color, plate, ct);
         if (!RahdariTtoClient.IsImageSuccess(imageResult))
         {
             if (imageResult.ErrorCode == ItsErrorCodes.AddImage.SendWindowExpired)
@@ -316,7 +316,7 @@ public sealed class RmtoSendService
         return true;
     }
 
-    private void SaveRahdariImages(CameraPhotoRecord photo, byte[] color, byte[] plate)
+    private void SaveRahdariImages(CameraPhotoRecord photo, byte[] color)
     {
         if (!_rahdariOptions.SaveImagesToFolder)
             return;
@@ -324,16 +324,13 @@ public sealed class RmtoSendService
         try
         {
             var dir = string.IsNullOrWhiteSpace(_rahdariOptions.ImageSaveFolderPath)
-                ? @"C:\RahdariImages"
+                ? @"C:\Temp\RahdariImages"
                 : _rahdariOptions.ImageSaveFolderPath;
             Directory.CreateDirectory(dir);
 
             var name = BuildImageName(photo);
             if (color.Length > 0)
                 File.WriteAllBytes(Path.Combine(dir, $"{name}_color.jpg"), color);
-
-            if (plate.Length > 0)
-                File.WriteAllBytes(Path.Combine(dir, $"{name}_plate.jpg"), plate);
         }
         catch (Exception ex)
         {
