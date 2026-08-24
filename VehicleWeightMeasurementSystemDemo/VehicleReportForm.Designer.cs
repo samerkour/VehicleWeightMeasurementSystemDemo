@@ -191,7 +191,6 @@ namespace VehicleWeightMeasurementSystemDemo
             chkPlateImage.TabIndex = 15;
             chkPlateImage.Text = "Include\\Exclude Plate Image";
             chkPlateImage.UseVisualStyleBackColor = true;
-            chkPlateImage.CheckedChanged += chkPlateImage_CheckedChanged;
             // 
             // chkHasPlate
             // 

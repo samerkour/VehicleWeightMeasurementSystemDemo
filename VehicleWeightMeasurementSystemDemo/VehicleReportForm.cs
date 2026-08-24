@@ -412,16 +412,6 @@ namespace VehicleWeightMeasurementSystemDemo
 
         }
 
-        private async void chkPlateImage_CheckedChanged(object sender, EventArgs e)
-        {
-            var column = dgvVehicles.Columns["PlateImage"];
-            if (column != null)
-                column.Visible = chkPlateImage.Checked;
-
-            _currentPage = 1;
-            await LoadPageAsync();
-        }
-
         private void dgvVehicles_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             var column = dgvVehicles.Columns[e.ColumnIndex];
@@ -500,48 +490,51 @@ namespace VehicleWeightMeasurementSystemDemo
                         {
                             var ws = wb.Worksheets.Add(dt, "Vehicles");
 
-                            // اندازه ستون تصویر و ارتفاع ردیف‌ها
-                            ws.Column(2).Width = 24;
-
-                            // 🔥 افزودن تصویر کراپ پلاک هر خودرو در سلول PlateImage
-                            List<Bitmap?> plateImages = null;
+                            List<Bitmap?>? plateImages = null;
 
                             try
                             {
-                                plateImages = await LoadPlateImagesAsync(data);
-
-                                for (int i = 0; i < data.Count; i++)
+                                // 🔥 تصاویر فقط وقتی chkPlateImage فعال است (وگرنه خروجی سریع بدون عکس)
+                                if (chkPlateImage.Checked)
                                 {
-                                    var image = plateImages[i];
-                                    if (image == null)
-                                        continue;
+                                    // اندازه ستون تصویر و ارتفاع ردیف‌ها
+                                    ws.Column(2).Width = 24;
 
-                                    using var ms = new MemoryStream();
-                                    image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                                    ms.Position = 0;
+                                    plateImages = await LoadPlateImagesAsync(data);
 
-                                    // ارتفاع ردیف متناسب با تصویر
-                                    ws.Row(i + 2).Height = 40;
-
-                                    var cell = ws.Cell(i + 2, 2);
-                                    var picture = ws.AddPicture(ms).MoveTo(cell);
-
-                                    // تطبیق تصویر با اندازه سلول (حفظ نسبت ابعاد)
-                                    double cellWidthPx = (ws.Column(cell.Address.ColumnNumber).Width * 7 + 5) * 0.5;
-                                    double cellHeightPx = (ws.Row(cell.Address.RowNumber).Height * 96 / 72.0) * 0.5;
-
-                                    double cellRatio = cellWidthPx / cellHeightPx;
-                                    double imgRatio = (double)image.Width / image.Height;
-
-                                    if (imgRatio >= cellRatio)
+                                    for (int i = 0; i < data.Count; i++)
                                     {
-                                        picture.Width = (int)cellWidthPx;
-                                        picture.Height = (int)(cellWidthPx / imgRatio);
-                                    }
-                                    else
-                                    {
-                                        picture.Height = (int)cellHeightPx;
-                                        picture.Width = (int)(cellHeightPx * imgRatio);
+                                        var image = plateImages[i];
+                                        if (image == null)
+                                            continue;
+
+                                        using var ms = new MemoryStream();
+                                        image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                                        ms.Position = 0;
+
+                                        // ارتفاع ردیف متناسب با تصویر
+                                        ws.Row(i + 2).Height = 40;
+
+                                        var cell = ws.Cell(i + 2, 2);
+                                        var picture = ws.AddPicture(ms).MoveTo(cell);
+
+                                        // تطبیق تصویر با اندازه سلول (حفظ نسبت ابعاد)
+                                        double cellWidthPx = (ws.Column(cell.Address.ColumnNumber).Width * 7 + 5) * 0.5;
+                                        double cellHeightPx = (ws.Row(cell.Address.RowNumber).Height * 96 / 72.0) * 0.5;
+
+                                        double cellRatio = cellWidthPx / cellHeightPx;
+                                        double imgRatio = (double)image.Width / image.Height;
+
+                                        if (imgRatio >= cellRatio)
+                                        {
+                                            picture.Width = (int)cellWidthPx;
+                                            picture.Height = (int)(cellWidthPx / imgRatio);
+                                        }
+                                        else
+                                        {
+                                            picture.Height = (int)cellHeightPx;
+                                            picture.Width = (int)(cellHeightPx * imgRatio);
+                                        }
                                     }
                                 }
 
@@ -576,68 +569,99 @@ namespace VehicleWeightMeasurementSystemDemo
         }
 
         /// <summary>
-        /// تصویر کراپ پلاک: اول فایل ذخیره‌شده (CameraPhotos.PlateFullPath)؛
-        /// فقط برای رکوردهای قدیمی از استخراج مجدد SATPA استفاده می‌شود.
+        /// تصاویر کراپ پلاک همه‌ی رکوردها با «حداقل کوئری»:
+        /// ۱) یک کوئری برای همه‌ی PlateFullPathها
+        /// ۲) خواندن موازی فایل‌ها از دیسک
+        /// ۳) فقط رکوردهای قدیمیِ بدون فایل → یک کوئری برای عکس اصلی + استخراج SATPA (ترتیبی)
         /// </summary>
-        private async Task<Bitmap?> LoadVehiclePlateImageAsync(int vehicleId)
-        {
-            // 🔥 1. فایل کراپ ذخیره‌شده روی دیسک
-            var storedPlatePath = await _repo.GetVehiclePlateImagePathAsync(vehicleId);
-            if (!string.IsNullOrWhiteSpace(storedPlatePath))
-            {
-                var stored = await Task.Run(() =>
-                {
-                    try
-                    {
-                        if (!File.Exists(storedPlatePath))
-                            return null;
-
-                        // کپی در حافظه تا فایل روی دیسک قفل نشود
-                        var bytes = File.ReadAllBytes(storedPlatePath);
-                        return new Bitmap(new MemoryStream(bytes));
-                    }
-                    catch (Exception loadEx)
-                    {
-                        Log.Warning("Failed to load stored plate {Path}: {Message}",
-                            storedPlatePath, loadEx.Message);
-                        return null;
-                    }
-                });
-
-                if (stored != null)
-                    return stored;
-            }
-
-            // 🔥 2. Fallback: رکوردهای قدیمی بدون فایل کراپ → استخراج مجدد از عکس اصلی
-            var photoPath = await _repo.GetVehiclePhotoPathAsync(vehicleId);
-            if (string.IsNullOrWhiteSpace(photoPath) || !File.Exists(photoPath))
-                return null;
-
-            var plate = await Task.Run(() => _plateService.Extract(photoPath));
-            return plate?.PlateImage;
-        }
-
         private async Task<List<Bitmap?>> LoadPlateImagesAsync(List<VehicleReportDto> data)
         {
-            var images = new List<Bitmap?>(data.Count);
+            if (data.Count == 0)
+                return new List<Bitmap?>();
 
-            foreach (var item in data)
+            var ids = data.Select(d => d.Id).ToList();
+
+            // 🔥 1. یک کوئری برای همه‌ی مسیرهای کراپ ذخیره‌شده (به‌جای N+1)
+            var platePaths = await _repo.GetVehiclePlateImagePathsAsync(ids);
+
+            var images = new Bitmap?[data.Count];
+            var missingIdx = new List<int>();
+
+            // 🔥 2. خواندن موازی فایل‌های موجود از دیسک (محدودشده)
+            using var gate = new SemaphoreSlim(8, 8);
+            var readTasks = new List<Task>(data.Count);
+
+            for (int i = 0; i < data.Count; i++)
             {
-                Bitmap? cropped = null;
-
-                try
+                if (platePaths.TryGetValue(data[i].Id, out var platePath))
                 {
-                    cropped = await LoadVehiclePlateImageAsync(item.Id);
+                    int idx = i;
+                    readTasks.Add(Task.Run(async () =>
+                    {
+                        await gate.WaitAsync();
+                        try
+                        {
+                            images[idx] = TryLoadBitmapFromFile(platePath);
+                        }
+                        finally
+                        {
+                            gate.Release();
+                        }
+                    }));
                 }
-                catch (Exception ex)
+                else
                 {
-                    Log.Warning("Failed to load plate image for vehicle {Id}: {Message}", item.Id, ex.Message);
+                    missingIdx.Add(i);
                 }
-
-                images.Add(cropped);
             }
 
-            return images;
+            await Task.WhenAll(readTasks);
+
+            // 🔥 3. Fallback: فقط رکوردهای قدیمی بدون فایل کراپ → استخراج مجدد از عکس اصلی.
+            //    موتور SATPA native تک‌نمونه‌ای است → ترتیبی اجرا می‌شود.
+            if (missingIdx.Count > 0)
+            {
+                var missingIds = missingIdx.Select(i => data[i].Id).ToList();
+                var photoPaths = await _repo.GetVehiclePhotoPathsAsync(missingIds);
+
+                foreach (var idx in missingIdx)
+                {
+                    if (!photoPaths.TryGetValue(data[idx].Id, out var photoPath) ||
+                        !File.Exists(photoPath))
+                        continue;
+
+                    try
+                    {
+                        var plate = await Task.Run(() => _plateService.Extract(photoPath));
+                        images[idx] = plate?.PlateImage;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("Plate extraction failed for vehicle {Id}: {Message}",
+                            data[idx].Id, ex.Message);
+                    }
+                }
+            }
+
+            return images.ToList();
+        }
+
+        private static Bitmap? TryLoadBitmapFromFile(string path)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                    return null;
+
+                // کپی در حافظه تا فایل روی دیسک قفل نشود
+                var bytes = File.ReadAllBytes(path);
+                return new Bitmap(new MemoryStream(bytes));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("Failed to load stored plate {Path}: {Message}", path, ex.Message);
+                return null;
+            }
         }
 
         public DataTable ToDataTable(List<VehicleReportDto> list)
@@ -736,20 +760,17 @@ namespace VehicleWeightMeasurementSystemDemo
                 // 🔥 بارگذاری تصویر کراپ پلاک هر ردیف (فقط وقتی chkPlateImage فعال است)
                 if (chkPlateImage.Checked)
                 {
-                    for (int i = 0; i < items.Count; i++)
+                    try
                     {
-                        if (_loading == false)
-                            break;
+                        // یک کوئری برای همه‌ی مسیرها + خواندن موازی فایل‌ها (بدون N+1)
+                        var images = await LoadPlateImagesAsync(items);
 
-                        try
-                        {
-                            // اول فایل ذخیره‌شده (PlateFullPath)؛ استخراج مجدد فقط برای رکوردهای قدیمی
-                            items[i].PlateImage = await LoadVehiclePlateImageAsync(items[i].Id);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Warning("Failed to load plate image for vehicle {Id}: {Message}", items[i].Id, ex.Message);
-                        }
+                        for (int i = 0; i < items.Count && _loading; i++)
+                            items[i].PlateImage = images[i];
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("Failed to load plate images: {Message}", ex.Message);
                     }
                 }
 

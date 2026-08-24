@@ -277,6 +277,63 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// مسیر جدیدترین کراپ پلاک هر خودرو در «یک» کوئری (به‌جای N+1).
+        /// </summary>
+        public async Task<Dictionary<int, string>> GetVehiclePlateImagePathsAsync(
+            IEnumerable<int> vehicleIds)
+        {
+            var ids = vehicleIds.Distinct().ToList();
+            if (ids.Count == 0)
+                return new Dictionary<int, string>();
+
+            await using var _context = await CreateContextAsync();
+
+            var rows = await _context.CameraPhotos
+                .Where(p => p.VehicleId != null &&
+                            p.PlateFullPath != null &&
+                            ids.Contains(p.VehicleId.Value))
+                .OrderByDescending(p => p.Id)
+                .Select(p => new { VehicleId = p.VehicleId!.Value, Path = p.PlateFullPath! })
+                .ToListAsync();
+
+            // اولین ردیف هر خودرو = جدیدترین عکس
+            var result = new Dictionary<int, string>(rows.Count);
+            foreach (var row in rows)
+                if (!result.ContainsKey(row.VehicleId))
+                    result[row.VehicleId] = row.Path;
+
+            return result;
+        }
+
+        /// <summary>
+        /// مسیر عکس اصلی هر خودرو در «یک» کوئری (به‌جای N+1).
+        /// </summary>
+        public async Task<Dictionary<int, string>> GetVehiclePhotoPathsAsync(
+            IEnumerable<int> vehicleIds)
+        {
+            var ids = vehicleIds.Distinct().ToList();
+            if (ids.Count == 0)
+                return new Dictionary<int, string>();
+
+            await using var _context = await CreateContextAsync();
+
+            var rows = await _context.CameraPhotos
+                .Where(p => p.VehicleId != null &&
+                            p.FullPath != null &&
+                            ids.Contains(p.VehicleId.Value))
+                .OrderByDescending(p => p.Id)
+                .Select(p => new { VehicleId = p.VehicleId!.Value, Path = p.FullPath! })
+                .ToListAsync();
+
+            var result = new Dictionary<int, string>(rows.Count);
+            foreach (var row in rows)
+                if (!result.ContainsKey(row.VehicleId))
+                    result[row.VehicleId] = row.Path;
+
+            return result;
+        }
+
         public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchAsync(
             DateTime from,
             DateTime to,
