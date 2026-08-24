@@ -185,7 +185,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // chkPlateImage
             // 
             chkPlateImage.AutoSize = true;
-            chkPlateImage.Location = new Point(354, 190);
+            chkPlateImage.Location = new Point(385, 190);
             chkPlateImage.Name = "chkPlateImage";
             chkPlateImage.Size = new Size(229, 24);
             chkPlateImage.TabIndex = 15;
@@ -196,7 +196,7 @@ namespace VehicleWeightMeasurementSystemDemo
             // chkHasPlate
             // 
             chkHasPlate.AutoSize = true;
-            chkHasPlate.Location = new Point(606, 190);
+            chkHasPlate.Location = new Point(659, 190);
             chkHasPlate.Name = "chkHasPlate";
             chkHasPlate.Size = new Size(192, 24);
             chkHasPlate.TabIndex = 16;

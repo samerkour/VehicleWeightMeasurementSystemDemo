@@ -168,12 +168,18 @@ namespace VehicleWeightMeasurementSystemDemo
             Application.ThreadException += (s, e) =>
             {
                 Log.Error(e.Exception, "UI Thread Exception");
+                RestartAfterCrash("UI thread exception");
             };
 
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 Log.Fatal(e.ExceptionObject as Exception, "Unhandled Exception");
+                RestartAfterCrash("Unhandled exception");
             };
+
+            // حلقه‌ی کرش‌های پیاپی: بعد از چند بار سریع، دیگر ری‌استارت نشود
+            _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(_ =>
+                Environment.SetEnvironmentVariable(CrashRestartCountEnv, "0"));
 
             try
             {
@@ -197,10 +203,58 @@ namespace VehicleWeightMeasurementSystemDemo
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Application crashed");
+                RestartAfterCrash("Application.Run crashed");
             }
             finally
             {
                 Log.CloseAndFlush();
+            }
+        }
+
+        private const string CrashRestartCountEnv = "VWMS_CRASH_RESTARTS";
+        private const int MaxConsecutiveCrashRestarts = 3;
+        private static int _crashRestartStarted;
+
+        /// <summary>
+        /// اجرای یک نمونه جدید برنامه بعد از کرش؛ با محافظت در برابر حلقه‌ی بی‌پایان.
+        /// </summary>
+        private static void RestartAfterCrash(string reason)
+        {
+            if (Interlocked.Exchange(ref _crashRestartStarted, 1) == 1)
+                return;
+
+            var count = int.TryParse(
+                Environment.GetEnvironmentVariable(CrashRestartCountEnv), out var n)
+                ? n : 0;
+
+            if (count >= MaxConsecutiveCrashRestarts)
+            {
+                Log.Fatal(
+                    "Crash restart limit ({Max}) reached — not restarting again. Reason: {Reason}",
+                    MaxConsecutiveCrashRestarts, reason);
+                return;
+            }
+
+            Log.Warning(
+                "Application crashed ({Reason}) — restarting (attempt {Attempt})",
+                reason, count + 1);
+
+            Log.CloseAndFlush();
+
+            // متغیر محیطی به پروسه‌ی فرزند هم منتقل می‌شود
+            Environment.SetEnvironmentVariable(CrashRestartCountEnv, (count + 1).ToString());
+
+            try
+            {
+                System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath)
+                    {
+                        UseShellExecute = true
+                    });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to relaunch application after crash");
             }
         }
     }

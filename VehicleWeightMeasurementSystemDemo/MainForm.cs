@@ -51,6 +51,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private bool _snapshotEnabled;
 
         private SnapshotCameraSettings? _snapshotCameraSettings;
+        private PlateImageFileStore? _plateImageStore;
 
         private SerialPortSettings? _serialSettings;
 
@@ -375,6 +376,8 @@ namespace VehicleWeightMeasurementSystemDemo
                 _serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
                 _snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
                 _overviewSettings = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
+                _plateImageStore = new PlateImageFileStore(
+                    _config.GetSection("PlateImageStore").Get<PlateImageStoreSettings>());
                 _alpha = _config.GetSection("WeightSettings").Get<WeightSettings>()?.Alpha ?? 1.5m;
                 _axleAlpha = _config.GetSection("AxleSettings").Get<AxleSettings>()?.Alpha ?? 1.0m;
 
@@ -671,6 +674,20 @@ namespace VehicleWeightMeasurementSystemDemo
                 {
                     // 🔥 2. فایل آماده است → استخراج پلاک
                     plate = await Task.Run(() => _plateService.Extract(imagePath));
+
+                    // 🔥 2.1 ذخیره تصویر کراپ پلاک روی دیسک (فقط وقتی پلاکی تشخیص داده شده)
+                    if (plate.PlateImage != null && !string.IsNullOrEmpty(plate.PlateNumber))
+                    {
+                        var info = await Task.Run(() =>
+                            _plateImageStore!.Save(plate.PlateImage, plate.PlateNumber));
+
+                        if (info != null)
+                        {
+                            plate.PlateFileName = info.FileName;
+                            plate.PlateRelativePath = info.RelativePath;
+                            plate.PlateFullPath = info.FullPath;
+                        }
+                    }
                 }
                 else
                 {
@@ -1066,9 +1083,38 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 _selectedPhotoPath = photoPath;
 
-                // کراپ پلاک از تصویر ذخیره‌شده
-                var plate = await Task.Run(() => _plateService.Extract(photoPath));
-                var cropped = plate?.PlateImage;
+                // 🔥 اول تصویر کراپ ذخیره‌شده (PlateFullPath)؛ بدون استخراج مجدد از عکس اصلی
+                Bitmap? cropped = null;
+
+                var storedPlatePath = await _repo.GetVehiclePlateImagePathAsync(vehicleId);
+                if (!string.IsNullOrWhiteSpace(storedPlatePath))
+                {
+                    cropped = await Task.Run(() =>
+                    {
+                        try
+                        {
+                            if (!File.Exists(storedPlatePath))
+                                return null;
+
+                            // کپی در حافظه تا فایل روی دیسک قفل نشود
+                            var bytes = File.ReadAllBytes(storedPlatePath);
+                            return new Bitmap(new MemoryStream(bytes));
+                        }
+                        catch (Exception loadEx)
+                        {
+                            Log.Warning("Failed to load stored plate {Path}: {Message}",
+                                storedPlatePath, loadEx.Message);
+                            return null;
+                        }
+                    });
+                }
+
+                if (cropped == null)
+                {
+                    // 🔥 رکوردهای قدیمی بدون فایل کراپ → استخراج مجدد از تصویر اصلی
+                    var plate = await Task.Run(() => _plateService.Extract(photoPath));
+                    cropped = plate?.PlateImage;
+                }
 
                 if (pictureBoxSelectedPlate.IsDisposed)
                 {

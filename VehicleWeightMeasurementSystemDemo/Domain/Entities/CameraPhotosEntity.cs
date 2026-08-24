@@ -32,6 +32,11 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public int? PlateReadStatus { get; set; }
         public DateTime? PlateReadAt { get; set; }
 
+        // 🔥 تصویر کراپ‌شده پلاک (C:\Temp\RahdariImages)
+        public string? PlateFileName { get; set; }
+        public string? PlateRelativePath { get; set; }
+        public string? PlateFullPath { get; set; }
+
         public int? PlateBoxLeft { get; set; }
         public int? PlateBoxTop { get; set; }
         public int? PlateBoxWidth { get; set; }

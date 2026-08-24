@@ -57,7 +57,6 @@ namespace VehicleWeightMeasurementSystemDemo
             dgvRecords = new DataGridView();
             lblRecordsTitle = new Label();
             lblRecordCounts = new Label();
-            lblSelectedPlate = new Label();
             pictureBoxSelectedPlate = new PictureBox();
             pnlSelectedRecord = new Panel();
             flpSelectedRecord = new FlowLayoutPanel();
@@ -81,13 +80,14 @@ namespace VehicleWeightMeasurementSystemDemo
             aboutToolStripMenuItem = new ToolStripMenuItem();
             sqlCommand1 = new Microsoft.Data.SqlClient.SqlCommand();
             tblTop = new TableLayoutPanel();
+            lblSelectedPlate = new Label();
             grpVehicleInfo.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPlate).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).BeginInit();
             grpImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCam1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBoxSelectedPlate).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxSelectedPlate).BeginInit();
             pnlSelectedRecord.SuspendLayout();
             menuStrip1.SuspendLayout();
             tblTop.SuspendLayout();
@@ -365,20 +365,6 @@ namespace VehicleWeightMeasurementSystemDemo
             lblRecordCounts.TabIndex = 11;
             lblRecordCounts.Text = "(- / -)";
             // 
-            // lblSelectedPlate
-            // 
-            lblSelectedPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            lblSelectedPlate.AutoSize = true;
-            lblSelectedPlate.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblSelectedPlate.ForeColor = Color.FromArgb(33, 150, 243);
-            lblSelectedPlate.Location = new Point(860, 467);
-            lblSelectedPlate.Name = "lblSelectedPlate";
-            lblSelectedPlate.Size = new Size(81, 23);
-            lblSelectedPlate.TabIndex = 14;
-            lblSelectedPlate.Text = "Plate: ---";
-            lblSelectedPlate.TextAlign = ContentAlignment.MiddleRight;
-            lblSelectedPlate.Visible = false;
-            // 
             // pictureBoxSelectedPlate
             // 
             pictureBoxSelectedPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -565,6 +551,20 @@ namespace VehicleWeightMeasurementSystemDemo
             tblTop.Size = new Size(1160, 390);
             tblTop.TabIndex = 12;
             // 
+            // lblSelectedPlate
+            // 
+            lblSelectedPlate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            lblSelectedPlate.AutoSize = true;
+            lblSelectedPlate.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblSelectedPlate.ForeColor = Color.FromArgb(33, 150, 243);
+            lblSelectedPlate.Location = new Point(860, 467);
+            lblSelectedPlate.Name = "lblSelectedPlate";
+            lblSelectedPlate.Size = new Size(81, 23);
+            lblSelectedPlate.TabIndex = 14;
+            lblSelectedPlate.Text = "Plate: ---";
+            lblSelectedPlate.TextAlign = ContentAlignment.MiddleRight;
+            lblSelectedPlate.Visible = false;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -595,8 +595,8 @@ namespace VehicleWeightMeasurementSystemDemo
             ((System.ComponentModel.ISupportInitialize)pictureBoxVehicle).EndInit();
             grpImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picCam1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBoxSelectedPlate).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvRecords).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxSelectedPlate).EndInit();
             pnlSelectedRecord.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
@@ -623,7 +623,6 @@ namespace VehicleWeightMeasurementSystemDemo
         private DataGridView dgvRecords;
         private Label lblRecordsTitle;
         private Label lblRecordCounts;
-        private Label lblSelectedPlate;
         private PictureBox pictureBoxSelectedPlate;
         private Panel pnlSelectedRecord;
         private FlowLayoutPanel flpSelectedRecord;
@@ -658,5 +657,6 @@ namespace VehicleWeightMeasurementSystemDemo
         private Label lblAxle45;
         private Microsoft.Data.SqlClient.SqlCommand sqlCommand1;
         private ToolStripMenuItem overviewCameraSettingsToolStripMenuItem;
+        private Label lblSelectedPlate;
     }
 }

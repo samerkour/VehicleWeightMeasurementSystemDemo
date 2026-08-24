@@ -225,6 +225,11 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     PlateReadStatus = plate != null ? 1 : 0,
                     PlateReadAt = DateTime.Now,
 
+                    // 🔥 تصویر کراپ‌شده پلاک (C:\Temp\RahdariImages)
+                    PlateFileName = plate?.PlateFileName,
+                    PlateRelativePath = plate?.PlateRelativePath,
+                    PlateFullPath = plate?.PlateFullPath,
+
 
                     TerminalSent = false,
                     TerminalTtoRegistered = false,
@@ -258,6 +263,17 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                 .Where(p => p.VehicleId == vehicleId)
                 .OrderByDescending(p => p.Id)
                 .Select(p => p.FullPath)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<string?> GetVehiclePlateImagePathAsync(int vehicleId)
+        {
+            await using var _context = await CreateContextAsync();
+
+            return await _context.CameraPhotos
+                .Where(p => p.VehicleId == vehicleId && p.PlateFullPath != null)
+                .OrderByDescending(p => p.Id)
+                .Select(p => p.PlateFullPath)
                 .FirstOrDefaultAsync();
         }
 

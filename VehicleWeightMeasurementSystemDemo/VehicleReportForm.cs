@@ -575,6 +575,48 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        /// <summary>
+        /// تصویر کراپ پلاک: اول فایل ذخیره‌شده (CameraPhotos.PlateFullPath)؛
+        /// فقط برای رکوردهای قدیمی از استخراج مجدد SATPA استفاده می‌شود.
+        /// </summary>
+        private async Task<Bitmap?> LoadVehiclePlateImageAsync(int vehicleId)
+        {
+            // 🔥 1. فایل کراپ ذخیره‌شده روی دیسک
+            var storedPlatePath = await _repo.GetVehiclePlateImagePathAsync(vehicleId);
+            if (!string.IsNullOrWhiteSpace(storedPlatePath))
+            {
+                var stored = await Task.Run(() =>
+                {
+                    try
+                    {
+                        if (!File.Exists(storedPlatePath))
+                            return null;
+
+                        // کپی در حافظه تا فایل روی دیسک قفل نشود
+                        var bytes = File.ReadAllBytes(storedPlatePath);
+                        return new Bitmap(new MemoryStream(bytes));
+                    }
+                    catch (Exception loadEx)
+                    {
+                        Log.Warning("Failed to load stored plate {Path}: {Message}",
+                            storedPlatePath, loadEx.Message);
+                        return null;
+                    }
+                });
+
+                if (stored != null)
+                    return stored;
+            }
+
+            // 🔥 2. Fallback: رکوردهای قدیمی بدون فایل کراپ → استخراج مجدد از عکس اصلی
+            var photoPath = await _repo.GetVehiclePhotoPathAsync(vehicleId);
+            if (string.IsNullOrWhiteSpace(photoPath) || !File.Exists(photoPath))
+                return null;
+
+            var plate = await Task.Run(() => _plateService.Extract(photoPath));
+            return plate?.PlateImage;
+        }
+
         private async Task<List<Bitmap?>> LoadPlateImagesAsync(List<VehicleReportDto> data)
         {
             var images = new List<Bitmap?>(data.Count);
@@ -585,12 +627,7 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 try
                 {
-                    var photoPath = await _repo.GetVehiclePhotoPathAsync(item.Id);
-                    if (!string.IsNullOrWhiteSpace(photoPath) && File.Exists(photoPath))
-                    {
-                        var plate = await Task.Run(() => _plateService.Extract(photoPath));
-                        cropped = plate?.PlateImage;
-                    }
+                    cropped = await LoadVehiclePlateImageAsync(item.Id);
                 }
                 catch (Exception ex)
                 {
@@ -706,12 +743,8 @@ namespace VehicleWeightMeasurementSystemDemo
 
                         try
                         {
-                            var photoPath = await _repo.GetVehiclePhotoPathAsync(items[i].Id);
-                            if (!string.IsNullOrWhiteSpace(photoPath) && File.Exists(photoPath))
-                            {
-                                var plate = await Task.Run(() => _plateService.Extract(photoPath));
-                                items[i].PlateImage = plate?.PlateImage;
-                            }
+                            // اول فایل ذخیره‌شده (PlateFullPath)؛ استخراج مجدد فقط برای رکوردهای قدیمی
+                            items[i].PlateImage = await LoadVehiclePlateImageAsync(items[i].Id);
                         }
                         catch (Exception ex)
                         {
