@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Printing;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using VehicleWeightMeasurementSystemDemo.Controls;
@@ -18,91 +18,137 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
     {
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        // SQL Server 2008 R2 and below don't support OFFSET/FETCH used by EF Core Skip/Take
-        private static readonly Lazy<bool> SupportsServerSidePaging = new(DetectServerSidePaging);
-
         public SqlRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
             _contextFactory = contextFactory;
         }
 
 
-        private static bool DetectServerSidePaging()
-        {
-            try
-            {
-                var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                    .Build();
-
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
-                if (string.IsNullOrWhiteSpace(connectionString))
-                    return true;
-
-                using var conn = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
-                conn.Open();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT compatibility_level FROM sys.databases WHERE database_id = DB_ID()";
-                var level = cmd.ExecuteScalar();
-                return level != null && Convert.ToInt32(level) >= 110;
-            }
-            catch
-            {
-                return true;
-            }
-        }
-
         private async Task<AppDbContext> CreateContextAsync()
         {
             return await _contextFactory.CreateDbContextAsync();
         }
 
+        // 🔥 پروجکشن مشترک گزارش (یک‌بار تعریف، در همه‌ی کوئری‌ها استفاده می‌شود)
+        private static readonly Expression<Func<VehicleEntity, VehicleReportDto>> VehicleReportSelector =
+            x => new VehicleReportDto
+            {
+                Id = x.Id,
+                Timestamp = x.Timestamp,
+                PlateNumber = x.PlateNumber,
+                LineName = x.Line.LineName,
+                Speed = x.Speed,
+                TotalWeight = x.TotalWeight,
+                AxleCount = x.AxleCount,
+                Overweight = x.TotalOverWeight > 0,
 
-        private async Task<IQueryable<VehicleEntity>> BuildSearchQuery(
+                ADC1 = x.ADC1,
+                ADC2 = x.ADC2,
+                ADC3 = x.ADC3,
+                ADC4 = x.ADC4,
+
+                AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
+                AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
+                AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
+                AxleWeight4 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
+                AxleWeight5 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
+                AxleWeight6 = x.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
+
+                Axle12 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                Axle23 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                Axle34 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                Axle45 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
+                Axle56 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault()
+            };
+
+        /// <summary>
+        /// ساخت کوئری جستجو با فیلترها (بدون ماده‌سازی).
+        /// Context همراه کوئری برگردانده می‌شود تا تا پایان اجرای کوئری زنده بماند و Dispose شود.
+        /// </summary>
+        private async Task<(AppDbContext Context, IQueryable<VehicleEntity> Query)> BuildSearchQuery(
             DateTime from, DateTime to, int? lineId, string plate,
             double? minWeight, double? maxWeight, bool overweight)
         {
             var _context = await CreateContextAsync();
             var query = _context.Vehicles.AsNoTracking().AsQueryable();
 
-            // همان بدنه فیلترهای فعلی SearchAsync (خطوط 182-225) را اینجا بگذار
-            // date / lineId / plate / minWeight / maxWeight / overweight
+            // 🔥 فیلتر بازه‌ی تاریخ
+            query = query.Where(x =>
+                x.Timestamp >= from &&
+                x.Timestamp <= to);
 
-            return query;
+            if (lineId.HasValue && lineId != 0)
+            {
+                query = query.Where(x => x.LineId == lineId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(plate))
+            {
+                string term = PersianCalendarHelper.NormalizePlate(plate);
+
+                query = query.Where(x =>
+                    x.PlateNumber
+                        .Replace("\u200F", "")
+                        .Replace("\u200E", "")
+                        .Replace("\u200B", "")
+                        .Replace("\u200C", "")
+                        .Replace("\u200D", "")
+                        .Replace("۰", "0").Replace("۱", "1").Replace("۲", "2").Replace("۳", "3")
+                        .Replace("۴", "4").Replace("۵", "5").Replace("۶", "6").Replace("۷", "7")
+                        .Replace("۸", "8").Replace("۹", "9")
+                        .Replace("٠", "0").Replace("١", "1").Replace("٢", "2").Replace("٣", "3")
+                        .Replace("٤", "4").Replace("٥", "5").Replace("٦", "6").Replace("٧", "7")
+                        .Replace("٨", "8").Replace("٩", "9")
+                        .Replace("  ", " ")
+                        .Trim()
+                        .Contains(term));
+            }
+
+            if (minWeight.HasValue && minWeight != 0)
+            {
+                query = query.Where(x =>
+                   x.TotalWeight >= minWeight);
+            }
+
+            if (maxWeight.HasValue && maxWeight != 0)
+            {
+                query = query.Where(x =>
+                   x.TotalWeight <= maxWeight);
+            }
+
+            if (overweight)
+            {
+                query = query.Where(x =>
+                   x.TotalOverWeight > 0);
+            }
+
+            return (_context, query);
         }
 
-        //public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchPagedAsync(
-        //    DateTime from, DateTime to, int? lineId, string plate,
-        //    double? minWeight, double? maxWeight, bool overweight,
-        //    int page, int pageSize)
-        //{
-        //    if (page < 1) page = 1;
-        //    if (pageSize < 1) pageSize = 50;
+        public async Task<(List<VehicleReportDto> Items, int TotalCount)> SearchPagedAsync(
+            DateTime from, DateTime to, int? lineId, string plate,
+            double? minWeight, double? maxWeight, bool overweight,
+            int page, int pageSize)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
 
-        //    var query = BuildSearchQuery(from, to, lineId, plate, minWeight, maxWeight, overweight);
+            var (context, query) = await BuildSearchQuery(
+                from, to, lineId, plate, minWeight, maxWeight, overweight);
 
-        //    var total = await query.CountAsync();
+            await using var _ = context;
 
-        //    var items = await query
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Skip((page - 1) * pageSize)
-        //        .Take(pageSize)
-        //        .Select(x => new VehicleReportDto
-        //        {
-        //            Id = x.Id,
-        //            Timestamp = x.Timestamp,
-        //            PlateNumber = x.PlateNumber,
-        //            LineName = x.Line.LineName,
-        //            Speed = x.Speed,
-        //            TotalWeight = x.TotalWeight,
-        //            AxleCount = x.AxleCount,
-        //            Overweight = x.TotalOverWeight > 0
-        //        })
-        //        .ToListAsync();
+            var total = await query.CountAsync();
 
-        //    return (items, total);
-        //}
+            var items = await query
+                .OrderByDescending(x => x.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(VehicleReportSelector)
+                .ToListAsync();
+
+            return (items, total);
+        }
 
         public async Task<List<int>> GetActiveLineIdsAsync()
         {
@@ -349,69 +395,11 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 100;
 
-            await using var _context = await CreateContextAsync();
+            var (context, query) = await BuildSearchQuery(
+                from, to, lineId, plate, minWeight, maxWeight, overweight);
 
-            var query = _context.Vehicles
+            await using var _ = context;
 
-                .Include(x => x.Line)
-                .Include(x => x.Axles)
-                .AsQueryable();
-
-
-
-            query = query.Where(x =>
-                x.Timestamp >= from &&
-                x.Timestamp <= to);
-
-
-            if (lineId.HasValue && lineId != 0)
-            {
-                query = query.Where(x => x.LineId == lineId);
-            }
-
-
-            if (!string.IsNullOrWhiteSpace(plate))
-            {
-                string term = PersianCalendarHelper.NormalizePlate(plate);
-
-                query = query.Where(x =>
-                    x.PlateNumber
-                        .Replace("\u200F", "")
-                        .Replace("\u200E", "")
-                        .Replace("\u200B", "")
-                        .Replace("\u200C", "")
-                        .Replace("\u200D", "")
-                        .Replace("۰", "0").Replace("۱", "1").Replace("۲", "2").Replace("۳", "3")
-                        .Replace("۴", "4").Replace("۵", "5").Replace("۶", "6").Replace("۷", "7")
-                        .Replace("۸", "8").Replace("۹", "9")
-                        .Replace("٠", "0").Replace("١", "1").Replace("٢", "2").Replace("٣", "3")
-                        .Replace("٤", "4").Replace("٥", "5").Replace("٦", "6").Replace("٧", "7")
-                        .Replace("٨", "8").Replace("٩", "9")
-                        .Replace("  ", " ")
-                        .Trim()
-                        .Contains(term));
-            }
-
-
-            if (minWeight.HasValue && minWeight != 0)
-            {
-                query = query.Where(x =>
-                   x.TotalWeight >= minWeight);
-            }
-
-
-            if (maxWeight.HasValue && maxWeight != 0)
-            {
-                query = query.Where(x =>
-                   x.TotalWeight <= maxWeight);
-            }
-
-
-            if (overweight)
-            {
-                query = query.Where(x =>
-                   x.TotalOverWeight > 0);
-            }
 
 
             if (hasPlate)
@@ -423,87 +411,13 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
 
             var totalCount = await query.CountAsync();
 
-            List<VehicleReportDto> items;
-
-            if (SupportsServerSidePaging.Value)
-            {
-                // SQL Server 2012+ → paging in database (OFFSET/FETCH)
-                items = await query
-                    .OrderByDescending(x => x.Timestamp)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(x => new VehicleReportDto
-                    {
-                        Id = x.Id,
-                        Timestamp = x.Timestamp,
-                        PlateNumber = x.PlateNumber,
-                        LineName = x.Line.LineName,
-                        Speed = x.Speed,
-                        TotalWeight = x.TotalWeight,
-                        AxleCount = x.AxleCount,
-                        Overweight = x.TotalOverWeight > 0,
-
-                        ADC1 = x.ADC1,
-                        ADC2 = x.ADC2,
-                        ADC3 = x.ADC3,
-                        ADC4 = x.ADC4,
-
-                        AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight4 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight5 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight6 = x.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
-
-                        Axle12 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle23 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle34 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle45 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle56 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault()
-                    })
-                    .ToListAsync();
-            }
-            else
-            {
-                // SQL Server 2008 R2 → OFFSET/FETCH not supported; page in memory
-                var all = await query
-                    .OrderByDescending(x => x.Timestamp)
-                    .Select(x => new VehicleReportDto
-                    {
-                        Id = x.Id,
-                        Timestamp = x.Timestamp,
-                        PlateNumber = x.PlateNumber,
-                        LineName = x.Line.LineName,
-                        Speed = x.Speed,
-                        TotalWeight = x.TotalWeight,
-                        AxleCount = x.AxleCount,
-                        Overweight = x.TotalOverWeight > 0,
-
-                        ADC1 = x.ADC1,
-                        ADC2 = x.ADC2,
-                        ADC3 = x.ADC3,
-                        ADC4 = x.ADC4,
-
-                        AxleWeight1 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight2 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight3 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight4 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight5 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)a.Weight).FirstOrDefault(),
-                        AxleWeight6 = x.Axles.Where(a => a.AxleIndex == 6).Select(a => (double?)a.Weight).FirstOrDefault(),
-
-                        Axle12 = x.Axles.Where(a => a.AxleIndex == 1).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle23 = x.Axles.Where(a => a.AxleIndex == 2).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle34 = x.Axles.Where(a => a.AxleIndex == 3).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle45 = x.Axles.Where(a => a.AxleIndex == 4).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault(),
-                        Axle56 = x.Axles.Where(a => a.AxleIndex == 5).Select(a => (double?)Math.Round(a.Distance ?? 0, 2)).FirstOrDefault()
-                    })
-                    .ToListAsync();
-
-                items = all
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-            }
+            // 🔥 SQL Server 2019 → صفحه‌بندی سمت دیتابیس (OFFSET/FETCH)
+            var items = await query
+                .OrderByDescending(x => x.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(VehicleReportSelector)
+                .ToListAsync();
 
             return (items, totalCount);
         }
