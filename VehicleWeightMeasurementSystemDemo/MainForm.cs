@@ -376,8 +376,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 _serialSettings = _config.GetSection("SerialPort").Get<SerialPortSettings>();
                 _snapshotCameraSettings = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
                 _overviewSettings = _config.GetSection("OverviewCamera").Get<OverviewCameraSettings>();
-                _plateImageStore = new PlateImageFileStore(
-                    _config.GetSection("PlateImageStore").Get<PlateImageStoreSettings>());
+                _plateImageStore = new PlateImageFileStore(_snapshotCameraSettings);
                 _alpha = _config.GetSection("WeightSettings").Get<WeightSettings>()?.Alpha ?? 1.5m;
                 _axleAlpha = _config.GetSection("AxleSettings").Get<AxleSettings>()?.Alpha ?? 1.0m;
 

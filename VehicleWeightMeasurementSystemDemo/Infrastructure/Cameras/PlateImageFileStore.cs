@@ -1,29 +1,35 @@
+using Serilog;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Serilog;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
 
 namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 {
     /// <summary>
-    /// ذخیره تصویر کراپ‌شده پلاک در پوشه‌ی تنظیم‌شده (appsettings → PlateImageStore:RootFolder)
+    /// ذخیره تصویر کراپ‌شده پلاک در {SnapshotCamera:WatchRootPath}\RahdariImages
+    /// (پوشه در صورت نبود به‌صورت خودکار ساخته می‌شود)
     /// با نام استاندارد: {PlateNumber}_{yyyyMMdd_HHmmssfff}.jpg
     /// </summary>
     public class PlateImageFileStore
     {
         private const long JpegQuality = 95L;
 
+        private const string DefaultRootFolder = @"C:\RahdariImages";
+        private const string SubFolderName = "RahdariImages";
+
         private readonly string _rootFolder;
 
-        public PlateImageFileStore(PlateImageStoreSettings? settings)
+        public PlateImageFileStore(SnapshotCameraSettings? settings)
         {
-            _rootFolder = string.IsNullOrWhiteSpace(settings?.RootFolder)
-                ? @"C:\Temp\RahdariImages"
-                : settings.RootFolder;
+            var watchRoot = settings?.WatchRootPath;
+
+            _rootFolder = string.IsNullOrWhiteSpace(watchRoot)
+                ? DefaultRootFolder
+                : Path.Combine(watchRoot, SubFolderName);
         }
 
         public sealed class PlateFileInfo
@@ -43,6 +49,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
 
             try
             {
+                // 🔥 ساخت پوشه در صورت نبود
                 Directory.CreateDirectory(_rootFolder);
                 var fileName = $"{plateNumber}_{DateTime.Now:yyyyMMdd_HHmmssfff}.jpg";
                 var fullPath = Path.Combine(_rootFolder, fileName);
@@ -63,6 +70,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
             }
         }
 
+       
         /// <summary>
         /// "C:\Temp\RahdariImages" → "/Temp/RahdariImages"
         /// </summary>
