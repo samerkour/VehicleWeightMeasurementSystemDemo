@@ -56,4 +56,13 @@ public sealed class RahdariOptions
 
     /// <summary>Timeout (ms) for health probes.</summary>
     public int HealthCheckTimeoutMs { get; set; } = 5000;
+
+    /// <summary>
+    /// When true, every Rahdari color/plate JPEG built for sending is also written to
+    /// <see cref="ImageSaveFolderPath"/> (created on demand) for inspection/debugging.
+    /// </summary>
+    public bool SaveImagesToFolder { get; set; }
+
+    /// <summary>Target folder for saved send images when <see cref="SaveImagesToFolder"/> is true.</summary>
+    public string ImageSaveFolderPath { get; set; } = @"C:\Temp\RahdariImages";
 }

@@ -1,12 +1,14 @@
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Globalization;
+using Microsoft.Extensions.Options;
 using RmtoSync.Configuration;
 using RmtoSync.Data;
 using RmtoSync.Its;
 using RmtoSync.Models;
 using RmtoSync.Utilities;
-using Microsoft.Extensions.Options;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Drawing.Text;
+using System.Globalization;
 
 namespace RmtoSync.Services;
 
@@ -30,13 +32,10 @@ public sealed class TtoImageService
 
         var p2 = PlateLetterMapper.Map(photo.PlateP2?.Trim());
         var pelak = $"{photo.PlateP4}{"ایران"}{photo.PlateP3}{p2}{photo.PlateP1}";
-        var passDate = photo.PassDatetime;
-        var isDay = passDate.Hour is >= 6 and <= 18;
-        var speed = photo.VehicleSpeed ?? photo.AverageSpeed;
 
         using var source = Image.FromFile(photo.FullPath, useEmbeddedColorManagement: true);
         using var resized = new Bitmap(source, new Size(800, 600));
-        using var annotated = DrawOverlay(resized, pelak, photo.LineNumber.ToString(), speed, _rahdari.StationLabel, passDate, isDay);
+        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari);
 
         var limits = ImageSizeLimits.Get(ResolveColorImageKind(payload));
         return FitJpegSize(annotated, limits.MinKb!.Value, limits.MaxKb, startQuality: 75);
@@ -128,29 +127,142 @@ public sealed class TtoImageService
         return new Rectangle(x, y, w, h);
     }
 
-    private static Bitmap DrawOverlay(
-        Image image, 
-        string pelak, 
-        string line,
-        int ? speed,
-        string station,
-        DateTime passDate, bool isDay)
+    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg)
     {
-        var bitmap = new Bitmap(image);
-        var brush = isDay ? Brushes.DarkBlue : Brushes.Aqua;
-        var pc = new PersianCalendar();
-        var dateText = $"{passDate:HH:mm:ss:fff} {pc.GetYear(passDate):0000}/{pc.GetMonth(passDate):00}/{pc.GetDayOfMonth(passDate):00}";
+        const int width = 751;
+        const int height = 1280;
+        const int headerHeight = 160;
+        const int footerHeight = 90;
 
-        using var g = Graphics.FromImage(bitmap);
-        using var font = new Font("Tahoma", 14, FontStyle.Bold);
-        g.DrawString("پلاک:" + pelak, font, brush, 10f, 510f);
-        g.DrawString("لاین:" + line, font, brush, 250f, 510f);
-        g.DrawString("ایستگاه:" + station, font, brush, 350f, 510f);
-        g.DrawString("سرعت لحظه ای:" + speed, font, brush, 450f, 510f);
+        var bitmap = new Bitmap(width, height);
 
-        g.DrawString("تاریخ و ساعت:" + dateText, font, brush, 10f, 560f);
-        g.DrawString("نام شرکت:شرکت فراسو توزین", font, brush, 450f, 560f);
+        using (var g = Graphics.FromImage(bitmap))
+        {
+            g.SmoothingMode = SmoothingMode.HighQuality;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            g.Clear(Color.White);
+
+            int imageY = headerHeight;
+            int imageHeight = height - headerHeight - footerHeight;
+            g.DrawImage(image, new Rectangle(0, imageY, width, imageHeight));
+
+            using (var shadow = new SolidBrush(Color.FromArgb(70, 0, 0, 0)))
+            {
+                g.FillRectangle(shadow, 0, headerHeight, width, 3);
+                g.FillRectangle(shadow, 0, height - footerHeight - 3, width, 3);
+            }
+
+            using (var barBrush = new SolidBrush(Color.FromArgb(245, 255, 255, 255)))
+            {
+                g.FillRectangle(barBrush, 0, 0, width, headerHeight);
+                g.FillRectangle(barBrush, 0, height - footerHeight, width, footerHeight);
+            }
+
+            using var borderPen = new Pen(Color.FromArgb(140, 96, 96, 96));
+            g.DrawLine(borderPen, 0, headerHeight, width, headerHeight);
+            g.DrawLine(borderPen, 0, height - footerHeight, width, height - footerHeight);
+
+            using var textBrush = new SolidBrush(Color.FromArgb(235, 30, 30, 30));
+            using var labelFont = CreatePersianFont(14, bold: true);
+            using var valueFont = CreatePersianFont(14, bold: false);
+
+            var pc = new PersianCalendar();
+            var passDate = photo.PassDatetime;
+            var instantSpeed = photo.VehicleSpeed ?? photo.AverageSpeed ?? 0;
+
+            var fields = new (string Label, string Value)[]
+            {
+                ("کد پلیس", cfg.Reserved7),
+                ("شماره خط عبور", photo.LineNumber.ToString(CultureInfo.InvariantCulture)),
+                ("تاریخ", $"{pc.GetYear(passDate):0000}/{pc.GetMonth(passDate):00}/{pc.GetDayOfMonth(passDate):00}"),
+                ("ساعت", $"{passDate:HH:mm:ss}"),
+                ("کد ایستگاه", cfg.SystemCode.ToString(CultureInfo.InvariantCulture)),
+                ("نام محور", cfg.StationLabel),
+                ("سرعت مجاز", $"{cfg.SpeedViolationThresholdKmh} km/h"),
+                ("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
+                ("پلاک", pelak)
+            };
+
+            const float margin = 12f;
+            float colWidth = (width - margin * 2) / 3f;
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                int row = i / 3;
+                int col = i % 3;
+                float x = width - margin - (col + 1) * colWidth;
+                var cellRect = new RectangleF(x, 10 + row * 50, colWidth, 46);
+                DrawField(g, fields[i].Label, fields[i].Value, cellRect, labelFont, valueFont, textBrush);
+            }
+
+            bool speeding = instantSpeed >= cfg.SpeedViolationThresholdKmh;
+            using var speedFont = CreatePersianFont(26, bold: true);
+            using var speedBrush = speeding
+                ? new SolidBrush(Color.Firebrick)
+                : new SolidBrush(Color.FromArgb(235, 30, 30, 30));
+
+            var sfCenter = new StringFormat(StringFormatFlags.DirectionRightToLeft)
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+
+            g.DrawString(
+                $"سرعت لحظه‌ای: {instantSpeed} km/h",
+                speedFont,
+                speedBrush,
+                new RectangleF(0, height - footerHeight, width, footerHeight),
+                sfCenter);
+        }
+
         return bitmap;
+    }
+
+    private static void DrawField(
+        Graphics g,
+        string label,
+        string value,
+        RectangleF rect,
+        Font labelFont,
+        Font valueFont,
+        Brush brush)
+    {
+        var sf = new StringFormat(StringFormatFlags.DirectionRightToLeft)
+        {
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Center
+        };
+
+        string labelText = $"{label}: ";
+        var labelSize = g.MeasureString(labelText, labelFont);
+        var labelRect = new RectangleF(rect.Right - labelSize.Width, rect.Y, labelSize.Width, rect.Height);
+        g.DrawString(labelText, labelFont, brush, labelRect, sf);
+
+        if (value.Length == 0)
+            return;
+
+        var valueSize = g.MeasureString(value, valueFont);
+        var valueRect = new RectangleF(labelRect.X - valueSize.Width + 4, rect.Y, valueSize.Width, rect.Height);
+        g.DrawString(value, valueFont, brush, valueRect, sf);
+    }
+
+    private static Font CreatePersianFont(float size, bool bold)
+    {
+        var style = bold ? FontStyle.Bold : FontStyle.Regular;
+        foreach (var name in new[] { "Vazirmatn", "Vazir", "IRANSansX", "IRANSans", "B Nazanin", "Tahoma" })
+        {
+            try
+            {
+                return new Font(new FontFamily(name), size, style);
+            }
+            catch (ArgumentException)
+            {
+            }
+        }
+
+        return new Font(FontFamily.GenericSansSerif, size, style);
     }
 
     private static byte[] FitJpegSize(Image image, int minKb, int maxKb, long startQuality)

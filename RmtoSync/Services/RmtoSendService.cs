@@ -294,12 +294,13 @@ public sealed class RmtoSendService
             return false;
         }
 
-        ValidatePhotoReady(photo);
-        var color = _images.BuildColorImage(photo, payload);
-        var plate = _images.BuildPlateImage(photo);
-        TtoPreSendValidator.Validate(payload, color, plate, requireImages: true);
+            ValidatePhotoReady(photo);
+            var color = _images.BuildColorImage(photo, payload);
+            var plate = _images.BuildPlateImage(photo);
+            SaveRahdariImages(photo, color, plate);
+            TtoPreSendValidator.Validate(payload, color, plate, requireImages: true);
 
-        var imageResult = await _rahadri.SendImageAsync(payload, color, plate, ct);
+            var imageResult = await _rahadri.SendImageAsync(payload, color, plate, ct);
         if (!RahdariTtoClient.IsImageSuccess(imageResult))
         {
             if (imageResult.ErrorCode == ItsErrorCodes.AddImage.SendWindowExpired)
@@ -313,6 +314,41 @@ public sealed class RmtoSendService
 
         await MarkSentAsync(photo, photo.TerminalPassInfoId ?? photo.PhotoId, ct);
         return true;
+    }
+
+    private void SaveRahdariImages(CameraPhotoRecord photo, byte[] color, byte[] plate)
+    {
+        if (!_rahdariOptions.SaveImagesToFolder)
+            return;
+
+        try
+        {
+            var dir = string.IsNullOrWhiteSpace(_rahdariOptions.ImageSaveFolderPath)
+                ? @"C:\RahdariImages"
+                : _rahdariOptions.ImageSaveFolderPath;
+            Directory.CreateDirectory(dir);
+
+            var name = BuildImageName(photo);
+            if (color.Length > 0)
+                File.WriteAllBytes(Path.Combine(dir, $"{name}_color.jpg"), color);
+
+            if (plate.Length > 0)
+                File.WriteAllBytes(Path.Combine(dir, $"{name}_plate.jpg"), plate);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to save Rahdari debug images PhotoId={PhotoId}", photo.PhotoId);
+        }
+    }
+
+    private static string BuildImageName(CameraPhotoRecord photo)
+    {
+        var plate = photo.PlateNoCompact;
+        if (string.IsNullOrWhiteSpace(plate))
+            return photo.PhotoId.ToString(CultureInfo.InvariantCulture);
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        return new string(plate.Trim().Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
     }
 
     private void ValidatePhotoReady(CameraPhotoRecord photo)
