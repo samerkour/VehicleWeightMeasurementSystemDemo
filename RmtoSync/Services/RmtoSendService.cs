@@ -9,8 +9,8 @@ namespace RmtoSync.Services;
 
 public sealed class RmtoSendService
 {
-    private const string DefaultRootFolder = @"C:\RahdariImages";
-    private const string SubFolderName = "RahdariImages";
+    private const string DefaultImageRootFolder = @"C:\RahdariImages";
+    private const string ImageSaveSubFolder = "RahdariImages";
 
     private readonly RmtoSyncOptions _options;
     private readonly RahdariOptions _rahdariOptions;
@@ -326,7 +326,10 @@ public sealed class RmtoSendService
 
         try
         {
-            var dir = ResolveImageSaveFolder(_rahdariOptions.WatchRootPath);
+            var watchRoot = _rahdariOptions.WatchRootPath;
+            var dir = string.IsNullOrWhiteSpace(watchRoot)
+                ? DefaultImageRootFolder
+                : Path.Combine(watchRoot, ImageSaveSubFolder);
             Directory.CreateDirectory(dir);
 
             var name = BuildImageName(photo);
@@ -338,11 +341,6 @@ public sealed class RmtoSendService
             _logger.LogWarning(ex, "Failed to save Rahdari debug images PhotoId={PhotoId}", photo.PhotoId);
         }
     }
-
-    private static string ResolveImageSaveFolder(string? watchRoot) =>
-        string.IsNullOrWhiteSpace(watchRoot)
-            ? DefaultRootFolder
-            : Path.Combine(watchRoot, SubFolderName);
 
     private static string BuildImageName(CameraPhotoRecord photo)
     {

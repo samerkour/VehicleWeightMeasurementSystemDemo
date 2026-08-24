@@ -58,15 +58,14 @@ public sealed class RahdariOptions
     public int HealthCheckTimeoutMs { get; set; } = 5000;
 
     /// <summary>
-    /// When true, every Rahdari color image built for sending is also written to
-    /// <c>{WatchRootPath}\RahdariImages</c> (created on demand) for inspection/debugging.
+    /// When true, every Rahdari color JPEG built for sending is also written under the
+    /// <see cref="WatchRootPath"/> image folder (created on demand) for inspection/debugging.
     /// </summary>
     public bool SaveImagesToFolder { get; set; }
 
     /// <summary>
-    /// Root watch folder of the snapshot pipeline. Rahdari send images go to
-    /// <see cref="WatchRootPath"/>\RahdariImages — same location as PlateImageFileStore.
-    /// Blank falls back to <c>C:\RahdariImages</c>.
+    /// Root folder of camera snapshot files. Saved send images go to
+    /// <c>{WatchRootPath}\RahdariImages</c>; when empty, <c>C:\RahdariImages</c> is used.
     /// </summary>
     public string WatchRootPath { get; set; } = string.Empty;
 }

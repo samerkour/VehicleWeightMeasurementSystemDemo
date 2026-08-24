@@ -215,7 +215,7 @@ public sealed class TtoImageService
             }
 
             bool speeding = instantSpeed >= cfg.SpeedViolationThresholdKmh;
-            using var speedFont = CreatePersianFont(26, bold: true);
+            using var speedFont = CreatePersianFont(16, bold: true);
             using var speedBrush = speeding
                 ? new SolidBrush(Color.Firebrick)
                 : new SolidBrush(Color.FromArgb(235, 30, 30, 30));
