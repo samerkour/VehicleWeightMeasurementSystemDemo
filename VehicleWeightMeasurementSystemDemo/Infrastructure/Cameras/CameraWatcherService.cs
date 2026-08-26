@@ -77,9 +77,16 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras
             OnStatusChanged?.Invoke(any);
         }
 
+        /// <summary>
+        /// نگاشت شناسه خط به پوشه‌ی فیزیکی دوربین.
+        /// 🔥 خط ۳ دوربین اختصاصی ندارد → تصاویرش از پوشه‌ی Line2 خوانده می‌شود.
+        /// </summary>
+        private static string GetWatchFolderName(int lineId)
+            => lineId == 3 ? "Line2" : $"Line{lineId}";
+
         private bool TryStartLine(int lineId)
         {
-            var folder = Path.Combine(_settings.WatchRootPath, $"Line{lineId}");
+            var folder = Path.Combine(_settings.WatchRootPath, GetWatchFolderName(lineId));
 
             if (!Directory.Exists(folder))
             {
