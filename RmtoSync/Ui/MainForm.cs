@@ -414,6 +414,11 @@ public sealed class MainForm : Form
         Process.Start(new ProcessStartInfo(logsDir) { UseShellExecute = true });
     }
 
+    private void InitializeComponent()
+    {
+
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)

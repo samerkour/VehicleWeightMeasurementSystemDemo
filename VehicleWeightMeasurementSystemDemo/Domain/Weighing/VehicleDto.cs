@@ -65,6 +65,10 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Weighing
         public double? VehicleLen { get; set; }
         public double TotalOverWeight { get; set; }
 
+        // 🔥 ITS classification fields (populated before persist)
+        public int? SpeedType { get; set; }
+        public string? CrimeCodes { get; set; }
+
 
         // 🔥 THIS IS THE IMPORTANT PART
         public string AxlesSummary

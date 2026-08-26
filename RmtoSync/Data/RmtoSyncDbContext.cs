@@ -42,6 +42,7 @@ public sealed class RmtoSyncDbContext : DbContext
             entity.Property(p => p.VehicleClass).HasConversion(IntToByte);
             entity.Property(p => p.CarClass13).HasConversion(IntToByte);
 
+            entity.Property(p => p.OcrScore).HasConversion(FloatToDecimal);
             entity.Property(p => p.Longitude).HasConversion(FloatToDecimal);
             entity.Property(p => p.Latitude).HasConversion(FloatToDecimal);
         });

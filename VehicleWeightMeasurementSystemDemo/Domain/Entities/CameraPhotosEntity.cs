@@ -28,9 +28,7 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public string PlateP3 { get; set; } = string.Empty;
         public string PlateP4 { get; set; } = string.Empty;
 
-        public double? PlateConfidence { get; set; }
-        public int? PlateReadStatus { get; set; }
-        public DateTime? PlateReadAt { get; set; }
+
 
         // 🔥 تصویر کراپ‌شده پلاک (C:\Temp\RahdariImages)
         public string? PlateFileName { get; set; }
@@ -50,25 +48,12 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public bool TerminalImageExpired { get; internal set; }
 
         public string? TerminalLastError { get; set; }
-        public int? SpeedType { get; set; }
-
-        public bool? Allowed { get; set; }
-        public bool? WrongDirection { get; set; }
-        public double? FirstToLastAxlesLen { get; set; }
 
         public DateTime? TerminalImageExpiredAt { get; set; }
         public DateTime? TerminalTtoRegisteredAt { get; set; }
         public long? TerminalPassInfoId { get; set; }
         public long? TerminalPackId { get; set; }
         public DateTime? TerminalImageDeadlineAt { get; set; }
-
-        public int? CarClass13 { get; set; }
-        public string? CrimeCodes { get; set; }
-
-        public decimal? OcrScore { get; set; }
-
-        public int? HeadGap { get; set; }
-        public int? Gap { get; set; }
 
         public int? LengthAxles12 { get; set; }
         public int? LengthAxles23 { get; set; }
@@ -82,9 +67,7 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public int? TotalWeightA { get; set; }
         public int? TotalWeightB { get; set; }
         public int? TotalWeightC { get; set; }
-        public int? TotalOverWeight { get; set; }
 
         public long? PassInfoId { get; set; }
-        public long? PreviousDeviceCode { get; set; }
     }
 }

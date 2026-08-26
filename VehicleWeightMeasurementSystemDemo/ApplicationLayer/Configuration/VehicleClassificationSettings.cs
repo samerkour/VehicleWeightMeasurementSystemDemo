@@ -6,6 +6,20 @@ namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration
     /// </summary>
     public class VehicleClassificationSettings
     {
+        // 🔹 ITS SpeedType codes
+        public const int SpeedTypeNone = 0;
+        public const int SpeedTypeInstant = 1;
+        public const int SpeedTypeAverage = 2;
+        public const int SpeedTypeInstantAndAverage = 3;
+
+        // 🔹 ITS CrimeCode constants (match ItsCrimeCodes in RmtoSync)
+        public const long CrimeCodeSpeedViolation = 2056;
+        public const long CrimeCodeWeightViolation = 2020;
+
+        // 🔹 Violation thresholds
+        public int SpeedViolationThresholdKmh { get; set; } = 105;
+        public double WeightViolationThresholdKg { get; set; } = 44000;
+
         // 🔹 آستانه‌های وزن (kg) برای تشخیص کلاس در خودروهای ۲ محور
         public double SedanMaxWeight { get; set; } = 1500;    // سواری
         public double PickupMaxWeight { get; set; } = 3500;   // وانت

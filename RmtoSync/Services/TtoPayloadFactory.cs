@@ -99,8 +99,6 @@ public static class TtoPayloadFactory
         var allowed = photo.Allowed is { } isAllowed
             ? (isAllowed ? TtoFieldValues.Allowed.Permitted : TtoFieldValues.Allowed.Violation)
             : ResolveAllowed(speed, weight, crimes, options);
-        if (crimes.Count == 0 && options.EnableAutoViolationDetection)
-            crimes = BuildAutoCrimes(speed, weight, allowed, options);
 
         if (allowed == TtoFieldValues.Allowed.Violation && crimes.Count == 0)
             throw new InvalidOperationException($"PhotoId={photo.PhotoId}: violation traffic requires crime code(s)");
@@ -163,9 +161,6 @@ public static class TtoPayloadFactory
         if (crimes.Count > 0)
             return TtoFieldValues.Allowed.Violation;
 
-        if (!options.EnableAutoViolationDetection)
-            return TtoFieldValues.Allowed.Permitted;
-
         if (speed >= options.SpeedViolationThresholdKmh || weight >= options.WeightViolationThresholdKg)
             return TtoFieldValues.Allowed.Violation;
 
@@ -218,19 +213,6 @@ public static class TtoPayloadFactory
         }
 
         return (speed, avgSpeed, speedType);
-    }
-
-    private static IReadOnlyList<long> BuildAutoCrimes(int speed, int weight, long allowed, RahdariOptions options)
-    {
-        if (allowed != TtoFieldValues.Allowed.Violation)
-            return Array.Empty<long>();
-
-        var crimes = new List<long>(2);
-        if (speed >= options.SpeedViolationThresholdKmh)
-            crimes.Add(options.SpeedViolationCrimeCode);
-        if (weight >= options.WeightViolationThresholdKg)
-            crimes.Add(options.WeightViolationCrimeCode);
-        return crimes;
     }
 
     private static IReadOnlyList<long> ParseCrimeCodes(string? raw)

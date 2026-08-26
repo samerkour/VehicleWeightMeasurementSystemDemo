@@ -26,12 +26,6 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
             builder.Property(p => p.PlateP3).HasMaxLength(10);
             builder.Property(p => p.PlateP4).HasMaxLength(10);
 
-            builder.Property(p => p.CrimeCodes).HasMaxLength(200);
-
-            // decimal precision for OcrScore
-            builder.Property(p => p.OcrScore)
-                .HasColumnType("decimal(5,2)");
-
             builder.Property(p => p.TerminalLastError).HasMaxLength(4000);
 
             builder.HasIndex(p => p.VehicleId);
@@ -41,10 +35,6 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
             builder.HasIndex(p => new { p.TerminalImageDeadlineAt, p.Id })
                 .HasDatabaseName("IX_CameraPhotos_TerminalImagePending")
                 .HasFilter("[TerminalSent] = 0 AND [TerminalTtoRegistered] = 1");
-
-            builder.HasIndex(p => new { p.PlateReadStatus, p.Id })
-                .HasDatabaseName("IX_CameraPhotos_TerminalTtoPending")
-                .HasFilter("[TerminalSent] = 0 AND [TerminalTtoRegistered] = 0");
 
             builder.HasData(
                 new CameraPhotosEntity
@@ -61,16 +51,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                     PlateP2 = "س",
                     PlateP3 = "۲۴۴",
                     PlateP4 = "۱۱",
-                    PlateConfidence = 92.5,
-                    PlateReadStatus = 1,
-                    PlateReadAt = new DateTime(2025, 1, 10, 8, 30, 1),
                     TerminalSent = true,
                     TerminalTtoRegistered = true,
                     TerminalImageExpired = false,
-                    SpeedType = 1,
-                    Allowed = true,
-                    WrongDirection = false,
-                    OcrScore = 95.2m
                 },
                 new CameraPhotosEntity
                 {
@@ -86,16 +69,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                     PlateP2 = "ب",
                     PlateP3 = "۵۵۵",
                     PlateP4 = "۴۴",
-                    PlateConfidence = 88.0,
-                    PlateReadStatus = 1,
-                    PlateReadAt = new DateTime(2025, 1, 10, 9, 15, 1),
                     TerminalSent = false,
                     TerminalTtoRegistered = false,
                     TerminalImageExpired = false,
-                    SpeedType = 1,
-                    Allowed = true,
-                    WrongDirection = false,
-                    OcrScore = 88.7m
                 }
             );
         }

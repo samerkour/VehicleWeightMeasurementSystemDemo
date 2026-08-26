@@ -23,9 +23,6 @@ public sealed class RahdariOptions
 
     public int SpeedViolationThresholdKmh { get; set; } = 105;
     public int WeightViolationThresholdKg { get; set; } = 44000;
-    public long SpeedViolationCrimeCode { get; set; } = ItsCrimeCodes.SpeedViolation;
-    public long WeightViolationCrimeCode { get; set; } = ItsCrimeCodes.WeightViolation;
-    public bool EnableAutoViolationDetection { get; set; }
 
     /// <summary>
     /// Camera-only station (no speed / WIM sensors yet). Sends stub speed/weight values with

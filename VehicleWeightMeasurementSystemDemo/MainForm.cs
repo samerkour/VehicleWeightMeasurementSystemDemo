@@ -767,6 +767,27 @@ namespace VehicleWeightMeasurementSystemDemo
                 // 🔥 Allowed: پلاک خوانده‌شده و وزن در محدوده مجاز
                 vehicle.Allowed = plateRead && (vehicle.TotalOverWeight) <= 0;
 
+                // 🔥 SpeedType: نوع سرعت (Instant=1, Average=2, InstantAndAverage=3, None=0)
+                var speed = vehicle.Speed ?? 0;
+                vehicle.SpeedType = speed > 0
+                    ? VehicleClassificationSettings.SpeedTypeInstant
+                    : VehicleClassificationSettings.SpeedTypeNone;
+
+                // 🔥 CrimeCodes: کد تخلفات بر اساس آستانه‌ها
+                if (vehicle.Allowed == false)
+                {
+                    var crimes = new List<long>();
+                    if (speed >= _classificationSettings.SpeedViolationThresholdKmh)
+                        crimes.Add(VehicleClassificationSettings.CrimeCodeSpeedViolation);
+                    if (vehicle.TotalWeight >= _classificationSettings.WeightViolationThresholdKg)
+                        crimes.Add(VehicleClassificationSettings.CrimeCodeWeightViolation);
+                    vehicle.CrimeCodes = crimes.Count > 0 ? string.Join(",", crimes) : null;
+                }
+                else
+                {
+                    vehicle.CrimeCodes = null;
+                }
+
                 // 🔥 موقعیت جغرافیایی ایستگاه (فقط یک‌بار برداشت)
                 if ((vehicle.Latitude == null || vehicle.Longitude == null) && _geoLocation != null)
                 {

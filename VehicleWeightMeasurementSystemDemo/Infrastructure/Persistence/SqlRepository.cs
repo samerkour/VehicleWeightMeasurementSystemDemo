@@ -240,6 +240,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     VehicleLen = v.VehicleLen,
                     TotalOverWeight = v.TotalOverWeight,
 
+                    SpeedType = v.SpeedType,
+                    CrimeCodes = v.CrimeCodes,
+
                     Axles = v.Axles.Select(a => new AxleEntity
                     {
                         AxleIndex = a.AxleIndex,
@@ -266,10 +269,6 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     PlateP2 = plateParts[2] ?? "",
                     PlateP3 = plateParts[1] ?? "",
                     PlateP4 = plateParts[0] ?? "",
-
-                    PlateConfidence = plate?.Confidence,
-                    PlateReadStatus = plate != null ? 1 : 0,
-                    PlateReadAt = DateTime.Now,
 
                     // 🔥 تصویر کراپ‌شده پلاک (C:\Temp\RahdariImages)
                     PlateFileName = plate?.PlateFileName,

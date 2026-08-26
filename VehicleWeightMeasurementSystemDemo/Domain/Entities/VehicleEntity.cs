@@ -45,6 +45,11 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public double? VehicleLen { get; set; }
         public double TotalOverWeight { get; set; }
 
+        public int? SpeedType { get; set; }
+        public string? CrimeCodes { get; set; }
+        public int? HeadGap { get; set; }
+        public int? Gap { get; set; }
+
         public string? WimRawLine { get; set; }
 
         // 🔥 Navigation
