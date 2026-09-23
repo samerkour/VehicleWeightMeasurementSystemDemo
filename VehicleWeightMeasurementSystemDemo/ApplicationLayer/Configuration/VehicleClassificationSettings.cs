@@ -17,7 +17,7 @@ namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration
         public const long CrimeCodeWeightViolation = 2020;
 
         // 🔹 Violation thresholds
-        public int SpeedViolationThresholdKmh { get; set; } = 105;
+        public int LightVehicleSpeedViolationThresholdKmh { get; set; } = 110;
         public double WeightViolationThresholdKg { get; set; } = 44000;
 
         // 🔹 آستانه‌های وزن (kg) برای تشخیص کلاس در خودروهای ۲ محور

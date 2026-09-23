@@ -21,7 +21,8 @@ public sealed class RahdariOptions
     public int DefaultCarClass13 { get; set; } = VehicleClass14Catalog.DefaultWhenUnknown;
     public long DefaultVehicleClass { get; set; } = TtoFieldValues.VehicleClass.Light;
 
-    public int SpeedViolationThresholdKmh { get; set; } = 105;
+    public int LightVehicleSpeedViolationThresholdKmh { get; set; } = 110;
+    public int HeavyVehicleSpeedViolationThresholdKmh { get; set; } = 110; 
     public int WeightViolationThresholdKg { get; set; } = 44000;
 
     /// <summary>

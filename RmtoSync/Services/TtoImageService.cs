@@ -197,7 +197,7 @@ public sealed class TtoImageService
                 ("ساعت", $"{passDate:HH:mm:ss}"),
                 ("کد ایستگاه", cfg.SystemCode.ToString(CultureInfo.InvariantCulture)),
                 ("نام محور", cfg.StationLabel),
-                ("سرعت مجاز", $"{cfg.SpeedViolationThresholdKmh} km/h"),
+                ("سرعت مجاز سبک/سنگین", $"{cfg.LightVehicleSpeedViolationThresholdKmh}/{cfg.HeavyVehicleSpeedViolationThresholdKmh} km/h"),
                 ("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
                 ("پلاک", pelak)
             };
@@ -214,7 +214,7 @@ public sealed class TtoImageService
                 DrawField(g, fields[i].Label, fields[i].Value, cellRect, labelFont, valueFont, textBrush);
             }
 
-            bool speeding = instantSpeed >= cfg.SpeedViolationThresholdKmh;
+            bool speeding = instantSpeed >= cfg.LightVehicleSpeedViolationThresholdKmh;
             using var speedFont = CreatePersianFont(16, bold: true);
             using var speedBrush = speeding
                 ? new SolidBrush(Color.Firebrick)

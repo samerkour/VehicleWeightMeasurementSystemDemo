@@ -161,7 +161,7 @@ public static class TtoPayloadFactory
         if (crimes.Count > 0)
             return TtoFieldValues.Allowed.Violation;
 
-        if (speed >= options.SpeedViolationThresholdKmh || weight >= options.WeightViolationThresholdKg)
+        if (speed >= options.LightVehicleSpeedViolationThresholdKmh || weight >= options.WeightViolationThresholdKg)
             return TtoFieldValues.Allowed.Violation;
 
         return TtoFieldValues.Allowed.Permitted;

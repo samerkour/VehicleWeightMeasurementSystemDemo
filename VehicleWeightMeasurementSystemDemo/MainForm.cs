@@ -777,7 +777,7 @@ namespace VehicleWeightMeasurementSystemDemo
                 if (vehicle.Allowed == false)
                 {
                     var crimes = new List<long>();
-                    if (speed >= _classificationSettings.SpeedViolationThresholdKmh)
+                    if (speed >= _classificationSettings.LightVehicleSpeedViolationThresholdKmh)
                         crimes.Add(VehicleClassificationSettings.CrimeCodeSpeedViolation);
                     if (vehicle.TotalWeight >= _classificationSettings.WeightViolationThresholdKg)
                         crimes.Add(VehicleClassificationSettings.CrimeCodeWeightViolation);
