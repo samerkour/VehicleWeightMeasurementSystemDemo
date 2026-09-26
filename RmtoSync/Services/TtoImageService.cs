@@ -193,6 +193,11 @@ public sealed class TtoImageService
             var passDate = photo.PassDatetime;
             var instantSpeed = photo.VehicleSpeed ?? photo.AverageSpeed ?? 0;
 
+            // برچسب کلاس خودرو؛ در صورت نبود مقدار (نال) → "-"
+            var vehicleClassLabel = photo.VehicleClass.HasValue
+                ? photo.VehicleClass.Value.ToString(CultureInfo.InvariantCulture)
+                : "-";
+
             var fields = new (string Label, string Value)[]
             {
                 ("کد پلیس", cfg.Reserved7),
@@ -204,9 +209,9 @@ public sealed class TtoImageService
                 ("سرعت مجاز سبک/سنگین", $"{cfg.LightVehicleSpeedViolationThresholdKmh}/{cfg.HeavyVehicleSpeedViolationThresholdKmh} km/h"),
                 ("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
                 ("پلاک", pelak),
-                ("سرعت مجاز (کلاس)", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
+                ("سرعت مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
                 ("وزن کل", FormatWeightKg(photo.TotalWeight)),
-                ("وزن مجاز (کلاس)", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
+                ("وزن مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
             };
 
             const float margin = 12f;
