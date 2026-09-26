@@ -211,15 +211,15 @@ public sealed class TtoImageService
                 ("ساعت", $"{passDate:HH:mm:ss}"),
                 ("کد ایستگاه", cfg.SystemCode.ToString(CultureInfo.InvariantCulture)),
                 ("نام محور", cfg.StationLabel),
-                ("سرعت مجاز سبک/سنگین", $"{cfg.LightVehicleSpeedViolationThresholdKmh}/{cfg.HeavyVehicleSpeedViolationThresholdKmh} km/h"),
-                //("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
+                ("سرعت مجاز سبک/سنگین", $"{cfg.HeavyVehicleSpeedViolationThresholdKmh}/{cfg.LightVehicleSpeedViolationThresholdKmh} km/h"),
                 ("پلاک", pelak),
                 ($"سرعت مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
                 ("وزن کل", FormatWeightKg(photo.TotalWeight)),
                 ($"وزن مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
             };
 
-            const float margin = 12f;
+            // حاشیه‌ی کم‌تر → ستون‌های عریض‌تر؛ توزیع کامل عرض هدر بین ۳ ستون.
+            const float margin = 6f;
             float colWidth = (width - margin * 2) / 3f;
 
             for (int i = 0; i < fields.Length; i++)
@@ -323,14 +323,27 @@ public sealed class TtoImageService
 
         string labelText = $"{label}: ";
         var labelSize = g.MeasureString(labelText, labelFont);
-        var labelRect = new RectangleF(rect.Right - labelSize.Width, rect.Y, labelSize.Width, rect.Height);
-        g.DrawString(labelText, labelFont, brush, labelRect, sf);
 
         if (value.Length == 0)
+        {
+            g.DrawString(labelText, labelFont, brush, rect, sf);
             return;
+        }
 
         var valueSize = g.MeasureString(value, valueFont);
-        var valueRect = new RectangleF(labelRect.X - valueSize.Width + 4, rect.Y, valueSize.Width, rect.Height);
+
+        // توزیع تناسبی عرض سلول بین برچسب (راست) و مقدار (چپ)
+        const float gap = 4f;
+        float required = labelSize.Width + gap + valueSize.Width;
+        float scale = Math.Min(1f, rect.Width / required);
+
+        float labelWidth = labelSize.Width * scale;
+        float valueWidth = valueSize.Width * scale;
+
+        var labelRect = new RectangleF(rect.Right - labelWidth, rect.Y, labelWidth, rect.Height);
+        g.DrawString(labelText, labelFont, brush, labelRect, sf);
+
+        var valueRect = new RectangleF(rect.Right - labelWidth - gap - valueWidth, rect.Y, valueWidth, rect.Height);
         g.DrawString(value, valueFont, brush, valueRect, sf);
     }
 
