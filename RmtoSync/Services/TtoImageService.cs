@@ -156,12 +156,14 @@ public sealed class TtoImageService
         const int footerHeight = 90;
 
         var bitmap = new Bitmap(width, height);
+        bitmap.SetResolution(96f, 96f);
 
         using (var g = Graphics.FromImage(bitmap))
         {
             g.SmoothingMode = SmoothingMode.HighQuality;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+            g.PageUnit = GraphicsUnit.Pixel;
 
             g.Clear(Color.White);
 
@@ -186,8 +188,8 @@ public sealed class TtoImageService
             g.DrawLine(borderPen, 0, height - footerHeight, width, height - footerHeight);
 
             using var textBrush = new SolidBrush(Color.FromArgb(235, 30, 30, 30));
-            using var labelFont = CreatePersianFont(14, bold: true);
-            using var valueFont = CreatePersianFont(14, bold: false);
+            using var labelFont = CreatePersianFont(8, bold: true);
+            using var valueFont = CreatePersianFont(8, bold: false);
 
             var pc = new PersianCalendar();
             var passDate = photo.PassDatetime;
@@ -207,11 +209,11 @@ public sealed class TtoImageService
                 ("کد ایستگاه", cfg.SystemCode.ToString(CultureInfo.InvariantCulture)),
                 ("نام محور", cfg.StationLabel),
                 ("سرعت مجاز سبک/سنگین", $"{cfg.LightVehicleSpeedViolationThresholdKmh}/{cfg.HeavyVehicleSpeedViolationThresholdKmh} km/h"),
-                ("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
+                //("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
                 ("پلاک", pelak),
-                ("سرعت مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
+                ($"سرعت مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
                 ("وزن کل", FormatWeightKg(photo.TotalWeight)),
-                ("وزن مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
+                ($"وزن مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
             };
 
             const float margin = 12f;
@@ -227,7 +229,7 @@ public sealed class TtoImageService
             }
 
             bool speeding = instantSpeed >= cfg.LightVehicleSpeedViolationThresholdKmh;
-            using var speedFont = CreatePersianFont(16, bold: true);
+            using var speedFont = CreatePersianFont(8, bold: true);
             using var speedBrush = speeding
                 ? new SolidBrush(Color.Firebrick)
                 : new SolidBrush(Color.FromArgb(235, 30, 30, 30));
