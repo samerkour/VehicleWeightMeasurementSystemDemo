@@ -14,6 +14,9 @@ namespace RmtoSync.Services;
 
 public sealed class TtoImageService
 {
+    /// <summary>کلاس‌های ۱ تا ۳ خودرو سبک محسوب می‌شوند (هم‌راستا با VehicleComplianceService.LightVehicleClassMax).</summary>
+    private const int LightVehicleClassMax = 3;
+
     private readonly RahdariOptions _rahdari;
     private readonly RmtoSyncOptions _sync;
 
@@ -148,7 +151,8 @@ public sealed class TtoImageService
     {
         const int width = 751;
         const int height = 1280;
-        const int headerHeight = 160;
+        // ۱۲ فیلد = ۴ ردیف × ۵۰px → ۱۰ + ۳×۵۰ + ۴۶ = ۲۰۶؛ ۲۱۰ فضای کافی برای ردیف چهارم است.
+        const int headerHeight = 210;
         const int footerHeight = 90;
 
         var bitmap = new Bitmap(width, height);
@@ -199,7 +203,10 @@ public sealed class TtoImageService
                 ("نام محور", cfg.StationLabel),
                 ("سرعت مجاز سبک/سنگین", $"{cfg.LightVehicleSpeedViolationThresholdKmh}/{cfg.HeavyVehicleSpeedViolationThresholdKmh} km/h"),
                 ("سرعت لحظه‌ای", $"{instantSpeed} km/h"),
-                ("پلاک", pelak)
+                ("پلاک", pelak),
+                ("سرعت مجاز (کلاس)", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
+                ("وزن کل", FormatWeightKg(photo.TotalWeight)),
+                ("وزن مجاز (کلاس)", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
             };
 
             const float margin = 12f;
@@ -266,6 +273,28 @@ public sealed class TtoImageService
 
         return bitmap;
     }
+
+    /// <summary>کلاس‌های خودرو ۱ تا ۳ سبک در نظر گرفته می‌شوند (هم‌راستا با VehicleComplianceService).</summary>
+    private static int ResolveMaxAllowedSpeedKmh(CameraPhotoRecord photo, RahdariOptions cfg)
+    {
+        // مقدار DB (Vehicles.MaxAllowedSpeedForClass) ترجیح دارد
+        if (photo.MaxAllowedSpeedForClass is int fromDb)
+            return fromDb;
+
+        // برگشت به آستانه‌ی سبک/سنگین بر اساس کلاس خودرو
+        var vehicleClass = photo.VehicleClass ?? LightVehicleClassMax;
+        return vehicleClass <= LightVehicleClassMax
+            ? cfg.LightVehicleSpeedViolationThresholdKmh
+            : cfg.HeavyVehicleSpeedViolationThresholdKmh;
+    }
+
+    /// <summary>وزن مجاز کلاس (kg) از DB؛ در صورت نبود مقدار، آستانه‌ی وزن سراسری از تنظیمات.</summary>
+    private static int ResolveMaxAllowedWeightKg(CameraPhotoRecord photo, RahdariOptions cfg) =>
+        photo.MaxAllowedWeightForClass ?? cfg.WeightViolationThresholdKg;
+
+    /// <summary>فرمت وزن کل (kg) با InvariantCulture؛ مقدار ناموجود → "-".</summary>
+    private static string FormatWeightKg(int? value) =>
+        value.HasValue ? $"{value.Value.ToString(CultureInfo.InvariantCulture)} kg" : "-";
 
     private static void DrawField(
         Graphics g,

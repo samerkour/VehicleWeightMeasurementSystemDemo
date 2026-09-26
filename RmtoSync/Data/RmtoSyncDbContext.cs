@@ -38,6 +38,8 @@ public sealed class RmtoSyncDbContext : DbContext
             entity.Property(p => p.AxleWeight8).HasConversion(FloatToInt);
             entity.Property(p => p.AxleWeight9).HasConversion(FloatToInt);
 
+            entity.Property(p => p.MaxAllowedWeightForClass).HasConversion(FloatToInt);
+
             entity.Property(p => p.TotalAxles).HasConversion(IntToByte);
             entity.Property(p => p.VehicleClass).HasConversion(IntToByte);
             entity.Property(p => p.CarClass13).HasConversion(IntToByte);

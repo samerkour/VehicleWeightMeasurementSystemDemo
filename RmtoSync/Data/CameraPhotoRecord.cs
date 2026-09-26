@@ -71,6 +71,12 @@ public sealed class CameraPhotoRecord
     public int? TotalWeightB { get; set; }
     public int? TotalWeightC { get; set; }
     public int? TotalOverWeight { get; set; }
+
+    /// <summary>حداکثر سرعت مجاز (km/h) برای کلاس خودرو — از جدول Vehicles.</summary>
+    public int? MaxAllowedSpeedForClass { get; set; }
+
+    /// <summary>حداکثر وزن مجاز (kg) برای کلاس خودرو — از جدول Vehicles.</summary>
+    public int? MaxAllowedWeightForClass { get; set; }
     public long? PassInfoId { get; set; }
     public long? PreviousDeviceCode { get; set; }
 
