@@ -151,9 +151,12 @@ public sealed class TtoImageService
     {
         const int width = 751;
         const int height = 1280;
-        // ۱۲ فیلد = ۴ ردیف × ۵۰px → ۱۰ + ۳×۵۰ + ۴۶ = ۲۰۶؛ ۲۱۰ فضای کافی برای ردیف چهارم است.
-        const int headerHeight = 210;
+        // ۱۱–۱۲ فیلد = ۴ ردیف × ۳۴px → ۸ + ۳×۳۴ + ۳۰ = ۱۴۰ ≤ ۱۵۰؛ هدر جمع‌وجور با فونت ۸pt.
+        const int headerHeight = 150;
         const int footerHeight = 90;
+        const float fieldTop = 8f;
+        const float fieldRowHeight = 34f;
+        const float fieldCellHeight = 30f;
 
         var bitmap = new Bitmap(width, height);
         bitmap.SetResolution(96f, 96f);
@@ -224,7 +227,7 @@ public sealed class TtoImageService
                 int row = i / 3;
                 int col = i % 3;
                 float x = width - margin - (col + 1) * colWidth;
-                var cellRect = new RectangleF(x, 10 + row * 50, colWidth, 46);
+                var cellRect = new RectangleF(x, fieldTop + row * fieldRowHeight, colWidth, fieldCellHeight);
                 DrawField(g, fields[i].Label, fields[i].Value, cellRect, labelFont, valueFont, textBrush);
             }
 
