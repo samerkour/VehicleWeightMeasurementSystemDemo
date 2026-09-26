@@ -12,12 +12,14 @@ namespace VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration
         public const int SpeedTypeAverage = 2;
         public const int SpeedTypeInstantAndAverage = 3;
 
-        // 🔹 ITS CrimeCode constants (match ItsCrimeCodes in RmtoSync)
-        public const long CrimeCodeSpeedViolation = 2056;
-        public const long CrimeCodeWeightViolation = 2020;
+        // 🔹 ITS CrimeCode values (bound from appsettings → VehicleClassification)
+        // پیش‌فرض‌ها با مقادیر مستند سامانه جامع هم‌راستا هستند: 2056 = سرعت، 2020 = وزن.
+        public long CrimeCodeSpeedViolation { get; set; } = 2056;
+        public long CrimeCodeWeightViolation { get; set; } = 2020;
 
         // 🔹 Violation thresholds
         public int LightVehicleSpeedViolationThresholdKmh { get; set; } = 110;
+        public int HeavyVehicleSpeedViolationThresholdKmh { get; set; } = 100;
         public double WeightViolationThresholdKg { get; set; } = 44000;
 
         // 🔹 آستانه‌های وزن (kg) برای تشخیص کلاس در خودروهای ۲ محور

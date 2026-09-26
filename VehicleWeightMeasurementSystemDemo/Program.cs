@@ -9,6 +9,7 @@ using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Abstractions;
 using VehicleWeightMeasurementSystemDemo.ApplicationLayer.Configuration;
+using VehicleWeightMeasurementSystemDemo.Domain.Services;
 using VehicleWeightMeasurementSystemDemo.Infrastructure;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Cameras;
 using VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence;
@@ -133,6 +134,11 @@ namespace VehicleWeightMeasurementSystemDemo
             // 🔹 Bind classification config
             builder.Services.Configure<VehicleClassificationSettings>(
                 builder.Configuration.GetSection("VehicleClassification"));
+
+            // 🔹 Domain service: class-based limits + violation rules (config-driven)
+            builder.Services.AddSingleton<IVehicleComplianceService>(sp =>
+                new VehicleComplianceService(
+                    sp.GetRequiredService<IOptions<VehicleClassificationSettings>>().Value));
 
 
             // 🔹 Bind config

@@ -44,6 +44,7 @@ namespace VehicleWeightMeasurementSystemDemo
         private readonly IServiceProvider _services;
         private IGeoLocationService _geoLocation;
         private VehicleClassificationSettings _classificationSettings;
+        private readonly IVehicleComplianceService _complianceService;
 
         // تنظیمات نگه‌داشته‌شده برای Start/Stop از منو
         private OverviewCameraSettings? _overviewSettings;
@@ -335,7 +336,8 @@ namespace VehicleWeightMeasurementSystemDemo
             CameraWatcherService cameraWatcher,
             IServiceProvider services,
             IGeoLocationService geoLocation,
-            IOptions<VehicleClassificationSettings> classificationSettings
+            IOptions<VehicleClassificationSettings> classificationSettings,
+            IVehicleComplianceService complianceService
             )
             : this()
         {
@@ -344,6 +346,7 @@ namespace VehicleWeightMeasurementSystemDemo
             _services = services;
             _geoLocation = geoLocation;
             _classificationSettings = classificationSettings.Value;
+            _complianceService = complianceService;
 
             _plateService = plateService;
 
@@ -752,20 +755,21 @@ namespace VehicleWeightMeasurementSystemDemo
                 vehicle.VehicleLen = VehicleClassifier.ComputeVehicleLength(vehicle);
                 vehicle.VehicleClass = VehicleClassifier.Classify(vehicle, _classificationSettings);
 
-                // 🔥 Overweight: تفاوت وزن واقعی با حداکثر وزن مجاز کلاس
-                if (vehicle.VehicleClass.HasValue && vehicle.TotalWeight.HasValue)
-                {
-                    if (_classificationSettings.MaxAllowedWeightByClass.TryGetValue(vehicle.VehicleClass.Value, out var maxAllowed))
-                        vehicle.TotalOverWeight = Math.Max(0, vehicle.TotalWeight.Value - maxAllowed);
-                }
+                // 🔥 ارزیابی کلاس‌محور تخلف‌ها (وزن/سرعت) — سرویس دامنه، کاملاً config-driven
+                var assessment = _complianceService.Assess(
+                    vehicle.VehicleClass, vehicle.Speed, vehicle.TotalWeight);
+
+                vehicle.TotalOverWeight = assessment.TotalOverWeight;
+                vehicle.MaxAllowedWeightForClass = assessment.MaxAllowedWeightForClass;
+                vehicle.MaxAllowedSpeedForClass = assessment.MaxAllowedSpeedForClass;
 
                 // 🔥 WrongDirection: جهت گزارش‌شده دوربین با جهت مورد انتظار ناسازگار است
                 var expected = _classificationSettings?.ExpectedDirection ?? 1;
                 vehicle.WrongDirection = (plate?.Direction ?? 0) != 0 &&
                                          (plate?.Direction != expected);
 
-                // 🔥 Allowed: پلاک خوانده‌شده و وزن در محدوده مجاز
-                vehicle.Allowed = plateRead && (vehicle.TotalOverWeight) <= 0;
+                // 🔥 Allowed: پلاک خوانده‌شده و عبور در محدودهٔ مجاز (وزن/سرعت کلاس)
+                vehicle.Allowed = plateRead && assessment.IsCompliant;
 
                 // 🔥 SpeedType: نوع سرعت (Instant=1, Average=2, InstantAndAverage=3, None=0)
                 var speed = vehicle.Speed ?? 0;
@@ -773,20 +777,10 @@ namespace VehicleWeightMeasurementSystemDemo
                     ? VehicleClassificationSettings.SpeedTypeInstant
                     : VehicleClassificationSettings.SpeedTypeNone;
 
-                // 🔥 CrimeCodes: کد تخلفات بر اساس آستانه‌ها
-                if (vehicle.Allowed == false)
-                {
-                    var crimes = new List<long>();
-                    if (speed >= _classificationSettings.LightVehicleSpeedViolationThresholdKmh)
-                        crimes.Add(VehicleClassificationSettings.CrimeCodeSpeedViolation);
-                    if (vehicle.TotalWeight >= _classificationSettings.WeightViolationThresholdKg)
-                        crimes.Add(VehicleClassificationSettings.CrimeCodeWeightViolation);
-                    vehicle.CrimeCodes = crimes.Count > 0 ? string.Join(",", crimes) : null;
-                }
-                else
-                {
-                    vehicle.CrimeCodes = null;
-                }
+                // 🔥 CrimeCodes: کد تخلفات از ارزیابی کلاس‌محور (2056 سرعت / 2020 وزن)
+                vehicle.CrimeCodes = assessment.CrimeCodes.Count > 0
+                    ? string.Join(",", assessment.CrimeCodes)
+                    : null;
 
                 // 🔥 موقعیت جغرافیایی ایستگاه (فقط یک‌بار برداشت)
                 if ((vehicle.Latitude == null || vehicle.Longitude == null) && _geoLocation != null)
@@ -1422,6 +1416,29 @@ namespace VehicleWeightMeasurementSystemDemo
             }
         }
 
+        /// <summary>
+        /// کلیدهای پیکربندی که فرم آنها را ویرایش نکرده، از شیء پیکربندی فعلی به
+        /// section بازنویسی‌شده منتقل می‌کند تا هنگام Save از appsettings حذف نشوند.
+        /// </summary>
+        private static void PreserveUneditedKeys(
+            object currentSource,
+            System.Text.Json.Nodes.JsonObject target,
+            params string[] editedKeys)
+        {
+            var edited = new HashSet<string>(editedKeys, StringComparer.OrdinalIgnoreCase);
+
+            // از پیکربندی فعلی (Section binding) همهٔ پراپرتی‌ها را می‌خوانیم
+            var props = System.Text.Json.JsonSerializer.SerializeToNode(currentSource) as System.Text.Json.Nodes.JsonObject;
+            if (props == null)
+                return;
+
+            foreach (var prop in props)
+            {
+                if (!edited.Contains(prop.Key) && !target.ContainsKey(prop.Key))
+                    target[prop.Key] = prop.Value?.DeepClone();
+            }
+        }
+
         private async void cameraSettingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var current = _config.GetSection("SnapshotCamera").Get<SnapshotCameraSettings>();
@@ -1618,6 +1635,8 @@ namespace VehicleWeightMeasurementSystemDemo
             foreach (var kvp in updated.MaxAllowedWeightByClass)
                 weights[kvp.Key.ToString()] = kvp.Value;
 
+            // 🔥 تنها کلیدهای قابل‌ویرایش را بازنویسی می‌کنیم؛ بقیهٔ کلیدهای
+            // VehicleClassification (کدهای تخلف، آستانه‌های سرعت/وزن، ...) حفظ می‌شوند.
             var section = new System.Text.Json.Nodes.JsonObject
             {
                 ["SedanMaxWeight"] = updated.SedanMaxWeight,
@@ -1629,6 +1648,13 @@ namespace VehicleWeightMeasurementSystemDemo
                 ["MinConfidence"] = updated.MinConfidence,
                 ["MaxAllowedWeightByClass"] = weights
             };
+
+            // کلیدهای پیکربندی که فرم آن‌ها را ویرایش نکرده (تخلف/آستانه‌ها) را
+            // از مقدار فعلی appsettings کپی می‌کنیم تا هنگام Save از بین نروند.
+            PreserveUneditedKeys(current, section,
+                "SedanMaxWeight", "PickupMaxWeight", "LightTruckMaxWeight",
+                "Truck3MaxWeight", "Truck4MaxWeight", "ExpectedDirection",
+                "MinConfidence", "MaxAllowedWeightByClass");
 
             if (!SaveConfigSection("VehicleClassification", section))
             {

@@ -24,6 +24,18 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
             builder.Property(v => v.ADC3).HasColumnType("varchar(16)");
             builder.Property(v => v.ADC4).HasColumnType("varchar(16)");
 
+            // 🔥 مقادیر آستانه در لحظه ثبت رکورد (Snapshot of config at record time)
+            // Defaults با مقادیر appsettings → VehicleClassification هم‌راستا هستند:
+            //   WeightViolationThresholdKg = 44000           → MaxAllowedWeightForClass
+            //   LightVehicleSpeedViolationThresholdKmh = 110 → MaxAllowedSpeedForClass
+            // DEFAULT constraint باعث می‌شود ردیف‌های موجود در ALTER هم به‌صورت خودکار مقدار بگیرند
+            // و هیچ‌کدام NULL یا از دست نروند (بدون از دست رفتن داده).
+            builder.Property(v => v.MaxAllowedWeightForClass)
+                .HasDefaultValue(44000.0);   // = WeightViolationThresholdKg
+
+            builder.Property(v => v.MaxAllowedSpeedForClass)
+                .HasDefaultValue(110);        // = LightVehicleSpeedViolationThresholdKmh
+
             builder.HasIndex(v => v.Timestamp);
 
             // Vehicle (1) -> (many) Axles — cascade
@@ -62,7 +74,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                     WrongDirection = false,
                     VehicleClass = 2,
                     VehicleLen = 12.4,
-                    TotalOverWeight = 0
+                    TotalOverWeight = 0,
+                    MaxAllowedWeightForClass = 44000,
+                    MaxAllowedSpeedForClass = 110
                 },
                 new VehicleEntity
                 {
@@ -81,7 +95,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                     WrongDirection = false,
                     VehicleClass = 3,
                     VehicleLen = 9.8,
-                    TotalOverWeight = 500
+                    TotalOverWeight = 500,
+                    MaxAllowedWeightForClass = 44000,
+                    MaxAllowedSpeedForClass = 110
                 },
                 new VehicleEntity
                 {
@@ -100,7 +116,9 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence.Configur
                     WrongDirection = false,
                     VehicleClass = 4,
                     VehicleLen = 15.2,
-                    TotalOverWeight = 3500
+                    TotalOverWeight = 3500,
+                    MaxAllowedWeightForClass = 44000,
+                    MaxAllowedSpeedForClass = 110
                 }
             );
         }

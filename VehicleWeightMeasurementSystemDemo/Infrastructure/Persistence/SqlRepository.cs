@@ -239,6 +239,8 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     Latitude = v.Latitude,
                     VehicleLen = v.VehicleLen,
                     TotalOverWeight = v.TotalOverWeight,
+                    MaxAllowedWeightForClass = v.MaxAllowedWeightForClass,
+                    MaxAllowedSpeedForClass = v.MaxAllowedSpeedForClass,
 
                     SpeedType = v.SpeedType,
                     CrimeCodes = v.CrimeCodes,

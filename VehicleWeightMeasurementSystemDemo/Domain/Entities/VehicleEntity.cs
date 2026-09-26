@@ -39,6 +39,18 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
 
         public int? VehicleClass { get; set; }
 
+        /// <summary>
+        /// حداکثر وزن مجاز (kg) اعمال‌شده برای این عبور (مقدار آستانه در لحظه ثبت رکورد).
+        /// در مایگریشن، مقدار پیش‌فرض از WeightViolationThresholdKg (44000) گرفته می‌شود.
+        /// </summary>
+        public double MaxAllowedWeightForClass { get; set; }
+
+        /// <summary>
+        /// حداکثر سرعت مجاز (km/h) اعمال‌شده برای این عبور (مقدار آستانه در لحظه ثبت رکورد).
+        /// در مایگریشن، مقدار پیش‌فرض از LightVehicleSpeedViolationThresholdKmh (110) گرفته می‌شود.
+        /// </summary>
+        public int MaxAllowedSpeedForClass { get; set; }
+
         public double? Longitude { get; set; }
         public double? Latitude { get; set; }
 
