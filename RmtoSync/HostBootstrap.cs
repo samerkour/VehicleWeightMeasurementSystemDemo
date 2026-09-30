@@ -96,6 +96,7 @@ public static class HostBootstrap
 
         builder.Services.AddSingleton<RahdariSyncStatus>();
         builder.Services.AddSingleton<CameraPhotoQueueRepository>();
+        builder.Services.AddSingleton<SchemaValidator>();
         builder.Services.AddSingleton<RahdariHealthCheck>();
         builder.Services.AddSingleton<RahdariTtoClient>();
         builder.Services.AddSingleton<TtoImageService>();
@@ -126,7 +127,21 @@ public static class HostBootstrap
 
             var connectionString = config.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
-            Log.Information("RmtoSync database schema checked");
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(15));
+
+            // اعتبارسنجی واقعی اسکیما (نه صرفاً اتصال). ناسازگاری مدل EF با پایگاه‌داده
+            // اینجا با فهرست دقیق ستون‌های مفقود گزارش می‌شود.
+            var schemaReport = await host.Services.GetRequiredService<SchemaValidator>().ValidateAsync(cts.Token);
+            if (schemaReport.IsCompatible)
+                Log.Information("RmtoSync database schema matches the EF model");
+            else
+                Log.Warning(
+                    "RmtoSync database schema does NOT match the EF model for {Count} object(s): {Objects}. Run {Script}.",
+                    schemaReport.Incompatible.Count(),
+                    string.Join(", ", schemaReport.Incompatible.Select(o =>
+                        $"{o.ObjectName} (missing: {(o.IsMissingObject ? "whole object" : string.Join("/", o.MissingColumns))})")),
+                    SchemaValidator.RemediationScript);
 
             // "Simple mode": in headless runs we don't keep polling forever.
             // Instead, we run a few sync cycles until the send queue is drained
@@ -138,8 +153,6 @@ public static class HostBootstrap
 
             const int maxCycles = 20;
             var totalSent = 0;
-
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(15));
 
             for (var cycle = 1; cycle <= maxCycles; cycle++)
             {

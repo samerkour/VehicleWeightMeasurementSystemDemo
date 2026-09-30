@@ -1,3 +1,6 @@
+using System.Data.Common;
+using System.Text.RegularExpressions;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace RmtoSync.Data;
@@ -6,14 +9,19 @@ public sealed class CameraPhotoQueueRepository
 {
     private readonly string _connectionString;
     private readonly IDbContextFactory<RmtoSyncDbContext> _contextFactory;
+    private readonly ILogger<CameraPhotoQueueRepository> _logger;
 
     public string ConnectionString => _connectionString;
 
-    public CameraPhotoQueueRepository(IConfiguration configuration, IDbContextFactory<RmtoSyncDbContext> contextFactory)
+    public CameraPhotoQueueRepository(
+        IConfiguration configuration,
+        IDbContextFactory<RmtoSyncDbContext> contextFactory,
+        ILogger<CameraPhotoQueueRepository> logger)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
         _contextFactory = contextFactory;
+        _logger = logger;
     }
 
     public Task<IReadOnlyList<CameraPhotoRecord>> GetPendingTtoBatchAsync(
@@ -188,7 +196,7 @@ public sealed class CameraPhotoQueueRepository
                 && p.PlateConfidence != 0
 
             orderby p.PhotoId
-            select new { Photo = p, LineCode = l.LineCode };
+            select new QueueRow { Photo = p, LineCode = l.LineCode };
 
         // فاصله‌ی بین تلاش‌ها: رکوردی که همین حالا شکست خورده در این دور دوباره انتخاب نمی‌شود،
         // تا یک رکوردِ خراب کل پنجره‌ی batch را اشغال نکند و پردازش بقیه‌ی صف متوقف نشود.
@@ -213,7 +221,37 @@ public sealed class CameraPhotoQueueRepository
                         || (r.Photo.PlateP4 ?? string.Empty).Trim() != string.Empty)));
         }
 
-        var rows = await query.Take(batchSize).ToListAsync(ct);
+        List<QueueRow> rows;
+        try
+        {
+            rows = await query.Take(batchSize).ToListAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (IsDatabaseFailure(ex))
+        {
+            // 🔥 ناسازگاری اسکیما (مثل «Invalid column name 'TerminalSent'») یا هر خطای
+            // دسترسی به پایگاه‌داده نباید چرخه را متوقف کند: batch خالی برگردانده می‌شود تا
+            // پردازش در چرخه‌ی بعدی ادامه پیدا کند. خطا پنهان نمی‌شود — با جزئیات کامل
+            // ثبت می‌شود تا علت ریشه‌ای («کدام ستون/ویو کم است») قابل رفع باشد.
+            //
+            // نکته: EF Core خطاهای گذرا (نظیر «Cannot open database») را در
+            // InvalidOperationException می‌پیچد و SqlException درون آن قرار می‌دهد،
+            // بنابراین گرفتن مستقیم SqlException کافی نیست.
+            _logger.LogError(
+                ex,
+                "Queue query failed for {Phase} — skipping this batch and continuing with the next cycle. " +
+                "BatchSize={BatchSize} SchemaError={SchemaError}. " +
+                "If this is 'Invalid column name' the database does not match the EF model: run {Remediation}.",
+                ttoRegistered ? "TTO" : "image",
+                batchSize,
+                TryDescribeSchemaError(ex),
+                SchemaValidator.RemediationScript);
+
+            return Array.Empty<CameraPhotoRecord>();
+        }
 
         var result = new List<CameraPhotoRecord>(rows.Count);
         foreach (var row in rows)
@@ -223,5 +261,68 @@ public sealed class CameraPhotoQueueRepository
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// نام مفقود را از پیام «Invalid column name 'X'» / «Invalid object name 'X'» استخراج می‌کند
+    /// تا لاگ علت ریشه‌ای را نشان دهد. SQL Server نام شیءِ والد را در پیام نمی‌آورد،
+    /// بنابراین فقط نام ستون یا شیءِ مفقود گزارش می‌شود.
+    /// </summary>
+    public static string DescribeSchemaError(string sqlErrorMessage, int errorNumber)
+    {
+        var match = InvalidNameRegex.Match(sqlErrorMessage);
+        if (!match.Success)
+            return $"no (error {errorNumber})";
+
+        return $"{match.Groups["kind"].Value} '{match.Groups["name"].Value}' " +
+               $"does not exist in the database (error {errorNumber})";
+    }
+
+    private static string TryDescribeSchemaError(Exception ex)
+    {
+        // نام ستون/شیءِ مفقود ممکن است در لایه‌ی بالاتر (پیام پیچیده‌ی EF) یا در استثنای
+        // درونی باشد؛ هر دو بررسی می‌شوند.
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is SqlException sqlException)
+                return DescribeSchemaError(sqlException.Message, sqlException.Number);
+
+            var described = DescribeSchemaError(current.Message, 0);
+            if (described != "no (error 0)")
+                return described;
+        }
+
+        return DescribeSchemaError(ex.Message, 0);
+    }
+
+    /// <summary>
+    /// آیا این استثنا ریشه در دسترسی به پایگاه‌داده دارد؟
+    /// EF Core هم <c>SqlException</c> را مستقیم پرتاب می‌کند و هم آن را داخل
+    /// <c>InvalidOperationException</c> (خطاهای گذرا) می‌پیچد؛ هر دو باید گرفته شوند،
+    /// ولی استثناهای برنامه‌نویسی نباید نادیده گرفته شوند.
+    /// </summary>
+    public static bool IsDatabaseFailure(Exception? ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is DbException or SqlException)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static readonly Regex InvalidNameRegex = new(
+        @"Invalid\s+(?<kind>column|object)\s+name\s+'(?<name>[^']+)'",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// DTO پروژکشن صف. (ساختار tuple در درختِ عبارت EF قابل استفاده نیست، بنابراین
+    /// به‌جای آن یک نوع نام‌دار به کار می‌رود.)
+    /// </summary>
+    private sealed class QueueRow
+    {
+        public CameraPhotoRecord Photo { get; set; } = new();
+        public string? LineCode { get; set; }
     }
 }
