@@ -3,7 +3,6 @@
     <File Path="Docs/RahdariTtoWs.curl.md" />
     <File Path="Docs/راهنمای فراخوانی وب_سرویس ارسال اطلاعات به سامانه جامع(نسخه چهارم).pdf" />
   </Folder>
-  <Project Path="Farasoo.AppGuard/Farasoo.AppGuard.csproj" />
   <Project Path="RmtoSync/RmtoSync.csproj" />
   <Project Path="RmtoSync.Tests/RmtoSync.Tests.csproj" />
   <Project Path="VehicleWeightMeasurementSystemDemo/VehicleWeightMeasurementSystemDemo.csproj" />
