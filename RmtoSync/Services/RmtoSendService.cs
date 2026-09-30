@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using RmtoSync.Configuration;
 using RmtoSync.Data;
@@ -20,7 +22,7 @@ public sealed class RmtoSendService
     private readonly RahdariSyncStatus _syncStatus;
     private readonly RahdariHealthCheck _healthCheck;
     private readonly ILogger<RmtoSendService> _logger;
-    private readonly HashSet<long> _plateIssuesLogged = new();
+    private readonly ConcurrentDictionary<long, byte> _plateIssuesLogged = new();
     private bool _lastHealthOk = true;
     private DateTime _lastHealthWarnUtc = DateTime.MinValue;
 
@@ -53,13 +55,14 @@ public sealed class RmtoSendService
 
         var processed = 0;
         var maxRecords = _options.EffectiveMaxRecords;
+        var startedAt = Stopwatch.GetTimestamp();
 
         processed += await ProcessPendingImagesAsync(maxRecords - processed, ct);
         if (processed >= maxRecords || ct.IsCancellationRequested)
-            return LogCycle(processed);
+            return LogCycle(processed, startedAt);
 
         processed += await ProcessPendingTtoAsync(maxRecords - processed, ct);
-        return LogCycle(processed);
+        return LogCycle(processed, startedAt);
     }
 
     private async Task<int> ProcessPendingTtoAsync(int maxRecords, CancellationToken ct)
@@ -67,12 +70,15 @@ public sealed class RmtoSendService
         if (maxRecords <= 0)
             return 0;
 
-        var pending = await _queue.GetPendingTtoBatchAsync(Math.Min(_options.EffectiveBatchSize, maxRecords), ct);
+        var pending = await _queue.GetPendingTtoBatchAsync(
+            Math.Min(_options.EffectiveBatchSize, maxRecords),
+            _options.EffectiveMaxSendAttempts,
+            _options.RetryBackoff,
+            ct);
         if (pending.Count == 0)
             return 0;
 
-        foreach (var photo in pending)
-            LogPlateIssues(photo);
+        // لاگ مشکلات پلاک داخل ProcessOneAsync (تک‌بار برای هر رکورد) انجام می‌شود.
 
         var plans = TtoSendRouter.PlanBatch(pending, _rahdariOptions);
         var singles = plans.Where(p => p.Mode == TtoSendRouter.SendMode.SingleWithImages).ToList();
@@ -84,31 +90,53 @@ public sealed class RmtoSendService
         return sent;
     }
 
+    /// <summary>
+    /// هر تصویر مستقل پردازش می‌شود: خطای یک رکورد فقط همان رکورد را ناموفق می‌کند و
+    /// پردازش بقیه‌ی صف ادامه می‌یابد.
+    /// </summary>
     private async Task<int> ProcessPendingImagesAsync(int maxRecords, CancellationToken ct)
     {
         if (maxRecords <= 0 || !_rahdariOptions.SendImagesSeparately)
             return 0;
 
-        var pending = await _queue.GetPendingImageBatchAsync(Math.Min(_options.EffectiveBatchSize, maxRecords), ct);
+        var pending = await _queue.GetPendingImageBatchAsync(
+            Math.Min(_options.EffectiveBatchSize, maxRecords),
+            _options.EffectiveMaxSendAttempts,
+            _options.RetryBackoff,
+            ct);
+
         var sent = 0;
+        var failed = 0;
 
-        foreach (var photo in pending)
+        // ارسال‌ها موازی اما محدود: صف پرتر از پیش پیش می‌رود بدون فشار بیش از حد بر سرویس راهداری.
+        await Parallel.ForEachAsync(
+            pending,
+            new ParallelOptions
+            {
+                CancellationToken = ct,
+                MaxDegreeOfParallelism = _options.EffectiveMaxConcurrentSends,
+            },
+            async (photo, token) =>
+            {
+                var outcome = await ProcessOneAsync(
+                    photo,
+                    () => TtoPayloadFactory.Create(photo, _rahdariOptions),
+                    TryCompleteWithImagesAsync,
+                    SendStage.SendImage,
+                    token);
+
+                if (outcome == RecordOutcome.Sent)
+                    Interlocked.Increment(ref sent);
+                else if (outcome == RecordOutcome.Failed)
+                    Interlocked.Increment(ref failed);
+            });
+
+        if (failed > 0)
         {
-            if (ct.IsCancellationRequested)
-                break;
-
-            LogPlateIssues(photo);
-
-            try
-            {
-                var payload = TtoPayloadFactory.Create(photo, _rahdariOptions);
-                if (await TryCompleteWithImagesAsync(photo, payload, ct))
-                    sent++;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                await HandleSendFailureAsync(photo, ex, ct);
-            }
+            _logger.LogWarning(
+                "{Failed} image send(s) failed this cycle and will retry up to {MaxAttempts} attempt(s).",
+                failed,
+                _options.EffectiveMaxSendAttempts);
         }
 
         return sent;
@@ -117,30 +145,99 @@ public sealed class RmtoSendService
     private async Task<int> ProcessSinglePlansAsync(IReadOnlyList<TtoSendRouter.SendPlan> singles, CancellationToken ct)
     {
         var sent = 0;
-        foreach (var plan in singles)
-        {
-            if (ct.IsCancellationRequested)
-                break;
 
-            try
+        await Parallel.ForEachAsync(
+            singles,
+            new ParallelOptions
             {
-                ValidatePhotoReady(plan.Photo);
-                var plate = _images.BuildPlateImage(plan.Photo);
-                var color = _images.BuildColorImage(plan.Photo, plan.Payload, plate);
-                TtoPreSendValidator.Validate(plan.Payload, color, plate, requireImages: true);
+                CancellationToken = ct,
+                MaxDegreeOfParallelism = _options.EffectiveMaxConcurrentSends,
+            },
+            async (plan, token) =>
+            {
+                var outcome = await ProcessOneAsync(
+                    plan.Photo,
+                    () => plan.Payload,
+                    SendSingleWithImagesAsync,
+                    SendStage.AddTtoWithImages,
+                    token);
 
-                var result = await _rahadri.SendSingleAsync(plan.Payload, color, plate, ct);
-                RahdariTtoClient.EnsureSuccess(plan.Photo.PhotoId, result);
-                await MarkSentAsync(plan.Photo, result.Reference, ct);
-                sent++;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                await HandleSendFailureAsync(plan.Photo, ex, ct);
-            }
-        }
+                if (outcome == RecordOutcome.Sent)
+                    Interlocked.Increment(ref sent);
+            });
 
         return sent;
+    }
+
+    private async Task<bool> SendSingleWithImagesAsync(CameraPhotoRecord photo, TtoPayload payload, CancellationToken ct)
+    {
+        ValidatePhotoReady(photo);
+        var plate = _images.BuildPlateImage(photo);
+        var color = _images.BuildColorImage(photo, payload, plate);
+        SaveRahdariImages(photo, color);
+        TtoPreSendValidator.Validate(payload, color, plate, requireImages: true);
+
+        var result = await _rahadri.SendSingleAsync(payload, color, plate, ct);
+        RahdariTtoClient.EnsureSuccess(photo.PhotoId, result);
+        await MarkSentAsync(photo, result.Reference, ct);
+        return true;
+    }
+
+    /// <summary>
+    /// اجرای امن یک رکورد: ادعای تلاش (attempt)، مهلت زمانی مستقل، ثبت مرحله و
+    /// رهاسازی رکورد پس از سقف تلاش مجاز. تنها لغوِ خاموش‌سازی میزبان از این مسیر عبور می‌کند.
+    /// </summary>
+    private async Task<RecordOutcome> ProcessOneAsync(
+        CameraPhotoRecord photo,
+        Func<TtoPayload> buildPayload,
+        Func<CameraPhotoRecord, TtoPayload, CancellationToken, Task<bool>> send,
+        SendStage stage,
+        CancellationToken ct)
+    {
+        var photoId = photo.PhotoId;
+        LogPlateIssues(photo);
+
+        var attempt = await _queue.TryBeginAttemptAsync(photoId, _options.EffectiveMaxSendAttempts, ct);
+        if (attempt == 0)
+        {
+            _logger.LogDebug(
+                "Skipped PhotoId={PhotoId} Stage={Stage} — already sent, abandoned, or retry cap reached",
+                photoId, stage);
+            return RecordOutcome.Skipped;
+        }
+
+        var retryCount = attempt - 1; // 0 برای اولین تلاش
+        _logger.LogInformation(
+            "Image send started PhotoId={PhotoId} Stage={Stage} RetryCount={RetryCount} Attempt={Attempt} of {MaxAttempts}",
+            photoId, stage, retryCount, attempt, _options.EffectiveMaxSendAttempts);
+
+        // مهلت مستقل هر رکورد: رکوردِ کند فقط خودش را از کار می‌اندازد، نه کل صف را.
+        using var recordCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        recordCts.CancelAfter(_options.SendTimeout);
+
+        try
+        {
+            var payload = buildPayload();
+            var sent = await send(photo, payload, recordCts.Token);
+            return sent ? RecordOutcome.Sent : RecordOutcome.Skipped;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            _logger.LogInformation(
+                "Image send cancelled by host shutdown PhotoId={PhotoId} Stage={Stage} RetryCount={RetryCount}",
+                photoId, stage, retryCount);
+            throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            await HandleSendFailureAsync(photo, stage, retryCount, _options.SendTimeout, ex, ct);
+            return RecordOutcome.Failed;
+        }
+        catch (Exception ex)
+        {
+            await HandleSendFailureAsync(photo, stage, retryCount, null, ex, ct);
+            return RecordOutcome.Failed;
+        }
     }
 
     private async Task<int> ProcessBatchPlansAsync(IReadOnlyList<TtoSendRouter.SendPlan> batches, CancellationToken ct)
@@ -149,17 +246,30 @@ public sealed class RmtoSendService
             return 0;
 
         var validBatches = new List<TtoSendRouter.SendPlan>(batches.Count);
+        var attemptByPhotoId = new Dictionary<long, int>(batches.Count);
+
         foreach (var plan in batches)
         {
+            ct.ThrowIfCancellationRequested();
+            LogPlateIssues(plan.Photo);
+
+            // ادعای تلاش برای مرحله‌ی TTO؛ رکوردِ رهاشده یا تمام‌شده دوباره انتخاب نمی‌شود.
+            var attempt = await _queue.TryBeginAttemptAsync(
+                plan.Photo.PhotoId, _options.EffectiveMaxSendAttempts, ct);
+            if (attempt == 0)
+                continue;
+
+            attemptByPhotoId[plan.Photo.PhotoId] = attempt;
+
             try
             {
                 ValidatePhotoReady(plan.Photo);
                 TtoPreSendValidator.Validate(plan.Payload, null, null, requireImages: false);
                 validBatches.Add(plan);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
-                await HandleSendFailureAsync(plan.Photo, ex, ct);
+                await HandleSendFailureAsync(plan.Photo, SendStage.ValidateTto, attempt - 1, null, ex, ct);
             }
         }
 
@@ -167,16 +277,34 @@ public sealed class RmtoSendService
             return 0;
 
         IReadOnlyList<InquiryInfoResult> inquiries;
-        try
+        using (var batchCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
         {
-            inquiries = await _rahadri.SendBatchAsync(validBatches.Select(b => b.Payload).ToList(), ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            var summary = RahdariResponseInterpreter.ExplainException(ex, "addTTOInfoBatch2").Summary;
-            foreach (var plan in validBatches)
-                await RecordErrorAsync(plan.Photo.PhotoId, summary, ct);
-            return 0;
+            batchCts.CancelAfter(_options.SendTimeout);
+
+            try
+            {
+                inquiries = await _rahadri.SendBatchAsync(validBatches.Select(b => b.Payload).ToList(), batchCts.Token);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // شکست درخواست دسته‌ای: هر رکورد مستقل ناموفق ثبت می‌شود و صف متوقف نمی‌شود.
+                foreach (var plan in validBatches)
+                {
+                    await HandleSendFailureAsync(
+                        plan.Photo,
+                        SendStage.AddTtoBatch,
+                        attemptByPhotoId[plan.Photo.PhotoId] - 1,
+                        _options.SendTimeout,
+                        ex,
+                        ct);
+                }
+
+                return 0;
+            }
         }
 
         var inquiryByRef = inquiries
@@ -187,17 +315,26 @@ public sealed class RmtoSendService
         var sent = 0;
         foreach (var plan in validBatches)
         {
-            if (!inquiryByRef.TryGetValue(plan.Photo.PhotoId, out var inquiry))
+            var photoId = plan.Photo.PhotoId;
+            var retryCount = attemptByPhotoId[photoId] - 1;
+
+            if (!inquiryByRef.TryGetValue(photoId, out var inquiry))
             {
-                await RecordErrorAsync(plan.Photo.PhotoId, "Batch response missing InquiryInfo for record", ct);
+                await HandleSendFailureAsync(
+                    plan.Photo,
+                    SendStage.AddTtoBatch,
+                    retryCount,
+                    null,
+                    new RahdariSendException(photoId, "Batch response missing InquiryInfo for record"),
+                    ct);
                 continue;
             }
 
             try
             {
-                RahdariTtoClient.EnsureTtoSuccess(plan.Photo.PhotoId, inquiry.ValidationCode);
+                RahdariTtoClient.EnsureTtoSuccess(photoId, inquiry.ValidationCode);
                 await _queue.MarkTtoRegisteredAsync(
-                    plan.Photo.PhotoId,
+                    photoId,
                     inquiry.PassInfoId,
                     inquiry.PackId,
                     plan.Photo.PassDatetime,
@@ -205,8 +342,8 @@ public sealed class RmtoSendService
 
                 _syncStatus.RecordSuccess(
                     "addTTOInfoBatch2",
-                    $"Ref={plan.Photo.PhotoId}: {ItsErrorCodes.Describe(inquiry.ValidationCode)}",
-                    plan.Photo.PhotoId,
+                    $"Ref={photoId}: {ItsErrorCodes.Describe(inquiry.ValidationCode)}",
+                    photoId,
                     inquiry.ValidationCode);
 
                 if (inquiry.ValidationCode == ItsErrorCodes.AddTto.Duplicate)
@@ -214,22 +351,27 @@ public sealed class RmtoSendService
                     plan.Photo.TerminalTtoRegistered = true;
                     plan.Photo.TerminalPassInfoId = inquiry.PassInfoId > 0 ? inquiry.PassInfoId : plan.Photo.TerminalPassInfoId;
                 }
-
-                if (_rahdariOptions.SendImagesSeparately)
-                {
-                    var refreshed = TtoPayloadFactory.Create(plan.Photo, _rahdariOptions);
-                    if (await TryCompleteWithImagesAsync(plan.Photo, refreshed, ct))
-                        sent++;
-                }
-                else if (await TryCompleteWithImagesAsync(plan.Photo, plan.Payload, ct))
-                {
-                    sent++;
-                }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
-                await HandleSendFailureAsync(plan.Photo, ex, ct);
+                await HandleSendFailureAsync(plan.Photo, SendStage.AddTtoBatch, retryCount, null, ex, ct);
+                continue;
             }
+
+            // مرحله‌ی ارسال تصویر بودجه‌ی تلاش مستقل دارد (MarkTtoRegisteredAsync شمارنده را صفر می‌کند).
+            var payload = _rahdariOptions.SendImagesSeparately
+                ? TtoPayloadFactory.Create(plan.Photo, _rahdariOptions)
+                : plan.Payload;
+
+            var outcome = await ProcessOneAsync(
+                plan.Photo,
+                () => payload,
+                TryCompleteWithImagesAsync,
+                SendStage.SendImage,
+                ct);
+
+            if (outcome == RecordOutcome.Sent)
+                sent++;
         }
 
         return sent;
@@ -360,7 +502,7 @@ public sealed class RmtoSendService
 
     private void LogPlateIssues(CameraPhotoRecord photo)
     {
-        if (!_plateIssuesLogged.Add(photo.PhotoId))
+        if (!_plateIssuesLogged.TryAdd(photo.PhotoId, 0))
             return;
 
         try
@@ -395,9 +537,22 @@ public sealed class RmtoSendService
         _syncStatus.RecordSent();
     }
 
-    private async Task HandleSendFailureAsync(CameraPhotoRecord photo, Exception ex, CancellationToken ct)
+    /// <summary>
+    /// ثبت ساخت‌یافته‌ی شکست یک رکورد. پس از رسیدن به سقف تلاش مجاز، رکورد «رها» می‌شود
+    /// (از صف خارج و علامت‌گذاری می‌شود) تا دیگر جلوی پردازش تصاویر بعدی را نگیرد.
+    /// </summary>
+    private async Task HandleSendFailureAsync(
+        CameraPhotoRecord photo,
+        SendStage stage,
+        int retryCount,
+        TimeSpan? timeout,
+        Exception ex,
+        CancellationToken ct)
     {
         var photoId = ex is RahdariSendException rse ? rse.PhotoId : photo.PhotoId;
+        var maxAttempts = _options.EffectiveMaxSendAttempts;
+        var attempt = retryCount + 1;
+        var isLastAttempt = attempt >= maxAttempts;
 
         if (ex is RahdariSendException { ItsErrorCode: ItsErrorCodes.AddImage.SendWindowExpired })
         {
@@ -406,8 +561,39 @@ public sealed class RmtoSendService
         }
 
         var explained = RahdariResponseInterpreter.ExplainException(ex, "send");
-        _logger.LogError(ex, "Rahdari send failed PhotoId={PhotoId} — {Summary}", photoId, explained.Summary);
-        _syncStatus.RecordFailure("send", ex, photoId);
+
+        _logger.LogError(
+            ex,
+            "Image send failed PhotoId={PhotoId} Stage={Stage} RetryCount={RetryCount} Attempt={Attempt} of {MaxAttempts} Timeout={Timeout} LastAttempt={IsLastAttempt} — {Summary}",
+            photoId,
+            stage,
+            retryCount,
+            attempt,
+            maxAttempts,
+            timeout?.TotalSeconds.ToString("0") ?? "-",
+            isLastAttempt,
+            explained.Summary);
+
+        _syncStatus.RecordFailure($"send/{stage}", ex, photoId);
+
+        if (isLastAttempt)
+        {
+            var message =
+                $"[{stage}] پس از {attempt} تلاش ناموفق رها شد — {explained.Summary}";
+
+            if (await _queue.AbandonAfterMaxRetriesAsync(photoId, message, ct))
+            {
+                _logger.LogError(
+                    "Record abandoned after {Attempts} attempt(s) — removed from the queue. PhotoId={PhotoId} Stage={Stage} Reason={Reason}",
+                    attempt,
+                    photoId,
+                    stage,
+                    explained.Summary);
+            }
+
+            return;
+        }
+
         await RecordErrorAsync(photoId, explained.Summary, ct);
     }
 
@@ -460,10 +646,32 @@ public sealed class RmtoSendService
                 count);
     }
 
-    private int LogCycle(int processed)
+    private int LogCycle(int processed, long startedAt)
     {
         if (processed > 0)
-            _logger.LogInformation("Cycle finished. Sent {Count} photo(s) to Rahdari.", processed);
+        {
+            _logger.LogInformation(
+                "Cycle finished. Sent {Count} photo(s) to Rahdari in {ElapsedMs}ms",
+                processed,
+                Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds.ToString("0"));
+        }
+
         return processed;
+    }
+
+    /// <summary>مرحله‌ی جاری پردازش هر رکورد — در لاگ‌های ساخت‌یافته گزارش می‌شود.</summary>
+    public enum SendStage
+    {
+        ValidateTto,
+        AddTtoBatch,
+        AddTtoWithImages,
+        SendImage,
+    }
+
+    private enum RecordOutcome
+    {
+        Sent,
+        Failed,
+        Skipped,
     }
 }

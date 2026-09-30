@@ -14,4 +14,7 @@ public sealed class CameraPhotoRow
     public long? TerminalPassInfoId { get; set; }
     public long? TerminalPackId { get; set; }
     public long? PassInfoId { get; set; }
+    public int TerminalSendAttempts { get; set; }
+    public DateTime? TerminalLastAttemptAt { get; set; }
+    public bool TerminalAbandoned { get; set; }
 }

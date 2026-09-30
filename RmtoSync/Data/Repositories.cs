@@ -16,11 +16,63 @@ public sealed class CameraPhotoQueueRepository
         _contextFactory = contextFactory;
     }
 
-    public Task<IReadOnlyList<CameraPhotoRecord>> GetPendingTtoBatchAsync(int batchSize, CancellationToken ct) =>
-        QueryBatchAsync(batchSize, ttoRegistered: false, ct);
+    public Task<IReadOnlyList<CameraPhotoRecord>> GetPendingTtoBatchAsync(
+        int batchSize, int maxAttempts, TimeSpan retryBackoff, CancellationToken ct) =>
+        QueryBatchAsync(batchSize, ttoRegistered: false, maxAttempts, retryBackoff, ct);
 
-    public Task<IReadOnlyList<CameraPhotoRecord>> GetPendingImageBatchAsync(int batchSize, CancellationToken ct) =>
-        QueryBatchAsync(batchSize, ttoRegistered: true, ct);
+    public Task<IReadOnlyList<CameraPhotoRecord>> GetPendingImageBatchAsync(
+        int batchSize, int maxAttempts, TimeSpan retryBackoff, CancellationToken ct) =>
+        QueryBatchAsync(batchSize, ttoRegistered: true, maxAttempts, retryBackoff, ct);
+
+    /// <summary>
+    /// Atomically claims a record for one send attempt and returns the 1-based attempt number,
+    /// or 0 when the record is no longer claimable (already sent, abandoned, or retry cap reached).
+    /// The predicate is re-checked in SQL, so concurrent workers can never double-claim a record.
+    /// </summary>
+    public async Task<int> TryBeginAttemptAsync(long photoId, int maxAttempts, CancellationToken ct)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var now = DateTime.Now;
+
+        var affected = await context.CameraPhotos
+            .Where(p => p.Id == photoId
+                && !p.TerminalSent
+                && !p.TerminalAbandoned
+                && p.TerminalSendAttempts < maxAttempts)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.TerminalSendAttempts, p => p.TerminalSendAttempts + 1)
+                    .SetProperty(p => p.TerminalLastAttemptAt, now),
+                ct);
+
+        if (affected == 0)
+            return 0;
+
+        return await context.CameraPhotos
+            .Where(p => p.Id == photoId)
+            .Select(p => p.TerminalSendAttempts)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Acknowledges a record that exhausted its retry budget: it leaves the pending queue
+    /// (TerminalSent + TerminalAbandoned) so it can no longer block newer records.
+    /// </summary>
+    public async Task<bool> AbandonAfterMaxRetriesAsync(long photoId, string errorMessage, CancellationToken ct)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var now = DateTime.Now;
+        var affected = await context.CameraPhotos
+            .Where(p => p.Id == photoId && !p.TerminalSent && !p.TerminalAbandoned)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.TerminalAbandoned, true)
+                    .SetProperty(p => p.TerminalSent, true)
+                    .SetProperty(p => p.TerminalSentAt, now)
+                    .SetProperty(p => p.TerminalLastError, errorMessage),
+                ct);
+        return affected > 0;
+    }
 
     public async Task MarkTtoRegisteredAsync(
         long photoId,
@@ -40,7 +92,10 @@ public sealed class CameraPhotoQueueRepository
                     .SetProperty(p => p.TerminalPassInfoId, passInfoId)
                     .SetProperty(p => p.TerminalPackId, packId)
                     .SetProperty(p => p.PassInfoId, passInfoId)
-                    .SetProperty(p => p.TerminalLastError, string.Empty),
+                    .SetProperty(p => p.TerminalLastError, string.Empty)
+                    // مرحله‌ی TTO با موفقیت تمام شد؛ مرحله‌ی ارسال تصویر بودجه‌ی تلاش مستقل دارد.
+                    .SetProperty(p => p.TerminalSendAttempts, 0)
+                    .SetProperty(p => p.TerminalLastAttemptAt, (DateTime?)null),
                 ct);
     }
 
@@ -110,14 +165,20 @@ public sealed class CameraPhotoQueueRepository
     private async Task<IReadOnlyList<CameraPhotoRecord>> QueryBatchAsync(
         int batchSize,
         bool ttoRegistered,
+        int maxAttempts,
+        TimeSpan retryBackoff,
         CancellationToken ct)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var now = DateTime.Now;
+        var backoffCutoff = now - retryBackoff;
 
         var query =
             from p in context.CameraPhotoQueue.AsNoTracking()
             join l in context.Lines on p.LineId equals l.Id
             where !p.TerminalSent
+                && !p.TerminalAbandoned
+                && p.TerminalSendAttempts < maxAttempts
                 && (p.TerminalTtoRegistered ?? false) == ttoRegistered
                 && (p.TerminalImageExpired ?? false) == false
                 && p.PlateReadStatus == 1
@@ -128,6 +189,10 @@ public sealed class CameraPhotoQueueRepository
 
             orderby p.PhotoId
             select new { Photo = p, LineCode = l.LineCode };
+
+        // فاصله‌ی بین تلاش‌ها: رکوردی که همین حالا شکست خورده در این دور دوباره انتخاب نمی‌شود،
+        // تا یک رکوردِ خراب کل پنجره‌ی batch را اشغال نکند و پردازش بقیه‌ی صف متوقف نشود.
+        query = query.Where(r => r.Photo.TerminalLastAttemptAt == null || r.Photo.TerminalLastAttemptAt <= backoffCutoff);
 
         if (ttoRegistered)
         {

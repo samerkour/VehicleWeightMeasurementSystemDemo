@@ -19,11 +19,16 @@ public sealed class TtoImageService
 
     private readonly RahdariOptions _rahdari;
     private readonly RmtoSyncOptions _sync;
+    private readonly VehicleClassOptions _vehicleClass;
 
-    public TtoImageService(IOptions<RahdariOptions> rahdari, IOptions<RmtoSyncOptions> sync)
+    public TtoImageService(
+        IOptions<RahdariOptions> rahdari,
+        IOptions<RmtoSyncOptions> sync,
+        IOptions<VehicleClassOptions> vehicleClass)
     {
         _rahdari = rahdari.Value;
         _sync = sync.Value;
+        _vehicleClass = vehicleClass.Value;
     }
 
     public byte[] BuildColorImage(CameraPhotoRecord photo, TtoPayload? payload = null, byte[]? plateImage = null)
@@ -38,7 +43,7 @@ public sealed class TtoImageService
 
         using var source = Image.FromFile(photo.FullPath, useEmbeddedColorManagement: true);
         using var resized = new Bitmap(source, new Size(800, 600));
-        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari, plateImage ?? BuildPlateImage(photo));
+        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari, _vehicleClass, plateImage ?? BuildPlateImage(photo));
 
         var limits = ImageSizeLimits.Get(ResolveColorImageKind(payload));
         return FitJpegSize(annotated, limits.MinKb!.Value, limits.MaxKb, startQuality: 75);
@@ -147,7 +152,7 @@ public sealed class TtoImageService
         return new Rectangle(x, y, w, h);
     }
 
-    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg, byte[] plateImage)
+    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg, VehicleClassOptions vehicleClassOptions, byte[] plateImage)
     {
         const int width = 751;
         const int height = 1280;
@@ -198,10 +203,8 @@ public sealed class TtoImageService
             var passDate = photo.PassDatetime;
             var instantSpeed = photo.VehicleSpeed ?? photo.AverageSpeed ?? 0;
 
-            // برچسب کلاس خودرو؛ در صورت نبود مقدار (نال) → "-"
-            var vehicleClassLabel = photo.VehicleClass.HasValue
-                ? photo.VehicleClass.Value.ToString(CultureInfo.InvariantCulture)
-                : "-";
+            // برچسب خوانای کلاس خودرو از تنظیمات (appsettings: VehicleClassLabels)؛ نال/نامعتبر → «نامشخص»
+            var vehicleClassLabel = GetVehicleClassLabel(photo.VehicleClass, vehicleClassOptions);
 
             var fields = new (string Label, string Value)[]
             {
@@ -213,19 +216,20 @@ public sealed class TtoImageService
                 ("نام محور", cfg.StationLabel),
                 ("سرعت مجاز سبک/سنگین", $"{cfg.HeavyVehicleSpeedViolationThresholdKmh}/{cfg.LightVehicleSpeedViolationThresholdKmh} km/h"),
                 ("پلاک", pelak),
-                ($"سرعت مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
+                //($"سرعت مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedSpeedKmh(photo, cfg).ToString(CultureInfo.InvariantCulture)} km/h"),
                 ("وزن کل", FormatWeightKg(photo.TotalWeight)),
                 ($"وزن مجاز (کلاس {vehicleClassLabel})", $"{ResolveMaxAllowedWeightKg(photo, cfg).ToString(CultureInfo.InvariantCulture)} kg")
             };
 
-            // حاشیه‌ی کم‌تر → ستون‌های عریض‌تر؛ توزیع کامل عرض هدر بین ۳ ستون.
-            const float margin = 6f;
-            float colWidth = (width - margin * 2) / 3f;
+            // کل عرض قابل‌استفاده‌ی هدر باید خرج ستون‌ها شود: حاشیه‌ی کم → ستون‌های عریض‌تر.
+            const float margin = 2f;
+            const int fieldColumns = 3;
+            float colWidth = (width - margin * 2) / fieldColumns;
 
             for (int i = 0; i < fields.Length; i++)
             {
-                int row = i / 3;
-                int col = i % 3;
+                int row = i / fieldColumns;
+                int col = i % fieldColumns;
                 float x = width - margin - (col + 1) * colWidth;
                 var cellRect = new RectangleF(x, fieldTop + row * fieldRowHeight, colWidth, fieldCellHeight);
                 DrawField(g, fields[i].Label, fields[i].Value, cellRect, labelFont, valueFont, textBrush);
@@ -305,6 +309,23 @@ public sealed class TtoImageService
     /// <summary>فرمت وزن کل (kg) با InvariantCulture؛ مقدار ناموجود → "-".</summary>
     private static string FormatWeightKg(int? value) =>
         value.HasValue ? $"{value.Value.ToString(CultureInfo.InvariantCulture)} kg" : "-";
+
+    /// <summary>
+    /// برچسب فارسی کلاس خودرو از تنظیمات (<c>VehicleClassLabels</c>)؛
+    /// کلاس نال یا فاقد نگاشت → برچسب پیش‌فرض «نامشخص».
+    /// </summary>
+    private static string GetVehicleClassLabel(int? vehicleClass, VehicleClassOptions options)
+    {
+        if (vehicleClass.HasValue &&
+            options.VehicleClassLabels.TryGetValue(
+                vehicleClass.Value.ToString(CultureInfo.InvariantCulture),
+                out var label))
+        {
+            return label;
+        }
+
+        return VehicleClassOptions.UnknownLabel;
+    }
 
     private static void DrawField(
         Graphics g,

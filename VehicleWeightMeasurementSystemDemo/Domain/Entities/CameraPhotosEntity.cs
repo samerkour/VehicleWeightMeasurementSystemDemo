@@ -47,6 +47,15 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Entities
         public bool TerminalTtoRegistered { get; internal set; }
         public bool TerminalImageExpired { get; internal set; }
 
+        /// <summary>تعداد تلاش‌های ارسال؛ پس از رسیدن به سقف، رکورد رها و از صف خارج می‌شود.</summary>
+        public int TerminalSendAttempts { get; set; }
+
+        /// <summary>زمان آخرین تلاش ارسال — برای فاصله‌گذاری بین تلاش‌های مجدد.</summary>
+        public DateTime? TerminalLastAttemptAt { get; set; }
+
+        /// <summary>رکورد پس از تمام‌شدن تلاش‌های مجاز دیگر از صف انتخاب نمی‌شود.</summary>
+        public bool TerminalAbandoned { get; set; }
+
         public string? TerminalLastError { get; set; }
 
         public DateTime? TerminalImageExpiredAt { get; set; }

@@ -77,6 +77,15 @@ public sealed class CameraPhotoRecord
 
     /// <summary>حداکثر وزن مجاز (kg) برای کلاس خودرو — از جدول Vehicles.</summary>
     public int? MaxAllowedWeightForClass { get; set; }
+
+    /// <summary>تعداد تلاش‌های ارسال انجام‌شده تا کنون (برای سقف تلاش مجدد).</summary>
+    public int TerminalSendAttempts { get; set; }
+
+    /// <summary>زمان آخرین تلاش ارسال — برای اعمال فاصله‌ی بین تلاش‌ها (backoff).</summary>
+    public DateTime? TerminalLastAttemptAt { get; set; }
+
+    /// <summary>رکورد پس از رسیدن به سقف تلاش مجاز رها شده و دیگر از صف انتخاب نمی‌شود.</summary>
+    public bool TerminalAbandoned { get; set; }
     public long? PassInfoId { get; set; }
     public long? PreviousDeviceCode { get; set; }
 

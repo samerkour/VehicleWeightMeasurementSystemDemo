@@ -81,8 +81,13 @@ public static class HostBootstrap
         builder.Logging.AddSerilog();
         builder.Services.Configure<RmtoSyncOptions>(builder.Configuration.GetSection(RmtoSyncOptions.SectionName));
         builder.Services.Configure<RahdariOptions>(builder.Configuration.GetSection(RahdariOptions.SectionName));
+        // نام سکشن و نام پراپرتی یکسان است؛ بنابراین والدِ سکشن بایند می‌شود تا درخت
+        // VehicleClassLabels روی پراپرتی دیکشنری نگاشت شود (بایند کردن خودِ سکشن، کلیدهای ۱..۱۴ را
+        // به‌عنوان نام پراپرتی می‌بیند و چیزی بایند نمی‌شود).
+        builder.Services.Configure<VehicleClassOptions>(builder.Configuration);
 
-        builder.Services.AddHttpClient("Rahdari", client => client.Timeout = TimeSpan.FromMinutes(2));
+        // مهلت پشتیبان سرویس؛ مهلت اصلی هر رکورد از RmtoSync:SendTimeoutSeconds (پیش‌فرض ۶۰ ثانیه) اعمال می‌شود.
+        builder.Services.AddHttpClient("Rahdari", client => client.Timeout = TimeSpan.FromSeconds(90));
 
         var cameraConnection = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
@@ -129,6 +134,7 @@ public static class HostBootstrap
             var sendService = host.Services.GetRequiredService<RmtoSendService>();
             var queue = host.Services.GetRequiredService<CameraPhotoQueueRepository>();
             var rahdariOptions = host.Services.GetRequiredService<IOptions<RahdariOptions>>().Value;
+            var syncOptions = host.Services.GetRequiredService<IOptions<RmtoSyncOptions>>().Value;
 
             const int maxCycles = 20;
             var totalSent = 0;
@@ -148,11 +154,11 @@ public static class HostBootstrap
                 if (sent == 0)
                     break;
 
-                if (!await HasAnyPendingAsync(queue, rahdariOptions, cts.Token))
+                if (!await HasAnyPendingAsync(queue, rahdariOptions, syncOptions, cts.Token))
                     break;
             }
 
-            var pending = await HasAnyPendingAsync(queue, rahdariOptions, cts.Token);
+            var pending = await HasAnyPendingAsync(queue, rahdariOptions, syncOptions, cts.Token);
             if (pending)
             {
                 Log.Warning("Oneshot finished but queue is not empty (some records may be stuck due to validation / missing images). TotalSent={TotalSent}", totalSent);
@@ -177,17 +183,21 @@ public static class HostBootstrap
     private static async Task<bool> HasAnyPendingAsync(
         CameraPhotoQueueRepository queue,
         RahdariOptions rahdariOptions,
+        RmtoSyncOptions syncOptions,
         CancellationToken ct)
     {
+        var maxAttempts = syncOptions.EffectiveMaxSendAttempts;
+        var backoff = syncOptions.RetryBackoff;
+
         // TTO pending (metadata not yet accepted by ITS).
-        var tto = await queue.GetPendingTtoBatchAsync(1, ct);
+        var tto = await queue.GetPendingTtoBatchAsync(1, maxAttempts, backoff, ct);
         if (tto.Count > 0)
             return true;
 
         // Image pending only matters when images are uploaded in a separate step.
         if (rahdariOptions.SendImagesSeparately)
         {
-            var images = await queue.GetPendingImageBatchAsync(1, ct);
+            var images = await queue.GetPendingImageBatchAsync(1, maxAttempts, backoff, ct);
             return images.Count > 0;
         }
 
