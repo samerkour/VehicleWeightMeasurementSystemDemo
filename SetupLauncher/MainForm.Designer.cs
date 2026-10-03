@@ -33,37 +33,61 @@
 
         private void InitializeComponent()
         {
-            this.btnSql = new Button();
-            this.btnVehicle = new Button();
-            this.btnRmto = new Button();
-            this.btnHelp = new Button();
-
-            this.SuspendLayout();
-
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+            btnSql = new Button();
+            btnVehicle = new Button();
+            btnRmto = new Button();
+            btnHelp = new Button();
+            SuspendLayout();
+            // 
+            // btnSql
+            // 
+            btnSql.Location = new Point(125, 607);
+            btnSql.Name = "btnSql";
+            btnSql.Size = new Size(185, 40);
+            btnSql.TabIndex = 0;
             btnSql.Text = "Install SQL Server";
-            btnSql.SetBounds(30, 30, 250, 40);
             btnSql.Click += btnSql_Click;
-
+            // 
+            // btnVehicle
+            // 
+            btnVehicle.Location = new Point(382, 607);
+            btnVehicle.Name = "btnVehicle";
+            btnVehicle.Size = new Size(206, 40);
+            btnVehicle.TabIndex = 1;
             btnVehicle.Text = "Install Vehicle System";
-            btnVehicle.SetBounds(30, 80, 250, 40);
             btnVehicle.Click += btnVehicle_Click;
-
+            // 
+            // btnRmto
+            // 
+            btnRmto.Location = new Point(660, 607);
+            btnRmto.Name = "btnRmto";
+            btnRmto.Size = new Size(172, 40);
+            btnRmto.TabIndex = 2;
             btnRmto.Text = "Install RmtoSync";
-            btnRmto.SetBounds(30, 130, 250, 40);
             btnRmto.Click += btnRmto_Click;
-
+            // 
+            // btnHelp
+            // 
+            btnHelp.Location = new Point(904, 607);
+            btnHelp.Name = "btnHelp";
+            btnHelp.Size = new Size(172, 40);
+            btnHelp.TabIndex = 3;
             btnHelp.Text = "Help";
-            btnHelp.SetBounds(30, 180, 250, 40);
             btnHelp.Click += btnHelp_Click;
-
-            this.Controls.AddRange(new Control[] {
-                btnSql, btnVehicle, btnRmto, btnHelp
-            });
-
-            this.Text = "System Installer";
-            this.ClientSize = new System.Drawing.Size(320, 260);
-
-            this.ResumeLayout(false);
+            // 
+            // MainForm
+            // 
+            BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
+            ClientSize = new Size(1232, 703);
+            Controls.Add(btnSql);
+            Controls.Add(btnVehicle);
+            Controls.Add(btnRmto);
+            Controls.Add(btnHelp);
+            MaximizeBox = false;
+            Name = "MainForm";
+            Text = "System Installer";
+            ResumeLayout(false);
         }
 
         #endregion
