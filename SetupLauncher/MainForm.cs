@@ -13,7 +13,7 @@ namespace SetupLauncher
         public MainForm()
         {
             InitializeComponent();
-            CheckAdmin();
+            //CheckAdmin();
         }
 
         private void CheckAdmin()
