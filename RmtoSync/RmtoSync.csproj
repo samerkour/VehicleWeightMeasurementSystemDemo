@@ -11,7 +11,12 @@
     <PlatformTarget>x64</PlatformTarget>
     <UserSecretsId>rmto-sync-kangan1405</UserSecretsId>
     <Platforms>AnyCPU;x64</Platforms>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />

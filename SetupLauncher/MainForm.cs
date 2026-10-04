@@ -30,28 +30,40 @@ namespace SetupLauncher
 
         private void RunProcess(string file, string args = "")
         {
-            if (!File.Exists(file))
+            try
             {
-                MessageBox.Show($"File not found:\n{file}");
-                return;
+                var psi = new ProcessStartInfo
+                {
+                    FileName = file,
+                    Arguments = args,
+                    UseShellExecute = true,
+                    Verb = "runas",
+                    WorkingDirectory = rootPath
+                };
+
+                Process.Start(psi);
             }
-
-            var psi = new ProcessStartInfo
+            catch (Exception ex)
             {
-                FileName = file,
-                Arguments = args,
-                UseShellExecute = true,
-                Verb = "runas"
-            };
-
-            Process.Start(psi);
+                MessageBox.Show($"Failed to start process:\n{ex.Message}");
+            }
         }
 
         // 1️⃣ SQL INSTALL
         private void btnSql_Click(object sender, EventArgs e)
         {
             string cmdPath = Path.Combine(rootPath, "setup.cmd");
-            RunProcess("cmd.exe", $"/c \"{cmdPath}\"");
+
+            if (!File.Exists(cmdPath))
+            {
+                MessageBox.Show($"setup.cmd not found:\n{cmdPath}");
+                return;
+            }
+
+            RunProcess(
+                "cmd.exe",
+                $"/c \"\"{cmdPath}\"\""
+            );
         }
 
         // 2️⃣ Vehicle System
