@@ -33,9 +33,21 @@ public sealed class RahdariOptions
     public bool AnprOnlyStation { get; set; } = true;
 
     /// <summary>
-    /// Stub instant speed (km/h) when <see cref="AnprOnlyStation"/> is true — no radar yet.
+    /// سرعت جایگزین (km/h) وقتی سرعت لحظه‌ای یا میانگین ثبت نشده است (NULL یا صفر).
+    /// بر اساس ITS مقدار صفر یعنی «سرعت ثبت نشده» و برای speedType = 1/2/3 نامعتبر است
+    /// (خطاهای ۱۱۶ و ۱۲۴)، بنابراین هیچ‌وقت صفر فرستاده نمی‌شود.
+    /// </summary>
+    public int DefaultSpeed { get; set; } = 60;
+
+    /// <summary>
+    /// نام قدیمیِ <see cref="DefaultSpeed"/>؛ فقط زمانی استفاده می‌شود که
+    /// <see cref="DefaultSpeed"/> صفر یا منفی باشد (سازگاری با فایل‌های پیکربندی قدیمی).
     /// </summary>
     public int FakeInstantSpeedKmh { get; set; } = 60;
+
+    /// <summary>سرعت پیش‌فرض مؤثر برای فیلدهای سرعتِ خالی/صفر.</summary>
+    public int EffectiveDefaultSpeed =>
+        DefaultSpeed > 0 ? DefaultSpeed : (FakeInstantSpeedKmh > 0 ? FakeInstantSpeedKmh : 60);
 
     /// <summary>
     /// مهلت مجاز ارسال تصویر پس از زمان عبور خودرو (ITS). پیش‌فرض ۲۴ ساعت است.

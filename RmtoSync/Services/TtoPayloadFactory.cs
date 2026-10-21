@@ -42,8 +42,9 @@ public static class TtoPayloadFactory
 
         // ── Maps incoming DB fields one-to-one (Vehicles table) ────────────────────
         // VehicleSpeed → Vehicles.Speed, AverageSpeed → Vehicles.AverageSpeed,
-        // TotalWeight → Vehicles.TotalWeight. Fall back to stub speed only when missing.
-        var fakeSpeed = options.FakeInstantSpeedKmh > 0 ? options.FakeInstantSpeedKmh : 60;
+        // TotalWeight → Vehicles.TotalWeight. Zero/NULL speed means "not measured" in
+        // ITS, so it is replaced by DefaultSpeed instead of being sent as 0.
+        var (speed, avgSpeed) = DefaultedSpeeds(photo.VehicleSpeed, photo.AverageSpeed, options);
 
         return new TtoPayload
         {
@@ -55,8 +56,8 @@ public static class TtoPayloadFactory
             ReceiveDateTime = receiveDateTime,
             Plate = plate,
             LineNumber = photo.LineNumber,
-            VehicleSpeed = photo.VehicleSpeed ?? fakeSpeed,
-            AverageSpeed = photo.AverageSpeed ?? 0,
+            VehicleSpeed = speed,
+            AverageSpeed = avgSpeed,
             Allowed = TtoFieldValues.Allowed.Permitted,
             VehicleClass = options.DefaultVehicleClass,
             WrongDirection = ToWrongDirection(photo.WrongDirection),
@@ -92,7 +93,8 @@ public static class TtoPayloadFactory
         var avgSpeed = photo.AverageSpeed ?? 0;
         var weight = photo.TotalWeight ?? 0;
         var speedType = ResolveSpeedType(speed, avgSpeed, photo.SpeedType);
-        (speed, avgSpeed, speedType) = NormalizeSpeedFields(speed, avgSpeed, speedType, options);
+        (speed, avgSpeed, speedType) = NormalizeSpeedFields(
+            speed, avgSpeed, speedType, photo.PreviousDeviceCode ?? 0, options);
         var axles = photo.TotalAxles ?? (weight > 0 ? (byte)2 : (byte)0);
 
         var crimes = ParseCrimeCodes(photo.CrimeCodes);
@@ -187,30 +189,45 @@ public static class TtoPayloadFactory
     }
 
     /// <summary>
-    /// DB may carry stale speedType=2/3 without average speed — ITS returns error 124.
-    /// When no real sensor data, fall back to fake instant speed (same as camera-only stub).
+    /// ITS treats 0 as "speed not measured" (speedType 0), and rejects 0 when speedType
+    /// claims a measured speed (errors 116/124). Every zero/NULL value is therefore
+    /// replaced with <see cref="RahdariOptions.DefaultSpeed"/> before the payload is built.
+    /// </summary>
+    private static (int Speed, int AvgSpeed) DefaultedSpeeds(int? speed, int? avgSpeed, RahdariOptions options)
+    {
+        var fallback = options.EffectiveDefaultSpeed;
+        return (
+            speed is > 0 ? speed.Value : fallback,
+            avgSpeed is > 0 ? avgSpeed.Value : fallback);
+    }
+
+    /// <summary>
+    /// Fills zero/NULL speeds with the configured default and keeps speedType consistent
+    /// with the values actually being sent:
+    /// average types are only kept when an average speed was really measured and a
+    /// PreviousDeviceCode exists; otherwise the record is sent as instant speed (type 1),
+    /// which never requires reserved10/PreviousDeviceCode and avoids ITS 116/124.
     /// </summary>
     private static (int Speed, int AvgSpeed, long SpeedType) NormalizeSpeedFields(
-        int speed, int avgSpeed, long speedType, RahdariOptions options)
+        int speed, int avgSpeed, long speedType, long previousDeviceCode, RahdariOptions options)
     {
-        if (speedType is TtoFieldValues.SpeedType.Average or TtoFieldValues.SpeedType.InstantAndAverage
-            && avgSpeed <= 0)
-        {
-            var fakeSpeed = options.FakeInstantSpeedKmh > 0 ? options.FakeInstantSpeedKmh : 60;
-            return (fakeSpeed, 0, TtoFieldValues.SpeedType.Instant);
-        }
+        var hasMeasuredSpeed = speed > 0;
+        var hasMeasuredAvg = avgSpeed > 0;
+        var fallback = options.EffectiveDefaultSpeed;
 
-        if (speedType == TtoFieldValues.SpeedType.Instant && speed <= 0)
-        {
-            var fakeSpeed = options.FakeInstantSpeedKmh > 0 ? options.FakeInstantSpeedKmh : 60;
-            return (fakeSpeed, avgSpeed, speedType);
-        }
+        if (!hasMeasuredSpeed)
+            speed = fallback;
 
-        if (speedType == TtoFieldValues.SpeedType.None && speed <= 0 && avgSpeed <= 0)
-        {
-            var fakeSpeed = options.FakeInstantSpeedKmh > 0 ? options.FakeInstantSpeedKmh : 60;
-            return (fakeSpeed, 0, TtoFieldValues.SpeedType.Instant);
-        }
+        if (!hasMeasuredAvg)
+            avgSpeed = fallback;
+
+        var averageTypeRequested = speedType is
+            TtoFieldValues.SpeedType.Average or TtoFieldValues.SpeedType.InstantAndAverage;
+
+        if (averageTypeRequested && (!hasMeasuredAvg || previousDeviceCode <= 0))
+            speedType = TtoFieldValues.SpeedType.Instant;
+        else if (speedType == TtoFieldValues.SpeedType.None)
+            speedType = TtoFieldValues.SpeedType.Instant;
 
         return (speed, avgSpeed, speedType);
     }

@@ -43,7 +43,7 @@ public sealed class TtoImageService
 
         using var source = Image.FromFile(photo.FullPath, useEmbeddedColorManagement: true);
         using var resized = new Bitmap(source, new Size(800, 600));
-        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari, _vehicleClass, plateImage ?? BuildPlateImage(photo));
+        using var annotated = DrawOverlay(resized, photo, pelak, _rahdari, _vehicleClass, plateImage ?? BuildPlateImage(photo), payload.VehicleSpeed);
 
         var limits = ImageSizeLimits.Get(ResolveColorImageKind(payload));
         return FitJpegSize(annotated, limits.MinKb!.Value, limits.MaxKb, startQuality: 75);
@@ -152,7 +152,7 @@ public sealed class TtoImageService
         return new Rectangle(x, y, w, h);
     }
 
-    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg, VehicleClassOptions vehicleClassOptions, byte[] plateImage)
+    private static Bitmap DrawOverlay(Image image, CameraPhotoRecord photo, string pelak, RahdariOptions cfg, VehicleClassOptions vehicleClassOptions, byte[] plateImage, long instantSpeed)
     {
         const int width = 751;
         const int height = 1280;
@@ -201,7 +201,6 @@ public sealed class TtoImageService
 
             var pc = new PersianCalendar();
             var passDate = photo.PassDatetime;
-            var instantSpeed = photo.VehicleSpeed ?? photo.AverageSpeed ?? 0;
 
             // برچسب خوانای کلاس خودرو از تنظیمات (appsettings: VehicleClassLabels)؛ نال/نامعتبر → «نامشخص»
             var vehicleClassLabel = GetVehicleClassLabel(photo.VehicleClass, vehicleClassOptions);

@@ -43,7 +43,8 @@ FROM dbo.CameraPhotos cp
 WHERE cp.TerminalSent = 1
   AND cp.TerminalAbandoned = 1
   AND cp.TerminalTtoRegistered = 0
-  AND cp.TerminalSentAt >= DATEADD(DAY, -@MaxAgeDays, GETDATE())
+  /* سن داده بر اساس زمان عبور/ورود سنجیده می‌شود، نه TerminalSentAt (که هنگام رهاسازی = اکنون است) */
+  AND ISNULL(cp.CapturedAt, cp.ImportedAt) >= DATEADD(DAY, -@MaxAgeDays, GETDATE())
   AND EXISTS (
         SELECT 1
         FROM @RecoverableReasons r
