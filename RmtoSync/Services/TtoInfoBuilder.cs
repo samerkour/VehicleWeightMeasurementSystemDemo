@@ -38,10 +38,27 @@ internal static class TtoInfoBuilder
             return BuildBatchTtoInfo(payload);
 
         var info = new XElement(RahdariSoapNamespaces.Tns + "TTOInfo");
+        var includeWim = payload.IsHeavy || payload.TotalWeight > 0;
 
-        // Field order aligned with ITS guide chapter 5 SOAP samples (addTTOInfo).
+        // Field order follows the WSDL sequence shown in ITS guide sample 6-4 (heavy/WIM),
+        // the only sample that contains every field. The server validates this sequence:
+        // a field sent in the wrong position aborts the call with HTTP 500
+        // SchemaValidationError (e.g. cARCLASS13 sent after LPF/SLPF).
         info.Add(BuildCrimes(payload.CrimeCodes));
         info.Add(DecimalField("aLLOWED", payload.Allowed));
+
+        if (includeWim)
+        {
+            AddAxleArray(info, "aXLESEQUIVALENT_W", payload.AxleEquivalentWeights, 8);
+            info.Add(DecimalField("aXLESEQUIVALENT_W_MORETHAN8", payload.AxleEquivalentWeightMoreThan8));
+            AddAxleArray(info, "aXLESWEIGHT", payload.AxleWeights, 9);
+        }
+
+        if (payload.CarClass13 != 0)
+            info.Add(DecimalField("cARCLASS13", payload.CarClass13));
+
+        if (payload.CarClass15.HasValue)
+            info.Add(DecimalField("cARCLASS15", payload.CarClass15.Value));
 
         if (includeImages && colorImage is { Length: > 0 })
             info.Add(StringField("cOLORIMAGE", Convert.ToBase64String(colorImage)));
@@ -50,11 +67,37 @@ internal static class TtoInfoBuilder
         info.Add(DecimalField("dEVICECODE", payload.DeviceCode));
 
         if (includeExtraColorImages && includeImages)
+        {
+            if (colorImage is { Length: > 0 })
+                info.Add(StringField("eXCOLORIMAGE1", Convert.ToBase64String(colorImage)));
+
             info.Add(StringField("eXCOLORIMAGE2", string.Empty));
+        }
+
+        if (includeWim)
+        {
+            info.Add(DecimalField("fIRSTTOLASTAXLESLEN", payload.FirstToLastAxlesLen));
+            info.Add(DecimalField("gAP", payload.Gap));
+            info.Add(DecimalField("hEADGAP", payload.HeadGap));
+        }
 
         info.Add(BoolField("hasImage", includeImages || payload.HasImage));
+
+        if (payload.Latitude.HasValue)
+            info.Add(DecimalField("lATITUDE", payload.Latitude.Value));
+
+        if (includeWim)
+            AppendLengthAxles(info, payload.AxleLengths);
+
         info.Add(DecimalField("lINENUMBER", payload.LineNumber));
+
+        if (payload.Longitude.HasValue)
+            info.Add(DecimalField("lONGITUDE", payload.Longitude.Value));
+
         info.Add(StringField("pASSDATETIME", FormatDateTime(payload.PassDateTime)));
+
+        if (payload.PassInfoId.HasValue)
+            info.Add(DecimalField("pASSINFOID", payload.PassInfoId.Value));
 
         if (includeImages && plateImage is { Length: > 0 })
             info.Add(StringField("pLATEIMAGE", Convert.ToBase64String(plateImage)));
@@ -71,40 +114,26 @@ internal static class TtoInfoBuilder
 
         info.Add(StringField("reserved7", payload.Reserved7));
         info.Add(DecimalField("sYSTEMCODE", payload.SystemCode));
+
+        if (payload.OcrScore.HasValue)
+            info.Add(DecimalField("score", payload.OcrScore.Value));
+
         info.Add(DecimalField("speedType", payload.SpeedType));
+
+        if (includeWim)
+            AppendWimTotals(info, payload);
+
         info.Add(DecimalField("vEHICLECLASS", payload.VehicleClass));
         info.Add(DecimalField("vEHICLELEN", payload.VehicleLen));
         info.Add(DecimalField("vEHICLEPLATE", payload.Plate.VehiclePlate));
         info.Add(DecimalField("vEHICLESPEED", payload.VehicleSpeed));
         info.Add(DecimalField("wRONGDIRECTION", payload.WrongDirection));
-        info.Add(DecimalField("LPF", payload.Plate.Lpf));
-        info.Add(DecimalField("SLPF", payload.Plate.Slpf));
-
-        if (payload.CarClass13 != 0)
-            info.Add(DecimalField("cARCLASS13", payload.CarClass13));
-
-        if (payload.OcrScore.HasValue)
-            info.Add(DecimalField("score", payload.OcrScore.Value));
-
-        if (payload.Longitude.HasValue)
-            info.Add(DecimalField("lONGITUDE", payload.Longitude.Value));
-
-        if (payload.Latitude.HasValue)
-            info.Add(DecimalField("lATITUDE", payload.Latitude.Value));
-
-        if (payload.PassInfoId.HasValue)
-            info.Add(DecimalField("pASSINFOID", payload.PassInfoId.Value));
-
-        if (payload.CarClass15.HasValue)
-            info.Add(DecimalField("cARCLASS15", payload.CarClass15.Value));
-
-        AppendWimFields(info, payload);
-
-        if (includeExtraColorImages && includeImages && colorImage is { Length: > 0 })
-            info.Add(StringField("eXCOLORIMAGE1", Convert.ToBase64String(colorImage)));
 
         if (payload.SpeedType is TtoFieldValues.SpeedType.Average or TtoFieldValues.SpeedType.InstantAndAverage)
             info.Add(DecimalField("PreviousDeviceCode", payload.PreviousDeviceCode));
+
+        info.Add(DecimalField("LPF", payload.Plate.Lpf));
+        info.Add(DecimalField("SLPF", payload.Plate.Slpf));
 
         return info;
     }
@@ -174,32 +203,24 @@ internal static class TtoInfoBuilder
             DecimalField("VehicleClass", payload.VehicleClass));
     }
 
-    private static void AppendWimFields(XElement info, TtoPayload payload)
+    /// <summary>
+    /// WIM totals in ITS guide sample 6-4 order: TOTALAXLES, TOTALOVERWEIGHT,
+    /// TOTALOVERWEIGHT_A, TOTALOVERWEIGHT_AX1..AX8, AX_MORETHAN8, _B, _C,
+    /// TOTALWEIGHT, _A, _B, _C.
+    /// </summary>
+    private static void AppendWimTotals(XElement info, TtoPayload payload)
     {
-        if (!payload.IsHeavy && payload.TotalWeight <= 0)
-            return;
-
         info.Add(DecimalField("tOTALAXLES", payload.TotalAxles));
-        info.Add(DecimalField("tOTALWEIGHT", payload.TotalWeight));
-        info.Add(DecimalField("hEADGAP", payload.HeadGap));
-        info.Add(DecimalField("gAP", payload.Gap));
-        info.Add(DecimalField("fIRSTTOLASTAXLESLEN", payload.FirstToLastAxlesLen));
-
-        AddAxleArray(info, "aXLESWEIGHT", payload.AxleWeights, 9);
-        AppendLengthAxles(info, payload.AxleLengths);
-        AddAxleArray(info, "aXLESEQUIVALENT_W", payload.AxleEquivalentWeights, 8);
-        info.Add(DecimalField("aXLESEQUIVALENT_W_MORETHAN8", payload.AxleEquivalentWeightMoreThan8));
-
         info.Add(DecimalField("tOTALOVERWEIGHT", payload.TotalOverWeight));
+        info.Add(DecimalField("tOTALOVERWEIGHT_A", payload.TotalOverWeightA));
+        AddOverweightAxles(info, payload.AxleOverWeights);
+        info.Add(DecimalField("tOTALOVERWEIGHT_AX_MORETHAN8", payload.AxleOverWeightMoreThan8));
+        info.Add(DecimalField("tOTALOVERWEIGHT_B", payload.TotalOverWeightB));
+        info.Add(DecimalField("tOTALOVERWEIGHT_C", payload.TotalOverWeightC));
+        info.Add(DecimalField("tOTALWEIGHT", payload.TotalWeight));
         info.Add(DecimalField("tOTALWEIGHT_A", payload.TotalWeightA));
         info.Add(DecimalField("tOTALWEIGHT_B", payload.TotalWeightB));
         info.Add(DecimalField("tOTALWEIGHT_C", payload.TotalWeightC));
-        info.Add(DecimalField("tOTALOVERWEIGHT_A", payload.TotalOverWeightA));
-        info.Add(DecimalField("tOTALOVERWEIGHT_B", payload.TotalOverWeightB));
-        info.Add(DecimalField("tOTALOVERWEIGHT_C", payload.TotalOverWeightC));
-
-        AddOverweightAxles(info, payload.AxleOverWeights);
-        info.Add(DecimalField("tOTALOVERWEIGHT_AX_MORETHAN8", payload.AxleOverWeightMoreThan8));
     }
 
     private static void AppendLengthAxles(XElement info, long[] lengths)
