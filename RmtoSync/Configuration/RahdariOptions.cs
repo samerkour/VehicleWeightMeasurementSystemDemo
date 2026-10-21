@@ -37,6 +37,13 @@ public sealed class RahdariOptions
     /// </summary>
     public int FakeInstantSpeedKmh { get; set; } = 60;
 
+    /// <summary>
+    /// مهلت مجاز ارسال تصویر پس از زمان عبور خودرو (ITS). پیش‌فرض ۲۴ ساعت است.
+    /// رکوردهایی که این مهلت را از دست داده‌اند با addTTOInfo همراه تصویر (نمونه‌ی ۲ راهنما)
+    /// فرستاده می‌شوند، چون مسیر AddImage دیگر پذیرفته نمی‌شود.
+    /// </summary>
+    public int ImageAttachWindowHours { get; set; } = ServiceLimits.ImageAttachHoursAfterPass;
+
     public decimal? StationLongitude { get; set; }
     public decimal? StationLatitude { get; set; }
 

@@ -25,6 +25,7 @@ public sealed class RmtoSendService
     private readonly ConcurrentDictionary<long, byte> _plateIssuesLogged = new();
     private bool _lastHealthOk = true;
     private DateTime _lastHealthWarnUtc = DateTime.MinValue;
+    private DateTime _lastDataAgeSweepUtc = DateTime.MinValue;
 
     public RmtoSendService(
         IOptions<RmtoSyncOptions> options,
@@ -51,6 +52,7 @@ public sealed class RmtoSendService
         if (!await EnsureServiceHealthyAsync(ct))
             return 0;
 
+        await AbandonBeyondDataAgeAsync(ct);
         await ExpireOverdueImageWindowsAsync(ct);
 
         var processed = 0;
@@ -276,14 +278,15 @@ public sealed class RmtoSendService
         if (validBatches.Count == 0)
             return 0;
 
-        IReadOnlyList<InquiryInfoResult> inquiries;
+        BatchSendResult batchResult;
         using (var batchCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
         {
             batchCts.CancelAfter(_options.SendTimeout);
 
             try
             {
-                inquiries = await _rahadri.SendBatchAsync(validBatches.Select(b => b.Payload).ToList(), batchCts.Token);
+                batchResult = await _rahadri.SendBatchAsync(
+                    validBatches.Select(b => b.Payload).ToList(), batchCts.Token);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -307,74 +310,149 @@ public sealed class RmtoSendService
             }
         }
 
-        var inquiryByRef = inquiries
-            .Where(i => i.ReferenceNo > 0)
-            .GroupBy(i => i.ReferenceNo)
-            .ToDictionary(g => g.Key, g => g.First());
+        var outcomes = BatchOutcomeMapper.Map(
+            validBatches.Select(b => b.Payload).ToList(), batchResult.Items);
 
         var sent = 0;
-        foreach (var plan in validBatches)
+        for (var index = 0; index < validBatches.Count; index++)
         {
+            var plan = validBatches[index];
             var photoId = plan.Photo.PhotoId;
             var retryCount = attemptByPhotoId[photoId] - 1;
+            var outcome = outcomes[index];
 
-            if (!inquiryByRef.TryGetValue(photoId, out var inquiry))
+            InquiryInfoResult inquiry;
+            if (outcome.Inquiry is not null)
             {
-                await HandleSendFailureAsync(
-                    plan.Photo,
-                    SendStage.AddTtoBatch,
-                    retryCount,
-                    null,
-                    new RahdariSendException(photoId, "Batch response missing InquiryInfo for record"),
-                    ct);
-                continue;
+                inquiry = outcome.Inquiry;
+            }
+            else
+            {
+                // «نبودن InquiryInfo» یعنی نتیجه نامعلوم، نه رد شدن رکورد. قبلاً همین حالت
+                // به‌عنوان شکست قطعی شمرده می‌شد و پس از ۳ تلاش رکورد برای همیشه رها می‌شد
+                // (۱۳٬۳۷۱ رکورد در همین پایگاه‌داده). اکنون با یک addTTOInfo تکی —
+                // که پاسخ قطعی می‌دهد — وضعیت روشن می‌شود.
+                inquiry = await ResolveUnconfirmedBatchOutcomeAsync(
+                    plan, retryCount, outcome.Reason, batchResult.ResponseSummary, ct);
+
+                if (inquiry.ReferenceNo <= 0)
+                    continue; // تأیید هم شکست خورد؛ تلاش در همان متد ثبت شده است
             }
 
-            try
-            {
-                RahdariTtoClient.EnsureTtoSuccess(photoId, inquiry.ValidationCode);
-                await _queue.MarkTtoRegisteredAsync(
-                    photoId,
-                    inquiry.PassInfoId,
-                    inquiry.PackId,
-                    plan.Photo.PassDatetime,
-                    ct);
-
-                _syncStatus.RecordSuccess(
-                    "addTTOInfoBatch2",
-                    $"Ref={photoId}: {ItsErrorCodes.Describe(inquiry.ValidationCode)}",
-                    photoId,
-                    inquiry.ValidationCode);
-
-                if (inquiry.ValidationCode == ItsErrorCodes.AddTto.Duplicate)
-                {
-                    plan.Photo.TerminalTtoRegistered = true;
-                    plan.Photo.TerminalPassInfoId = inquiry.PassInfoId > 0 ? inquiry.PassInfoId : plan.Photo.TerminalPassInfoId;
-                }
-            }
-            catch (Exception ex)
-            {
-                await HandleSendFailureAsync(plan.Photo, SendStage.AddTtoBatch, retryCount, null, ex, ct);
-                continue;
-            }
-
-            // مرحله‌ی ارسال تصویر بودجه‌ی تلاش مستقل دارد (MarkTtoRegisteredAsync شمارنده را صفر می‌کند).
-            var payload = _rahdariOptions.SendImagesSeparately
-                ? TtoPayloadFactory.Create(plan.Photo, _rahdariOptions)
-                : plan.Payload;
-
-            var outcome = await ProcessOneAsync(
-                plan.Photo,
-                () => payload,
-                TryCompleteWithImagesAsync,
-                SendStage.SendImage,
-                ct);
-
-            if (outcome == RecordOutcome.Sent)
+            if (await CompleteTtoStageAsync(plan, inquiry, retryCount, ct))
                 sent++;
         }
 
         return sent;
+    }
+
+    /// <summary>
+    /// رکوردی که پاسخ batch آن InquiryInfo نداشته را با <c>addTTOInfo</c> تکی قطعی می‌کند.
+    /// اگر سرور قبلاً همان رکورد را پذیرفته باشد کد ۱۰۱ (تکراری) برمی‌گرداند؛ این کد موفق
+    /// شمرده می‌شود، پس نه ارسال دوباره رخ می‌دهد و نه رکورد از دست می‌رود.
+    /// </summary>
+    private async Task<InquiryInfoResult> ResolveUnconfirmedBatchOutcomeAsync(
+        TtoSendRouter.SendPlan plan,
+        int retryCount,
+        string reason,
+        string batchResponseSummary,
+        CancellationToken ct)
+    {
+        var photoId = plan.Photo.PhotoId;
+
+        _logger.LogWarning(
+            "Batch outcome UNCONFIRMED PhotoId={PhotoId} — {Reason}. BatchResponse: {BatchResponse}. " +
+            "Confirming with a single addTTOInfo call (authoritative) instead of treating it as a failure.",
+            photoId,
+            reason,
+            batchResponseSummary);
+
+        using var confirmCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        confirmCts.CancelAfter(_options.SendTimeout);
+
+        try
+        {
+            var result = await _rahadri.SendTtoOnlyAsync(plan.Payload, confirmCts.Token);
+            RahdariTtoClient.EnsureSuccess(photoId, result);
+
+            return new InquiryInfoResult(
+                ReferenceNo: photoId,
+                ValidationCode: result.ErrorCode,
+                PassInfoId: result.Reference,
+                DeviceCode: plan.Payload.DeviceCode,
+                CompanyCode: plan.Payload.CompanyCode,
+                PackId: 0);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            await HandleSendFailureAsync(
+                plan.Photo,
+                SendStage.AddTtoConfirm,
+                retryCount,
+                _options.SendTimeout,
+                ex,
+                ct);
+
+            return new InquiryInfoResult(0, 0, 0, 0, 0, 0);
+        }
+    }
+
+    /// <summary>
+    /// ثبت موفقیت مرحله‌ی TTO و سپس ارسال تصویر. بودجه‌ی تلاش تصویر مستقل است
+    /// (MarkTtoRegisteredAsync شمارنده را صفر می‌کند).
+    /// </summary>
+    private async Task<bool> CompleteTtoStageAsync(
+        TtoSendRouter.SendPlan plan,
+        InquiryInfoResult inquiry,
+        int retryCount,
+        CancellationToken ct)
+    {
+        var photoId = plan.Photo.PhotoId;
+
+        try
+        {
+            RahdariTtoClient.EnsureTtoSuccess(photoId, inquiry.ValidationCode);
+            await _queue.MarkTtoRegisteredAsync(
+                photoId,
+                inquiry.PassInfoId,
+                inquiry.PackId,
+                plan.Photo.PassDatetime,
+                ct);
+
+            _syncStatus.RecordSuccess(
+                "addTTOInfoBatch2",
+                $"Ref={photoId}: {ItsErrorCodes.Describe(inquiry.ValidationCode)}",
+                photoId,
+                inquiry.ValidationCode);
+
+            if (inquiry.ValidationCode == ItsErrorCodes.AddTto.Duplicate)
+            {
+                plan.Photo.TerminalTtoRegistered = true;
+                plan.Photo.TerminalPassInfoId = inquiry.PassInfoId > 0 ? inquiry.PassInfoId : plan.Photo.TerminalPassInfoId;
+            }
+        }
+        catch (Exception ex)
+        {
+            await HandleSendFailureAsync(plan.Photo, SendStage.AddTtoBatch, retryCount, null, ex, ct);
+            return false;
+        }
+
+        var payload = _rahdariOptions.SendImagesSeparately
+            ? TtoPayloadFactory.Create(plan.Photo, _rahdariOptions)
+            : plan.Payload;
+
+        var outcome = await ProcessOneAsync(
+            plan.Photo,
+            () => payload,
+            TryCompleteWithImagesAsync,
+            SendStage.SendImage,
+            ct);
+
+        return outcome == RecordOutcome.Sent;
     }
 
     private async Task<bool> EnsureServiceHealthyAsync(CancellationToken ct)
@@ -632,13 +710,54 @@ public sealed class RmtoSendService
         }
     }
 
-    private async Task ExpireOverdueImageWindowsAsync(CancellationToken ct)
+    /// <summary>
+    /// حداکثر یک‌بار در ساعت، رکوردهای دارای پلاک را که از عمر مجاز ITS (۳۰ روز) گذشته‌اند
+    /// با دلیل روشن از صف خارج می‌کند. بدون این کار هر رکورد سه تماس بی‌نتیجه می‌سازد و
+    /// در Logs فقط «داده منقضی» تکرار می‌شود.
+    /// </summary>
+    private async Task AbandonBeyondDataAgeAsync(CancellationToken ct)
     {
+        var now = DateTime.UtcNow;
+        if (now - _lastDataAgeSweepUtc < TimeSpan.FromHours(1))
+            return;
+
+        _lastDataAgeSweepUtc = now;
+
+        var message =
+            $"داده قدیمی‌تر از {ServiceLimits.MaxDataAgeDays} روز است — ITS نمی‌پذیرد (کد {ItsErrorCodes.AddTto.DataExpired})";
+
+        try
+        {
+            var count = await _queue.AbandonBeyondMaxDataAgeAsync(
+                ServiceLimits.MaxDataAgeDays, message, ct);
+
+            if (count > 0)
+            {
+                _logger.LogWarning(
+                    "Abandoned {Count} record(s) older than {Days} days — ITS rejects expired data (code {Code}). " +
+                    "They are reported as unsent, not silently dropped.",
+                    count,
+                    ServiceLimits.MaxDataAgeDays,
+                    ItsErrorCodes.AddTto.DataExpired);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // پاک‌سازی دوره‌ای نباید چرخه‌ی ارسال را متوقف کند.
+            _logger.LogWarning(ex, "Failed to abandon records beyond the ITS data-age limit");
+        }
+    }
+
+    private async Task ExpireOverdueImageWindowsAsync(CancellationToken ct)    {
         if (!_rahdariOptions.SendImagesSeparately)
             return;
 
         var message =
-            $"مهلت {ServiceLimits.ImageAttachHoursAfterPass} ساعته ارسال تصویر منقضی شده (ITS کد {ItsErrorCodes.AddImage.SendWindowExpired})";
+            $"مهلت {_rahdariOptions.ImageAttachWindowHours} ساعته ارسال تصویر منقضی شده (ITS کد {ItsErrorCodes.AddImage.SendWindowExpired})";
         var count = await _queue.MarkExpiredImageWindowsAsync(message, ct);
         if (count > 0)
             _logger.LogWarning(
@@ -664,6 +783,7 @@ public sealed class RmtoSendService
     {
         ValidateTto,
         AddTtoBatch,
+        AddTtoConfirm,
         AddTtoWithImages,
         SendImage,
     }

@@ -33,7 +33,7 @@ public class SendQueueRetryTests(ITestOutputHelper output)
             var queue = ctx.Queue;
 
             // هر دو رکورد ابتدا در صف انتخاب می‌شوند.
-            var first = await queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default);
+            var first = await queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default, ctx.LineId);
             Assert.Contains(first, p => p.PhotoId == ctx.PoisonPhotoId);
             Assert.Contains(first, p => p.PhotoId == ctx.HealthyPhotoId);
 
@@ -57,7 +57,7 @@ public class SendQueueRetryTests(ITestOutputHelper output)
             Assert.Equal(0, await queue.TryBeginAttemptAsync(ctx.PoisonPhotoId, MaxAttempts, default));
 
             // رکوردِ رهاشده از صف خارج شده ولی رکورد سالم هنوز در صف است ⇒ صف جلو نمی‌افتد.
-            var after = await queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default);
+            var after = await queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default, ctx.LineId);
             Assert.DoesNotContain(after, p => p.PhotoId == ctx.PoisonPhotoId);
             Assert.Contains(after, p => p.PhotoId == ctx.HealthyPhotoId);
 
@@ -88,12 +88,12 @@ public class SendQueueRetryTests(ITestOutputHelper output)
 
             // با backoff یک‌ساعته، رکوردی که همین حالا شکست خورده نباید در همین چرخه دوباره انتخاب شود.
             var withBackoff = await queue.GetPendingTtoBatchAsync(
-                50, MaxAttempts, TimeSpan.FromHours(1), default);
+                50, MaxAttempts, TimeSpan.FromHours(1), default, ctx.LineId);
             Assert.DoesNotContain(withBackoff, p => p.PhotoId == ctx.PoisonPhotoId);
             Assert.Contains(withBackoff, p => p.PhotoId == ctx.HealthyPhotoId);
 
             // بدون backoff، دوباره در دسترس است (تلاش مجدد).
-            var withoutBackoff = await queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default);
+            var withoutBackoff = await queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default, ctx.LineId);
             Assert.Contains(withoutBackoff, p => p.PhotoId == ctx.PoisonPhotoId);
         }
         finally
@@ -122,6 +122,29 @@ public class SendQueueRetryTests(ITestOutputHelper output)
             Assert.Equal(0, row.Attempts);
             Assert.Null(row.LastAttemptAt);
             Assert.True(row.TtoRegistered);
+        }
+        finally
+        {
+            await ctx.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnprRecord_WithoutWeightSpeedOrConfidence_IsStillEligible()
+    {
+        var ctx = await TestData.CreateAsync(output);
+        if (ctx is null)
+            return;
+
+        try
+        {
+            await ctx.ClearSensorDataAsync();
+
+            // ایستگاه فقط-دوربین: نه وزن، نه سرعت، نه confidence. پیش‌تر هر سه شرط
+            // باعث می‌شد رکوردِ دارای پلاک کامل بی‌صدا از صف حذف شود.
+            var pending = await ctx.Queue.GetPendingTtoBatchAsync(50, MaxAttempts, NoBackoff, default, ctx.LineId);
+
+            Assert.Contains(pending, p => p.PhotoId == ctx.HealthyPhotoId);
         }
         finally
         {
@@ -159,6 +182,7 @@ public class SendQueueRetryTests(ITestOutputHelper output)
         public CameraPhotoQueueRepository Queue { get; }
         public long PoisonPhotoId { get; }
         public long HealthyPhotoId { get; }
+        public int LineId => _lineId;
         public DateTime Timestamp { get; }
 
         public static async Task<TestData?> CreateAsync(ITestOutputHelper output)
@@ -260,6 +284,21 @@ public class SendQueueRetryTests(ITestOutputHelper output)
                     vehicleId,
                     now);
             }
+        }
+
+        public async Task ClearSensorDataAsync()
+        {
+            // A camera-only station has no WIM weight, no radar speed and often no OCR score.
+            // Those columns must not decide eligibility (they did before, dropping ~4,000 records).
+            await using var conn = new SqlConnection(ConnectionString);
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand(
+                """
+                UPDATE v SET TotalWeight = 0, Speed = 0, AverageSpeed = 0, PlateConfidence = 0, PlateReadStatus = 0
+                FROM Vehicles v WHERE v.Id = @vehicleId;
+                """, conn);
+            cmd.Parameters.AddWithValue("@vehicleId", _vehicleId);
+            await cmd.ExecuteNonQueryAsync();
         }
 
         public static async Task<(bool Abandoned, bool Sent, bool TtoRegistered, int Attempts, DateTime? LastAttemptAt, string? LastError)>

@@ -29,12 +29,12 @@ public sealed class RahdariTtoClient
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<InquiryInfoResult>> SendBatchAsync(
+    public async Task<BatchSendResult> SendBatchAsync(
         IReadOnlyList<TtoPayload> payloads,
         CancellationToken ct)
     {
         if (payloads.Count == 0)
-            return Array.Empty<InquiryInfoResult>();
+            return new BatchSendResult(Array.Empty<InquiryInfoResult>(), 0, "empty request");
 
         if (payloads.Count > ServiceLimits.MaxBatchRecords)
             throw new InvalidOperationException($"Batch exceeds ITS limit of {ServiceLimits.MaxBatchRecords} records");
@@ -47,27 +47,47 @@ public sealed class RahdariTtoClient
             var responseXml = await PostSoapAsync("addTTOInfoBatch2", envelope, ct);
             var batchResult = ParseBatch2Result(responseXml);
 
-            if (batchResult.TokenExpired && attempt == 0)
+            if (ItsErrorCodes.IsTokenExpired(batchResult.ErrorCode))
             {
-                _logger.LogWarning("Rahdari token expired during batch send, re-login");
-                await ForceLoginAsync(ct);
-                continue;
+                if (attempt == 0)
+                {
+                    _logger.LogWarning(
+                        "Rahdari token expired during batch send (ErrorCode={Code}) — re-login and retry",
+                        batchResult.ErrorCode);
+                    await ForceLoginAsync(ct);
+                    continue;
+                }
+
+                throw new RahdariSendException(
+                    0,
+                    $"Rahdari addTTOInfoBatch2: token expired (code {batchResult.ErrorCode}) even after re-login",
+                    batchResult.ErrorCode);
             }
 
-            if (batchResult.TokenExpired)
-                throw new InvalidOperationException("Rahdari addTTOInfoBatch2 failed: token expired");
-
-            if (batchResult.BatchErrorCode is ItsErrorCodes.Batch.NullPayload
-                or ItsErrorCodes.Batch.TooManyRecords
-                or ItsErrorCodes.Batch.MethodNotAllowed)
+            // A wrapper-level error means the whole batch was rejected. Previously only three
+            // codes were recognised, so every other rejection (expired token, invalid device,
+            // authorisation problems, …) was returned as "no items" and the caller reported the
+            // misleading "Batch response missing InquiryInfo for record" for every record in
+            // the batch. Always surface the real code.
+            if (batchResult.ErrorCode != 0 && batchResult.Items.Count == 0)
             {
-                var msg = $"Rahdari addTTOInfoBatch2 rejected batch: {ItsErrorCodes.Describe(batchResult.BatchErrorCode)}";
-                _logger.LogError("Rahdari batch rejected ErrorCode={Code} — {Desc}",
-                    batchResult.BatchErrorCode, ItsErrorCodes.Describe(batchResult.BatchErrorCode));
-                _syncStatus.RecordFailure("addTTOInfoBatch2",
-                    new RahdariResultExplanation("خطای batch", ItsErrorCodes.Describe(batchResult.BatchErrorCode),
-                        ErrorCode: batchResult.BatchErrorCode, Source: "ITS فصل 3-5"));
-                throw new InvalidOperationException(msg);
+                _logger.LogError(
+                    "Rahdari addTTOInfoBatch2 rejected the batch: ErrorCode={Code} ({Desc}). {Summary}",
+                    batchResult.ErrorCode,
+                    ItsErrorCodes.Describe(batchResult.ErrorCode),
+                    batchResult.ResponseSummary);
+
+                _syncStatus.RecordFailure("addTTOInfoBatch2", new RahdariResultExplanation(
+                    "خطای batch",
+                    ItsErrorCodes.Describe(batchResult.ErrorCode),
+                    ErrorCode: batchResult.ErrorCode,
+                    Source: "ITS فصل 3-5"));
+
+                throw new RahdariSendException(
+                    0,
+                    $"Rahdari addTTOInfoBatch2 rejected the batch: {ItsErrorCodes.Describe(batchResult.ErrorCode)} " +
+                    $"(code {batchResult.ErrorCode})",
+                    batchResult.ErrorCode);
             }
 
             foreach (var item in batchResult.Items)
@@ -81,6 +101,27 @@ public sealed class RahdariTtoClient
                     item.PackId);
             }
 
+            if (batchResult.Items.Count == 0)
+            {
+                // The call succeeded at the transport level but the body carried no InquiryInfo.
+                // This is an *unconfirmed* outcome, never proof that the server rejected the
+                // records, so it must not be treated as a definitive failure.
+                _logger.LogWarning(
+                    "Rahdari addTTOInfoBatch2 returned no InquiryInfo for {Sent} record(s). " +
+                    "Outcome is UNCONFIRMED (not a rejection). {Summary} Body={Body}",
+                    payloads.Count,
+                    batchResult.ResponseSummary,
+                    batchResult.RawResponse);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Rahdari batch accepted: sent {Sent}, InquiryInfo returned {Received}. {Summary}",
+                    payloads.Count,
+                    batchResult.Items.Count,
+                    batchResult.ResponseSummary);
+            }
+
             if (batchResult.Items.Count > 0)
             {
                 var first = batchResult.Items[0];
@@ -91,10 +132,10 @@ public sealed class RahdariTtoClient
                     first.ValidationCode);
             }
 
-            return batchResult.Items;
+            return new BatchSendResult(batchResult.Items, batchResult.ErrorCode, batchResult.ResponseSummary);
         }
 
-        throw new InvalidOperationException("Rahdari addTTOInfoBatch2 failed after retry");
+        throw new RahdariSendException(0, "Rahdari addTTOInfoBatch2 failed after retry");
     }
 
     public async Task<AddImageResult> SendImageAsync(
@@ -128,9 +169,11 @@ public sealed class RahdariTtoClient
                 ItsErrorCodes.Describe(result.ErrorCode),
                 result.SysError);
 
-            if (result.ErrorCode == ItsErrorCodes.AddTto.TokenExpired && attempt == 0)
+            if (ItsErrorCodes.IsTokenExpired(result.ErrorCode) && attempt == 0)
             {
-                _logger.LogWarning("Rahdari token expired, re-login");
+                _logger.LogWarning(
+                    "Rahdari token expired (code {Code}), re-login",
+                    result.ErrorCode);
                 await ForceLoginAsync(ct);
                 continue;
             }
@@ -139,6 +182,45 @@ public sealed class RahdariTtoClient
         }
 
         throw new InvalidOperationException("Rahdari addTTOInfo failed after retry");
+    }
+
+    /// <summary>
+    /// ارسال <c>addTTOInfo</c> بدون تصویر برای قطعی‌کردن وضعیت رکوردی که پاسخ batch آن
+    /// نامعلوم بوده است. این متد مرجع نهایی است: سرور برای همین <c>ReferenceNo</c> یک
+    /// <c>ErrorCode</c> قطعی برمی‌گرداند (۰/۱/۲/۹۹ موفق، ۱۰۱ تکراری، بقیه رد).
+    /// </summary>
+    public async Task<AddTtoResult> SendTtoOnlyAsync(TtoPayload payload, CancellationToken ct)
+    {
+        await EnsureTokenAsync(ct);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var info = TtoInfoBuilder.BuildTtoInfo(payload, includeImages: false, null, null);
+            var envelope = WrapSoapBody(
+                new XElement(RahdariSoapNamespaces.Tns + "addTTOInfo",
+                    new XElement(RahdariSoapNamespaces.Tns + "Token", _token),
+                    info));
+
+            var responseXml = await PostSoapAsync("addTTOInfo", envelope, ct);
+            var result = ParseAddTtoResult(responseXml);
+
+            _logger.LogInformation(
+                "Rahdari addTTOInfo (confirm) Ref={Ref} ErrorCode={Code} ({Desc}) SysError={SysError}",
+                payload.ReferenceNo,
+                result.ErrorCode,
+                ItsErrorCodes.Describe(result.ErrorCode),
+                result.SysError);
+
+            if (ItsErrorCodes.IsTokenExpired(result.ErrorCode) && attempt == 0)
+            {
+                await ForceLoginAsync(ct);
+                continue;
+            }
+
+            return result;
+        }
+
+        throw new RahdariSendException(payload.ReferenceNo, "Rahdari addTTOInfo (confirm) failed after retry");
     }
 
     private async Task EnsureTokenAsync(CancellationToken ct)
@@ -263,25 +345,67 @@ public sealed class RahdariTtoClient
 
     private static Batch2ParseResult ParseBatch2Result(string xml)
     {
-        var doc = XDocument.Parse(xml);
-        var wrapper = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "addTTOInfoBatch2Result");
+        var summary = SummariseResponse(xml);
+        XDocument doc;
+        try
+        {
+            doc = XDocument.Parse(xml);
+        }
+        catch (System.Xml.XmlException ex)
+        {
+            return new Batch2ParseResult(-1, Array.Empty<InquiryInfoResult>(), summary, Truncate(xml));
+        }
+
+        var wrapper = doc.Descendants().FirstOrDefault(e =>
+            string.Equals(e.Name.LocalName, "addTTOInfoBatch2Result", StringComparison.OrdinalIgnoreCase));
+
         if (wrapper == null)
-            return new Batch2ParseResult(true, -1, Array.Empty<InquiryInfoResult>());
+            return new Batch2ParseResult(-1, Array.Empty<InquiryInfoResult>(), summary, Truncate(xml));
 
         var errorCode = ReadDecimal(wrapper, "ErrorCode");
-        if (errorCode == ItsErrorCodes.AddTto.TokenExpired)
-            return new Batch2ParseResult(true, errorCode, Array.Empty<InquiryInfoResult>());
 
-        if (!IsSuccessfulWrapper(wrapper))
-            return new Batch2ParseResult(false, errorCode, Array.Empty<InquiryInfoResult>());
-
+        // Never discard items just because the wrapper flags a failure: some deployments return
+        // per-record InquiryInfo alongside a non-zero wrapper code (partial acceptance).
         var items = wrapper.Descendants()
-            .Where(e => e.Name.LocalName == "InquiryInfo")
+            .Where(e => string.Equals(e.Name.LocalName, "InquiryInfo", StringComparison.OrdinalIgnoreCase))
             .Select(ParseInquiryInfo)
             .ToList();
 
-        return new Batch2ParseResult(false, errorCode, items);
+        return new Batch2ParseResult(errorCode, items, summary, Truncate(xml));
     }
+
+    /// <summary>
+    /// One-line, base64-free description of a batch response, safe to write to logs.
+    /// Without this the operator could only see "no InquiryInfo" and had no way to tell a
+    /// rejected batch from an expired token or a genuinely empty result.
+    /// </summary>
+    private static string SummariseResponse(string xml)
+    {
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            var wrapper = doc.Descendants().FirstOrDefault(e =>
+                string.Equals(e.Name.LocalName, "addTTOInfoBatch2Result", StringComparison.OrdinalIgnoreCase));
+
+            if (wrapper == null)
+                return "no addTTOInfoBatch2Result wrapper";
+
+            var errorCode = ReadDecimal(wrapper, "ErrorCode");
+            var success = wrapper.Elements()
+                .FirstOrDefault(e => string.Equals(e.Name.LocalName, "IsSuccessfull", StringComparison.OrdinalIgnoreCase))?.Value;
+            var itemCount = wrapper.Descendants()
+                .Count(e => string.Equals(e.Name.LocalName, "InquiryInfo", StringComparison.OrdinalIgnoreCase));
+
+            return $"ErrorCode={errorCode} ({ItsErrorCodes.Describe(errorCode)}) IsSuccessfull={success ?? "-"} items={itemCount}";
+        }
+        catch (Exception ex) when (ex is System.Xml.XmlException)
+        {
+            return $"unparseable response ({ex.Message})";
+        }
+    }
+
+    private static string Truncate(string value) =>
+        value.Length <= 2000 ? value : value[..2000] + "…";
 
     private static InquiryInfoResult ParseInquiryInfo(XElement element)
     {
@@ -341,13 +465,6 @@ public sealed class RahdariTtoClient
         return decimal.TryParse(value, out var parsed) ? parsed : 0;
     }
 
-    private static bool IsSuccessfulWrapper(XElement wrapper)
-    {
-        var isSuccessful = wrapper.Elements()
-            .FirstOrDefault(e => e.Name.LocalName == "IsSuccessfull")?.Value;
-        return !string.Equals(isSuccessful, "false", StringComparison.OrdinalIgnoreCase);
-    }
-
     public static bool IsTtoSuccess(long validationCode) => ItsErrorCodes.IsTtoSuccess(validationCode);
 
     public static bool IsImageSuccess(AddImageResult result) =>
@@ -389,8 +506,22 @@ public sealed class RahdariTtoClient
     private static string FormatContext(string? context) =>
         string.IsNullOrWhiteSpace(context) ? string.Empty : $" [{context}]";
 
-    private sealed record Batch2ParseResult(bool TokenExpired, long BatchErrorCode, IReadOnlyList<InquiryInfoResult> Items);
+    private sealed record Batch2ParseResult(
+        long ErrorCode,
+        IReadOnlyList<InquiryInfoResult> Items,
+        string ResponseSummary,
+        string RawResponse);
 }
+
+/// <summary>
+/// Outcome of an addTTOInfoBatch2 call. <see cref="Items"/> may legitimately be empty while
+/// <see cref="ErrorCode"/> is zero — that is an <b>unconfirmed</b> outcome, not a rejection,
+/// and the caller must not dead-letter the records because of it.
+/// </summary>
+public sealed record BatchSendResult(
+    IReadOnlyList<InquiryInfoResult> Items,
+    long ErrorCode,
+    string ResponseSummary);
 
 public sealed record AddTtoResult(long ErrorCode, string ErrorDesc, long SysError, long Reference = 0);
 

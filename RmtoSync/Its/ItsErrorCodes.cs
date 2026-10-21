@@ -45,6 +45,17 @@ public static class ItsErrorCodes
         public const long ViolationNotAllowedForCamera = 129;
         public const long NullReferenceNo = 191;
         public const long MethodNotAllowed = 1011;
+
+        /// <summary>
+        /// ITS guide chapter 3 lists <b>1001</b> as «توکن منقضی شده» (token expired) for the
+        /// TTO methods, while the server also emits <b>1002</b> for the same condition on some
+        /// deployments. Both must trigger a re-login: before this was handled, an expired
+        /// token made addTTOInfoBatch2 return no InquiryInfo at all, which the sender then
+        /// misreported as «Batch response missing InquiryInfo» and dead-lettered the records.
+        /// </summary>
+        public const long TokenExpiredLegacy = 1001;
+
+        /// <summary>کد «توکن منقضی شده» که سرور در addTTOInfo برمی‌گرداند.</summary>
         public const long TokenExpired = 1002;
     }
 
@@ -114,6 +125,7 @@ public static class ItsErrorCodes
         [AddTto.NullReferenceNo] = "مقدار ReferenceNo برابر Null",
         [AddTto.MethodNotAllowed] = "متد برای این کاربر غیرمجاز",
         [AddTto.TokenExpired] = "توکن منقضی شده",
+        [AddTto.TokenExpiredLegacy] = "توکن منقضی شده",
         [Batch.NullPayload] = "مقدار گروه داده ارسالی برابر Null",
         [Batch.TooManyRecords] = "تعداد ترددهای ارسالی بیش از 100",
         [Batch.MethodNotAllowed] = "متد برای این کاربر غیرمجاز",
@@ -137,6 +149,14 @@ public static class ItsErrorCodes
     public static bool IsTtoSuccess(long code) =>
         code is AddTto.OkNationalPlate or AddTto.OkDamagedPlate or AddTto.OkTransitPlate
             or AddTto.OkAwaitingImage or AddTto.Duplicate;
+
+    /// <summary>
+    /// آیا این کد یعنی «توکن معتبر نیست و باید دوباره Login کرد»؟
+    /// راهنما کد ۱۰۰۱ را برای متدهای TTO «توکن منقضی» می‌داند و سرور در برخی نسخه‌ها ۱۰۰۲
+    /// برمی‌گرداند؛ هر دو یک اقدام دارند (Login مجدد و تکرار همان درخواست).
+    /// </summary>
+    public static bool IsTokenExpired(long code) =>
+        code is AddTto.TokenExpiredLegacy or AddTto.TokenExpired;
 
     public static bool IsAddImageSuccess(long errorCode, long sysError) =>
         sysError == 0 && errorCode is 0 or AddTto.Duplicate or AddImage.PlateAlreadySent;
