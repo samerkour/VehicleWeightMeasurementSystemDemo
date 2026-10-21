@@ -30,7 +30,9 @@ INSERT INTO @RecoverableReasons (Pattern) VALUES
     (N'%The operation was canceled%'),           -- timeout/لغو گذرا
     (N'%connection attempt failed%'),            -- قطعی شبکه
     (N'%error occurred while sending the request%'),
-    (N'%token expired%');
+    (N'%token expired%'),
+    (N'%HTTP 500%'),                             -- رد پیش از ثبت (schema/فالت سرور)
+    (N'%SchemaValidationError%');
 
 /* ---------------------------------------------------------------------------------------------
    2) انتخاب کاندیدها
