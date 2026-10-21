@@ -7,11 +7,111 @@ public sealed class RahdariSyncStatus
 {
     private readonly object _gate = new();
     private readonly List<RahdariSyncEvent> _recent = new();
-    private const int MaxRecent = 20;
+    private const int MaxRecent = 50;
 
-    public RahdariSyncEvent? LastEvent { get; private set; }
+    private long _sentCount;
+    private long _failedCount;
+    private int _consecutiveFailures;
+    private long _cycleCount;
+    private int _lastCycleProcessed;
+    private DateTime? _lastSuccessAt;
+    private DateTime? _lastFailureAt;
+    private DateTime? _lastCycleAt;
+    private TimeSpan _lastCycleDuration;
 
-    public long SentCount { get; private set; }
+    public DateTime StartedAt { get; } = DateTime.Now;
+
+    public RahdariSyncEvent? LastEvent
+    {
+        get
+        {
+            lock (_gate)
+                return _recent.Count > 0 ? _recent[0] : null;
+        }
+    }
+
+    /// <summary>Records confirmed as sent to Rahdari during this session.</summary>
+    public long SentCount
+    {
+        get
+        {
+            lock (_gate)
+                return _sentCount;
+        }
+    }
+
+    /// <summary>Failed send attempts during this session (one record may fail several times).</summary>
+    public long FailedCount
+    {
+        get
+        {
+            lock (_gate)
+                return _failedCount;
+        }
+    }
+
+    public int ConsecutiveFailures
+    {
+        get
+        {
+            lock (_gate)
+                return _consecutiveFailures;
+        }
+    }
+
+    public DateTime? LastSuccessAt
+    {
+        get
+        {
+            lock (_gate)
+                return _lastSuccessAt;
+        }
+    }
+
+    public DateTime? LastFailureAt
+    {
+        get
+        {
+            lock (_gate)
+                return _lastFailureAt;
+        }
+    }
+
+    public DateTime? LastCycleAt
+    {
+        get
+        {
+            lock (_gate)
+                return _lastCycleAt;
+        }
+    }
+
+    public TimeSpan LastCycleDuration
+    {
+        get
+        {
+            lock (_gate)
+                return _lastCycleDuration;
+        }
+    }
+
+    public int LastCycleProcessed
+    {
+        get
+        {
+            lock (_gate)
+                return _lastCycleProcessed;
+        }
+    }
+
+    public long CycleCount
+    {
+        get
+        {
+            lock (_gate)
+                return _cycleCount;
+        }
+    }
 
     public IReadOnlyList<RahdariSyncEvent> RecentEvents
     {
@@ -27,7 +127,11 @@ public sealed class RahdariSyncStatus
     public void RecordSent()
     {
         lock (_gate)
-            SentCount++;
+        {
+            _sentCount++;
+            _lastSuccessAt = DateTime.Now;
+            _consecutiveFailures = 0;
+        }
 
         Changed?.Invoke();
     }
@@ -44,6 +148,12 @@ public sealed class RahdariSyncStatus
             _ => "پذیرفته شد"
         };
 
+        lock (_gate)
+        {
+            _lastSuccessAt = DateTime.Now;
+            _consecutiveFailures = 0;
+        }
+
         Record(new RahdariSyncEvent(
             Timestamp: DateTime.Now,
             IsSuccess: true,
@@ -59,25 +169,40 @@ public sealed class RahdariSyncStatus
 
     public void RecordFailure(string operation, Exception ex, long? photoId = null)
     {
-        Record(new RahdariSyncEvent(
-            Timestamp: DateTime.Now,
-            IsSuccess: false,
-            Explanation: RahdariResponseInterpreter.ExplainException(ex, operation) with { PhotoId = photoId }));
+        RecordFailure(operation, RahdariResponseInterpreter.ExplainException(ex, operation) with { PhotoId = photoId });
     }
 
     public void RecordFailure(string operation, RahdariResultExplanation explanation)
     {
+        lock (_gate)
+        {
+            _failedCount++;
+            _consecutiveFailures++;
+            _lastFailureAt = DateTime.Now;
+        }
+
         Record(new RahdariSyncEvent(
             Timestamp: DateTime.Now,
             IsSuccess: false,
             Explanation: explanation with { Operation = operation }));
     }
 
+    /// <summary>Called by the worker after every poll so the UI can show liveness and throughput.</summary>
+    public void RecordCycleCompleted(int processed, TimeSpan duration)
+    {
+        lock (_gate)
+        {
+            _lastCycleAt = DateTime.Now;
+            _lastCycleDuration = duration;
+            _lastCycleProcessed = processed;
+            _cycleCount++;
+        }
+    }
+
     private void Record(RahdariSyncEvent entry)
     {
         lock (_gate)
         {
-            LastEvent = entry;
             _recent.Insert(0, entry);
             if (_recent.Count > MaxRecent)
                 _recent.RemoveAt(_recent.Count - 1);

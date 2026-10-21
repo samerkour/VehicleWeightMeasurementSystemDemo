@@ -1,6 +1,7 @@
 using RmtoSync.Configuration;
 using RmtoSync.Its;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 
 namespace RmtoSync.Services;
 
@@ -57,9 +58,11 @@ public sealed class RmtoSyncWorker : BackgroundService
                 continue;
             }
 
+            var cycleStarted = Stopwatch.GetTimestamp();
+            var processed = 0;
             try
             {
-                await _sendService.RunCycleAsync(stoppingToken);
+                processed = await _sendService.RunCycleAsync(stoppingToken);
                 consecutiveFailures = 0;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -80,6 +83,7 @@ public sealed class RmtoSyncWorker : BackgroundService
             }
             finally
             {
+                _syncStatus.RecordCycleCompleted(processed, Stopwatch.GetElapsedTime(cycleStarted));
                 Interlocked.Exchange(ref _syncRunning, 0);
             }
         }
