@@ -420,8 +420,8 @@ public sealed partial class MainForm : Form
             Math.Min(p.BackColor.B + 20, 255));
         _lastResultLabel.ForeColor = p.ForeColor;
         _lastResultLabel.Text = string.IsNullOrWhiteSpace(detail)
-            ? $"نتیجه راهداری: {p.LabelLong} — {p.DocHint}"
-            : $"نتیجه راهداری ({p.LabelLong}) — {detail}";
+            ? $"نتیجه قبلی راهداری: {p.LabelLong} — {p.DocHint}"
+            : $"نتیجه قبلی راهداری ({p.LabelLong}) — {detail}";
     }
 
     private void RefreshResultGrid()

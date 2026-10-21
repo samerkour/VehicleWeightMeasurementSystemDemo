@@ -94,7 +94,7 @@ partial class MainForm
         this._lastResultLabel.Height = 64;
         this._lastResultLabel.Name = "_lastResultLabel";
         this._lastResultLabel.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
-        this._lastResultLabel.Text = "نتیجه راهداری: نامشخص";
+        this._lastResultLabel.Text = "نتیجه قبلی راهداری: نامشخص";
         this._lastResultLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
         //
