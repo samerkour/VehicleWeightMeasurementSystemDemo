@@ -10,9 +10,9 @@ using Serilog;
 
 namespace RmtoSync.Ui;
 
-public sealed class MainForm : Form
+public sealed partial class MainForm : Form
 {
-    private readonly string[] _args;
+    private readonly string[] _args = Array.Empty<string>();
     private readonly IConfigurationRoot? _config;
     private readonly string? _connectionString;
 
@@ -24,180 +24,18 @@ public sealed class MainForm : Form
     private QueueStatusSnapshot? _snapshot;
     private bool _snapshotLoading;
 
-    private readonly Label _statusLabel;
-    private readonly Label _lastResultLabel;
-    private readonly DataGridView _recentGrid;
-    private readonly Button _startStopButton;
-    private readonly Button _lastErrorButton;
-    private readonly Button _logsButton;
-    private readonly Button _exitButton;
-    private readonly System.Windows.Forms.Timer _clockTimer;
-    private readonly System.Windows.Forms.Timer _queueTimer;
+    /// <summary>Parameterless constructor required by the WinForms designer.</summary>
+    public MainForm()
+    {
+        InitializeComponent();
+    }
 
     public MainForm(string[] args)
+        : this()
     {
         _args = args;
         _config = TryLoadConfig();
         _connectionString = _config?.GetConnectionString("DefaultConnection");
-
-        Text = "Rmto Sync";
-        RightToLeft = RightToLeft.No;
-        RightToLeftLayout = false;
-        Font = new Font("Segoe UI", 9F);
-        StartPosition = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.Sizable;
-        MaximizeBox = true;
-        MinimizeBox = true;
-        WindowState = FormWindowState.Maximized;
-        ClientSize = new Size(900, 560);
-
-        var titleLabel = new Label
-        {
-            Text = "Send records to Rahdari terminal",
-            AutoSize = false,
-            Dock = DockStyle.Top,
-            Height = 38,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI", 10F, FontStyle.Bold)
-        };
-
-        var buttonPanel = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Bottom,
-            Height = 52,
-            FlowDirection = FlowDirection.LeftToRight,
-            Padding = new Padding(16, 10, 16, 10),
-            WrapContents = false
-        };
-
-        _statusLabel = new Label
-        {
-            Text = "آماده شروع سرویس...",
-            AutoSize = false,
-            Dock = DockStyle.Top,
-            Height = 176,
-            BorderStyle = BorderStyle.FixedSingle,
-            Padding = new Padding(10, 8, 10, 8),
-            TextAlign = ContentAlignment.TopLeft,
-            BackColor = Color.FromArgb(247, 249, 252),
-            ForeColor = Color.FromArgb(33, 37, 41),
-            Font = new Font("Segoe UI", 9.5F)
-        };
-
-        _lastResultLabel = new Label
-        {
-            Text = "نتیجه راهداری: نامشخص",
-            AutoSize = false,
-            Dock = DockStyle.Bottom,
-            Height = 64,
-            BorderStyle = BorderStyle.FixedSingle,
-            Padding = new Padding(10, 6, 10, 6),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-        };
-
-        _recentGrid = BuildRecentGrid();
-        _recentGrid.CellDoubleClick += (_, e) =>
-        {
-            if (e.RowIndex >= 0 && _recentGrid.Rows[e.RowIndex].Tag is RahdariSyncEvent entry)
-                ShowRecentEventDialog(entry);
-        };
-
-        _startStopButton = new Button
-        {
-            Text = "Start service",
-            AutoSize = true,
-            MinimumSize = new Size(150, 32),
-            Margin = new Padding(8, 0, 0, 0)
-        };
-        _startStopButton.Click += async (_, _) => await ToggleServiceAsync();
-
-        _logsButton = new Button
-        {
-            Text = "Logs folder",
-            AutoSize = true,
-            MinimumSize = new Size(150, 32),
-            Margin = new Padding(8, 0, 0, 0)
-        };
-        _logsButton.Click += (_, _) => OpenLogsFolder();
-
-        _lastErrorButton = new Button
-        {
-            Text = "نامشخص",
-            AutoSize = true,
-            MinimumSize = new Size(150, 32),
-            Margin = new Padding(8, 0, 0, 0),
-            FlatStyle = FlatStyle.Flat,
-            UseVisualStyleBackColor = false,
-            Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-        };
-        _lastErrorButton.FlatAppearance.BorderSize = 1;
-        _lastErrorButton.Click += (_, _) => ShowLastRahdariResultDialog();
-        ApplyRahdariResultVisual(RahdariOutcomeKind.Unknown);
-
-        _exitButton = new Button
-        {
-            Text = "Exit",
-            AutoSize = true,
-            MinimumSize = new Size(150, 32),
-            Margin = new Padding(8, 0, 0, 0)
-        };
-        _exitButton.Click += (_, _) => Close();
-
-        buttonPanel.Controls.Add(_startStopButton);
-        buttonPanel.Controls.Add(_lastErrorButton);
-        buttonPanel.Controls.Add(_logsButton);
-        buttonPanel.Controls.Add(_exitButton);
-
-        Controls.Add(_recentGrid);
-        Controls.Add(_lastResultLabel);
-        Controls.Add(buttonPanel);
-        Controls.Add(_statusLabel);
-        Controls.Add(titleLabel);
-
-        _clockTimer = new System.Windows.Forms.Timer { Interval = 1000 };
-        _clockTimer.Tick += (_, _) => UpdateStatusText();
-
-        _queueTimer = new System.Windows.Forms.Timer { Interval = 30_000 };
-        _queueTimer.Tick += async (_, _) => await RefreshSnapshotAsync();
-
-        FormClosing += async (_, e) =>
-        {
-            if (_host is not null && !_stopping)
-            {
-                var answer = MessageBox.Show(
-                    "Service is running. Stop it before exit?",
-                    "Confirm exit",
-                    MessageBoxButtons.YesNoCancel,
-                    MessageBoxIcon.Question,
-                    MessageBoxDefaultButton.Button1);
-
-                if (answer == DialogResult.Cancel)
-                {
-                    e.Cancel = true;
-                    return;
-                }
-
-                if (answer == DialogResult.Yes)
-                {
-                    e.Cancel = true;
-                    await StopServiceAsync();
-                    Close();
-                    return;
-                }
-            }
-        };
-
-        Load += async (_, _) =>
-        {
-            UpdateStatusText();
-            _clockTimer.Start();
-            _queueTimer.Start();
-            await RefreshSnapshotAsync();
-
-            if (ShouldAutoStartServiceOnLaunch())
-                await StartServiceAsync();
-        };
     }
 
     private static IConfigurationRoot? TryLoadConfig()
@@ -216,76 +54,6 @@ public sealed class MainForm : Form
         }
     }
 
-    private static DataGridView BuildRecentGrid()
-    {
-        var grid = new DataGridView
-        {
-            Dock = DockStyle.Fill,
-            ReadOnly = true,
-            AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false,
-            AllowUserToResizeRows = false,
-            AutoGenerateColumns = false,
-            RowHeadersVisible = false,
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            MultiSelect = false,
-            BackgroundColor = Color.White,
-            BorderStyle = BorderStyle.FixedSingle,
-            GridColor = Color.FromArgb(222, 226, 230),
-            ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
-            EnableHeadersVisualStyles = false,
-            RowTemplate = { Height = 26 }
-        };
-
-        grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 37, 41);
-        grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-        grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        grid.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
-        grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(200, 230, 201);
-        grid.DefaultCellStyle.SelectionForeColor = Color.Black;
-        grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250);
-
-        grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "Time",
-            HeaderText = "زمان",
-            Width = 72
-        });
-        grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "Result",
-            HeaderText = "نتیجه",
-            Width = 130
-        });
-        grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "Operation",
-            HeaderText = "عملیات",
-            Width = 120
-        });
-        grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "PhotoId",
-            HeaderText = "PhotoId",
-            Width = 82
-        });
-        grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "Code",
-            HeaderText = "کد",
-            Width = 55
-        });
-        grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "Summary",
-            HeaderText = "توضیح",
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-            MinimumWidth = 200
-        });
-
-        return grid;
-    }
-
     private bool ShouldAutoStartServiceOnLaunch()
     {
         try
@@ -296,6 +64,68 @@ public sealed class MainForm : Form
         {
             return true;
         }
+    }
+
+    private async void MainForm_Load(object? sender, EventArgs e)
+    {
+        UpdateStatusText();
+        _clockTimer.Start();
+        _queueTimer.Start();
+        await RefreshSnapshotAsync();
+
+        if (ShouldAutoStartServiceOnLaunch())
+            await StartServiceAsync();
+    }
+
+    private async void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
+    {
+        if (_host is not null && !_stopping)
+        {
+            var answer = MessageBox.Show(
+                "Service is running. Stop it before exit?",
+                "Confirm exit",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1);
+
+            if (answer == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            if (answer == DialogResult.Yes)
+            {
+                e.Cancel = true;
+                await StopServiceAsync();
+                Close();
+                return;
+            }
+        }
+    }
+
+    private async void StartStopButton_Click(object? sender, EventArgs e) =>
+        await ToggleServiceAsync();
+
+    private void LastErrorButton_Click(object? sender, EventArgs e) =>
+        ShowLastRahdariResultDialog();
+
+    private void LogsButton_Click(object? sender, EventArgs e) =>
+        OpenLogsFolder();
+
+    private void ExitButton_Click(object? sender, EventArgs e) =>
+        Close();
+
+    private void ClockTimer_Tick(object? sender, EventArgs e) =>
+        UpdateStatusText();
+
+    private async void QueueTimer_Tick(object? sender, EventArgs e) =>
+        await RefreshSnapshotAsync();
+
+    private void RecentGrid_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex >= 0 && _recentGrid.Rows[e.RowIndex].Tag is RahdariSyncEvent entry)
+            ShowRecentEventDialog(entry);
     }
 
     private void UpdateStatusText()
@@ -711,9 +541,8 @@ public sealed class MainForm : Form
         if (disposing)
         {
             _clockTimer?.Stop();
-            _clockTimer?.Dispose();
             _queueTimer?.Stop();
-            _queueTimer?.Dispose();
+            components?.Dispose();
 
             if (_syncStatus is not null)
                 _syncStatus.Changed -= OnSyncStatusChanged;
