@@ -95,7 +95,7 @@ public static class RahdariResponseInterpreter
             var summary = element switch
             {
                 "TTOInfo" => "ساختار XML batch اشتباه است: باید ttow:ttoInfo باشد نه tempuri:TTOInfo (ITS فصل 5 / WSDL).",
-                "score" => "فیلد score در ارسال batch مجاز نیست یا جای آن در XML اشتباه است (نمونه‌های فصل 5 batch بدون score).",
+                "score" => "فیلد score با schema سرور سازگار نیست (فقط در نمونه ۶-۴ آمده و سرور آن را با HTTP 500 رد می‌کند)؛ این نسخه آن را ارسال نمی‌کند.",
                 "cARCLASS13" => "فیلد cARCLASS13 در این نوع ارسال یا ترتیب XML مجاز نیست.",
                 _ when !string.IsNullOrEmpty(element)
                     => $"فیلد XML «{element}» با schema سرور سازگار نیست.",

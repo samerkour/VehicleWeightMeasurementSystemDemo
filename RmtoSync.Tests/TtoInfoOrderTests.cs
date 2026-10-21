@@ -46,7 +46,7 @@ public sealed class TtoInfoOrderTests
             "lINENUMBER",
             "pASSDATETIME", "pASSINFOID", "pLATEIMAGE",
             "rECEIVEDATETIME", "ReferenceNo", "reserved10", "reserved7", "sYSTEMCODE",
-            "score", "speedType",
+            "speedType",
             "tOTALAXLES", "tOTALOVERWEIGHT", "tOTALOVERWEIGHT_A",
             "tOTALOVERWEIGHT_AX1", "tOTALOVERWEIGHT_AX2", "tOTALOVERWEIGHT_AX3", "tOTALOVERWEIGHT_AX4",
             "tOTALOVERWEIGHT_AX5", "tOTALOVERWEIGHT_AX6", "tOTALOVERWEIGHT_AX7", "tOTALOVERWEIGHT_AX8",
@@ -80,6 +80,7 @@ public sealed class TtoInfoOrderTests
         Assert.True(IndexOf(names, "tOTALAXLES") < IndexOf(names, "vEHICLECLASS"));
         Assert.True(IndexOf(names, "wRONGDIRECTION") < IndexOf(names, "LPF"));
         Assert.True(IndexOf(names, "LPF") < IndexOf(names, "SLPF"));
+        Assert.DoesNotContain("score", names);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ public sealed class TtoInfoOrderTests
         CarClass13 = 1,
         SpeedType = TtoFieldValues.SpeedType.Instant,
         Reserved7 = "607057",
+        OcrScore = 89,
         TotalAxles = 2,
         TotalWeight = 540,
         AxleWeights = [270, 270, 0, 0, 0, 0, 0, 0, 0],

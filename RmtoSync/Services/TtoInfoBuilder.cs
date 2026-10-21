@@ -115,9 +115,11 @@ internal static class TtoInfoBuilder
         info.Add(StringField("reserved7", payload.Reserved7));
         info.Add(DecimalField("sYSTEMCODE", payload.SystemCode));
 
-        if (payload.OcrScore.HasValue)
-            info.Add(DecimalField("score", payload.OcrScore.Value));
-
+        // ITS guide: score appears only in the heavy/WIM sample (6-4); the light-traffic
+        // samples (6-1..6-3) omit it. The deployed service rejects it with HTTP 500
+        // (observed on light/ANPR records; whether the cause is position, datatype or a
+        // business rule is unconfirmed). The element is optional, so it is not sent at all.
+        // The value stays on the payload for logging/reporting.
         info.Add(DecimalField("speedType", payload.SpeedType));
 
         if (includeWim)

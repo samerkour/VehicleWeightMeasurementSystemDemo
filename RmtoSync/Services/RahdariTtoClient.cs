@@ -317,10 +317,11 @@ public sealed class RahdariTtoClient
         {
             var explained = RahdariResponseInterpreter.ExplainSoapFault(body, soapAction);
             _logger.LogError(
-                "Rahdari {Action} HTTP {Status}: {Summary}",
+                "Rahdari {Action} HTTP {Status}: {Summary} | Fault: {Fault}",
                 soapAction,
                 (int)response.StatusCode,
-                explained.Summary);
+                explained.Summary,
+                Truncate(explained.TechnicalDetail ?? body));
             _syncStatus.RecordFailure(soapAction, explained);
             throw new HttpRequestException($"Rahdari HTTP {(int)response.StatusCode}: {explained.Summary}");
         }
