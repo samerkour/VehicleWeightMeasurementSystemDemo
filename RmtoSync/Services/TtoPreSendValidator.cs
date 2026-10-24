@@ -29,8 +29,35 @@ public static class TtoPreSendValidator
         if (payload.ReceiveDateTime < now.AddDays(-ServiceLimits.MaxDataAgeDays))
             throw new RahdariSendException(payload.ReferenceNo, $"ReceiveDateTime is older than {ServiceLimits.MaxDataAgeDays} days (ITS 113)");
 
+        if (!string.IsNullOrWhiteSpace(payload.ClassificationIssue))
+            throw new RahdariSendException(
+                payload.ReferenceNo,
+                $"Invalid vehicle classification: {payload.ClassificationIssue} " +
+                $"(ITS {ItsErrorCodes.AddTto.InvalidCarClass})",
+                ItsErrorCodes.AddTto.InvalidCarClass);
+
+        // vEHICLECLASS is the two-value ITS field (1=light, 2=heavy). It is not
+        // the 14-class CarClass13 taxonomy; sending a CarClass13 value here is
+        // rejected by the server with ITS 112 «عدم صحت کلاس خودرو».
+        if (payload.VehicleClass is not
+            (TtoFieldValues.VehicleClass.Light or TtoFieldValues.VehicleClass.Heavy))
+        {
+            throw new RahdariSendException(
+                payload.ReferenceNo,
+                $"Invalid vEHICLECLASS value {payload.VehicleClass}; ITS accepts 1 (light) " +
+                $"or 2 (heavy) (ITS {ItsErrorCodes.AddTto.InvalidCarClass})",
+                ItsErrorCodes.AddTto.InvalidCarClass);
+        }
+
         if (!VehicleClass14Catalog.IsValid(payload.CarClass13))
             throw new RahdariSendException(payload.ReferenceNo, $"Invalid CARCLASS13 value: {payload.CarClass13}");
+
+        if (payload.IsHeavy && !VehicleClass14Catalog.IsValid(payload.CarClass15 ?? 0))
+            throw new RahdariSendException(
+                payload.ReferenceNo,
+                $"Heavy vehicle requires a valid cARCLASS15 value, got {payload.CarClass15?.ToString() ?? "NULL"} " +
+                $"(ITS {ItsErrorCodes.AddTto.InvalidCarClassForWim})",
+                ItsErrorCodes.AddTto.InvalidCarClassForWim);
 
         ValidateSpeedFields(payload);
 

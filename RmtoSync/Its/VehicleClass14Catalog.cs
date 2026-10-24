@@ -24,7 +24,30 @@ public static class VehicleClass14Catalog
     /// <summary>Send 1 when vehicle type cannot be determined (PDF chapter 2-3).</summary>
     public const int DefaultWhenUnknown = (int)VehicleClass14.Sedan;
 
+    /// <summary>
+    /// First heavy class in the 14-class taxonomy. Classes 1–3 are light
+    /// (sedan, pickup, two-axle light truck); 4–14 are heavy (PDF table 4-1).
+    /// </summary>
+    public const int HeavyVehicleMin = (int)VehicleClass14.TruckTwoAxleHeavy;
+
     public static bool IsValid(int code) => code is >= 1 and <= 14;
+
+    public static bool IsHeavy(int code) => IsValid(code) && code >= HeavyVehicleMin;
+
+    /// <summary>
+    /// Map the 14-class <c>CarClass13</c> code to the two-value TTOInfo
+    /// <c>vEHICLECLASS</c> domain: 1 = light, 2 = heavy (ITS guide chapter 3).
+    /// </summary>
+    public static long ToRmtoVehicleClass(int carClass13)
+    {
+        if (!IsValid(carClass13))
+            throw new ArgumentOutOfRangeException(
+                nameof(carClass13), carClass13, "CarClass13 must be in the range 1..14.");
+
+        return IsHeavy(carClass13)
+            ? TtoFieldValues.VehicleClass.Heavy
+            : TtoFieldValues.VehicleClass.Light;
+    }
 
     private static readonly IReadOnlyDictionary<VehicleClass14, string> PersianNames = new Dictionary<VehicleClass14, string>
     {

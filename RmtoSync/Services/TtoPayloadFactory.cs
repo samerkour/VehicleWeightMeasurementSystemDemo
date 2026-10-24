@@ -35,9 +35,9 @@ public static class TtoPayloadFactory
     private static TtoPayload CreateAnprOnly(CameraPhotoRecord photo, RahdariOptions options)
     {
         var plate = PlatePayloadEncoder.Encode(photo);
-        var carClass13 = photo.CarClass13 is >= 1 and <= 14
-            ? photo.CarClass13.Value
-            : options.DefaultCarClass13;
+        var classificationIssue = (string?)null;
+        var carClass13 = ResolveCarClass13(photo, options.DefaultCarClass13, ref classificationIssue);
+        var vehicleClass = ResolveDefaultVehicleClass(options, ref classificationIssue);
         var (passDateTime, receiveDateTime) = NormalizePassAndReceiveDates(photo.PassDatetime, photo.ImportedAt);
 
         // ── Maps incoming DB fields one-to-one (Vehicles table) ────────────────────
@@ -59,9 +59,10 @@ public static class TtoPayloadFactory
             VehicleSpeed = speed,
             AverageSpeed = avgSpeed,
             Allowed = TtoFieldValues.Allowed.Permitted,
-            VehicleClass = options.DefaultVehicleClass,
+            VehicleClass = vehicleClass,
             WrongDirection = ToWrongDirection(photo.WrongDirection),
             CarClass13 = carClass13,
+            ClassificationIssue = classificationIssue,
             SpeedType = TtoFieldValues.SpeedType.Instant,
             Reserved7 = options.Reserved7,
             PreviousDeviceCode = 0,
@@ -105,12 +106,13 @@ public static class TtoPayloadFactory
         if (allowed == TtoFieldValues.Allowed.Violation && crimes.Count == 0)
             throw new InvalidOperationException($"PhotoId={photo.PhotoId}: violation traffic requires crime code(s)");
 
-        var vehicleClass = photo.VehicleClass.HasValue
-            ? (long)photo.VehicleClass.Value
-            : ResolveVehicleClass(weight, options);
-        var carClass13 = photo.CarClass13 is >= 1 and <= 14
-            ? photo.CarClass13.Value
-            : options.DefaultCarClass13;
+        var classificationIssue = (string?)null;
+        // Full-station records must carry a real 14-class value. Never guess one:
+        // an invalid value is reported by TtoPreSendValidator as ITS 112.
+        var carClass13 = ResolveCarClass13(photo, fallback: 0, ref classificationIssue);
+        var vehicleClass = carClass13 == 0
+            ? 0
+            : VehicleClass14Catalog.ToRmtoVehicleClass(carClass13);
 
         return new TtoPayload
         {
@@ -128,7 +130,8 @@ public static class TtoPayloadFactory
             VehicleClass = vehicleClass,
             WrongDirection = ToWrongDirection(photo.WrongDirection),
             CarClass13 = carClass13,
-            CarClass15 = vehicleClass == TtoFieldValues.VehicleClass.Heavy ? carClass13 : null,
+            CarClass15 = VehicleClass14Catalog.IsHeavy(carClass13) ? carClass13 : null,
+            ClassificationIssue = classificationIssue,
             SpeedType = speedType,
             Reserved7 = options.Reserved7,
             PreviousDeviceCode = photo.PreviousDeviceCode ?? 0,
@@ -169,10 +172,55 @@ public static class TtoPayloadFactory
         return TtoFieldValues.Allowed.Permitted;
     }
 
-    private static long ResolveVehicleClass(int weight, RahdariOptions options) =>
-        weight >= options.WeightViolationThresholdKg
-            ? TtoFieldValues.VehicleClass.Heavy
-            : options.DefaultVehicleClass;
+    /// <summary>
+    /// Resolve the 14-class code from the source row. <c>CarClass13</c> is the
+    /// authoritative column; <c>VehicleClass</c> is kept as a fallback because the
+    /// current database view aliases both to <c>Vehicles.VehicleClass</c>. A
+    /// configured default is only used for ANPR-only records (where no WIM class
+    /// exists); full-station records must never be guessed.
+    /// </summary>
+    private static int ResolveCarClass13(
+        CameraPhotoRecord photo,
+        int fallback,
+        ref string? classificationIssue)
+    {
+        if (photo.CarClass13 is >= 1 and <= 14)
+            return photo.CarClass13.Value;
+
+        if (photo.VehicleClass is >= 1 and <= 14)
+            return photo.VehicleClass.Value;
+
+        if (fallback is >= 1 and <= 14)
+        {
+            classificationIssue ??=
+                $"Vehicles.CarClass13/VehicleClass is missing or outside 1..14; " +
+                $"using configured DefaultCarClass13={fallback} for an ANPR-only record.";
+            return fallback;
+        }
+
+        classificationIssue ??=
+            $"Vehicles.CarClass13/VehicleClass is missing or outside 1..14 " +
+            $"(CarClass13={photo.CarClass13?.ToString() ?? "NULL"}, " +
+            $"VehicleClass={photo.VehicleClass?.ToString() ?? "NULL"}); " +
+            $"ITS vEHICLECLASS cannot be derived safely.";
+        return 0;
+    }
+
+    private static long ResolveDefaultVehicleClass(
+        RahdariOptions options,
+        ref string? classificationIssue)
+    {
+        if (options.DefaultVehicleClass is
+            TtoFieldValues.VehicleClass.Light or TtoFieldValues.VehicleClass.Heavy)
+        {
+            return options.DefaultVehicleClass;
+        }
+
+        classificationIssue ??=
+            $"Rahdari:DefaultVehicleClass={options.DefaultVehicleClass} is invalid; " +
+            "ITS accepts 1 (light) or 2 (heavy).";
+        return 0;
+    }
 
     private static long ResolveSpeedType(int speed, int avgSpeed, int? explicitType)
     {

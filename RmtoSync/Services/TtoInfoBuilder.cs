@@ -34,6 +34,8 @@ internal static class TtoInfoBuilder
         bool includeExtraColorImages = false,
         TtoInfoEnvelopeKind envelope = TtoInfoEnvelopeKind.SingleAddTtoInfo)
     {
+        EnsureValidVehicleClass(payload);
+
         if (envelope == TtoInfoEnvelopeKind.BatchItem)
             return BuildBatchTtoInfo(payload);
 
@@ -256,6 +258,25 @@ internal static class TtoInfoBuilder
             crimes.Add(new XElement(RahdariSoapNamespaces.Arr + "Crime",
                 new XElement(RahdariSoapNamespaces.Arr + "crime", code)));
         return crimes;
+    }
+
+    /// <summary>
+    /// Last line of defence: never serialize a 14-class CarClass13 value into
+    /// vEHICLECLASS. The server rejects that with ITS 112 «عدم صحت کلاس خودرو».
+    /// </summary>
+    private static void EnsureValidVehicleClass(TtoPayload payload)
+    {
+        if (payload.VehicleClass is
+            TtoFieldValues.VehicleClass.Light or TtoFieldValues.VehicleClass.Heavy)
+        {
+            return;
+        }
+
+        throw new RahdariSendException(
+            payload.ReferenceNo,
+            $"Invalid vEHICLECLASS value {payload.VehicleClass}; ITS accepts 1 (light) or 2 (heavy) " +
+            $"(ITS {ItsErrorCodes.AddTto.InvalidCarClass})",
+            ItsErrorCodes.AddTto.InvalidCarClass);
     }
 
     private static XElement DecimalField(string name, long value) =>

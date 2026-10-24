@@ -20,6 +20,13 @@ public sealed class TtoPayload
     public long WrongDirection { get; init; }
     public int CarClass13 { get; init; }
     public int? CarClass15 { get; init; }
+
+    /// <summary>
+    /// Set when the source vehicle class cannot be mapped safely. The pre-send
+    /// validator turns this into ITS 112 before any SOAP call; it is never sent.
+    /// </summary>
+    public string? ClassificationIssue { get; init; }
+
     public long SpeedType { get; init; }
     public string Reserved7 { get; init; } = string.Empty;
     public bool HasImage { get; set; } = true;

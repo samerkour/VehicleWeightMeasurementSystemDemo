@@ -158,6 +158,16 @@ public static class ItsErrorCodes
     public static bool IsTokenExpired(long code) =>
         code is AddTto.TokenExpiredLegacy or AddTto.TokenExpired;
 
+    /// <summary>
+    /// آیا این کد یک رد قطعی اعتبارسنجی است که تکرار همان درخواست آن را برطرف نمی‌کند؟
+    /// کدهای ۱۰۲ تا ۱۲۹ (به‌جز توکن ۱۰۰۱/۱۰۰۲ و موفق/تکراری) و همچنین ۱۹۱ و ۱۰۱۱
+    /// به داده یا payload وابسته‌اند؛ تا زمانی که داده اصلاح نشود، تلاش مجدد بی‌فایده است.
+    /// </summary>
+    public static bool IsPermanentTtoValidation(long code) =>
+        code is >= AddTto.InvalidDevice and <= AddTto.ViolationNotAllowedForCamera
+            or AddTto.NullReferenceNo
+            or AddTto.MethodNotAllowed;
+
     public static bool IsAddImageSuccess(long errorCode, long sysError) =>
         sysError == 0 && errorCode is 0 or AddTto.Duplicate or AddImage.PlateAlreadySent;
 
