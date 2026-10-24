@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VehicleWeightMeasurementSystemDemo.Controls;
 using VehicleWeightMeasurementSystemDemo.Domain.Entities;
+using VehicleWeightMeasurementSystemDemo.Domain.Services;
 using VehicleWeightMeasurementSystemDemo.Domain.Weighing;
 using VehicleWeightMeasurementSystemDemo.Reports;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
@@ -220,7 +221,7 @@ namespace VehicleWeightMeasurementSystemDemo.Infrastructure.Persistence
                     LineId = v.LineId,
 
                     AxleCount = v.AxleCount,
-                    TotalWeight = v.TotalWeight == null ? null : (double?)(int)Math.Round((decimal)v.TotalWeight.Value * weightAlpha),
+                    TotalWeight = VehicleWeightCalibration.Apply(v.TotalWeight, weightAlpha),
                     AverageSpeed = v.Speed,
 
                     ADC1 = v.ADC1,

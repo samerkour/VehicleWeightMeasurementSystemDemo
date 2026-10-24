@@ -49,6 +49,12 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Services
 
         /// <summary>بررسی تخلف‌های وزن و سرعت برای یک عبور و ساخت کدهای تخلف متناظر.</summary>
         VehicleViolationAssessment Assess(int? vehicleClass, double? speedKmh, double? totalWeightKg);
+
+        /// <summary>
+        /// جایگزینی تنظیمات در همان نمونه (پس از ذخیرهٔ فرم تنظیمات) تا
+        /// محدودیت‌ها و کدهای تخلف جدید بلافاصله برای رکوردهای بعدی اعمال شوند.
+        /// </summary>
+        void UpdateSettings(VehicleClassificationSettings settings);
     }
 
     /// <summary>
@@ -63,11 +69,26 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Services
         /// <summary>کلاس‌های ۴ تا ۱۴ خودرو سنگین محسوب می‌شوند.</summary>
         public const int HeavyVehicleClassMin = 4;
 
-        private readonly VehicleClassificationSettings _settings;
+        private VehicleClassificationSettings _settings;
 
         public VehicleComplianceService(VehicleClassificationSettings settings)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        }
+
+        /// <inheritdoc />
+        public void UpdateSettings(VehicleClassificationSettings settings)
+        {
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        }
+
+        /// <summary>
+        /// قالب ذخیره‌سازی کدها در <c>Vehicles.CrimeCodes</c>: جدا‌شده با کاما،
+        /// یا <c>null</c> وقتی تخلفی وجود ندارد. RmtoSync همین قالب را می‌خواند.
+        /// </summary>
+        public static string? FormatCrimeCodes(IReadOnlyList<long> crimeCodes)
+        {
+            return crimeCodes.Count == 0 ? null : string.Join(",", crimeCodes);
         }
 
         /// <inheritdoc />
@@ -106,8 +127,23 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Services
             var weightViolation = totalOverWeight > 0;
 
             var crimes = new List<long>(2);
-            if (speedViolation) crimes.Add(_settings.CrimeCodeSpeedViolation);   // 2056
-            if (weightViolation) crimes.Add(_settings.CrimeCodeWeightViolation); // 2020
+            if (speedViolation)
+            {
+                if (_settings.CrimeCodeSpeedViolation <= 0)
+                    throw new InvalidOperationException(
+                        "VehicleClassification:CrimeCodeSpeedViolation must be configured with a positive code.");
+
+                crimes.Add(_settings.CrimeCodeSpeedViolation);
+            }
+
+            if (weightViolation)
+            {
+                if (_settings.CrimeCodeWeightViolation <= 0)
+                    throw new InvalidOperationException(
+                        "VehicleClassification:CrimeCodeWeightViolation must be configured with a positive code.");
+
+                crimes.Add(_settings.CrimeCodeWeightViolation);
+            }
 
             return new VehicleViolationAssessment
             {

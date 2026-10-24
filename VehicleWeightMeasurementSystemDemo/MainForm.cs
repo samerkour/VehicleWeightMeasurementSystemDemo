@@ -753,34 +753,23 @@ namespace VehicleWeightMeasurementSystemDemo
                 vehicle.PlateReadAt = plateRead ? DateTime.Now : (DateTime?)null;
 
                 vehicle.VehicleLen = VehicleClassifier.ComputeVehicleLength(vehicle);
-                vehicle.VehicleClass = VehicleClassifier.Classify(vehicle, _classificationSettings);
 
-                // 🔥 ارزیابی کلاس‌محور تخلف‌ها (وزن/سرعت) — سرویس دامنه، کاملاً config-driven
-                var assessment = _complianceService.Assess(
-                    vehicle.VehicleClass, vehicle.Speed, vehicle.TotalWeight);
-
-                vehicle.TotalOverWeight = assessment.TotalOverWeight;
-                vehicle.MaxAllowedWeightForClass = assessment.MaxAllowedWeightForClass;
-                vehicle.MaxAllowedSpeedForClass = assessment.MaxAllowedSpeedForClass;
+                // 🔥 یک نقطهٔ واحد برای وزن کالیبره‌شده، طبقه‌بندی، حد مجاز، اضافه‌وزن و کد تخلف.
+                // پیش از این، ارزیابی با وزن خام انجام می‌شد و TotalWeight با ضریب آلفا ذخیره می‌شد
+                // → کد 2020 برای خودروهای اضافه‌وزن ثبت نمی‌شد.
+                VehicleViolationEvaluator.Evaluate(
+                    vehicle, _classificationSettings, _complianceService, _alpha, plateRead);
 
                 // 🔥 WrongDirection: جهت گزارش‌شده دوربین با جهت مورد انتظار ناسازگار است
                 var expected = _classificationSettings?.ExpectedDirection ?? 1;
                 vehicle.WrongDirection = (plate?.Direction ?? 0) != 0 &&
                                          (plate?.Direction != expected);
 
-                // 🔥 Allowed: پلاک خوانده‌شده و عبور در محدودهٔ مجاز (وزن/سرعت کلاس)
-                vehicle.Allowed = plateRead && assessment.IsCompliant;
-
                 // 🔥 SpeedType: نوع سرعت (Instant=1, Average=2, InstantAndAverage=3, None=0)
                 var speed = vehicle.Speed ?? 0;
                 vehicle.SpeedType = speed > 0
                     ? VehicleClassificationSettings.SpeedTypeInstant
                     : VehicleClassificationSettings.SpeedTypeNone;
-
-                // 🔥 CrimeCodes: کد تخلفات از ارزیابی کلاس‌محور (2056 سرعت / 2020 وزن)
-                vehicle.CrimeCodes = assessment.CrimeCodes.Count > 0
-                    ? string.Join(",", assessment.CrimeCodes)
-                    : null;
 
                 // 🔥 موقعیت جغرافیایی ایستگاه (فقط یک‌بار برداشت)
                 if ((vehicle.Latitude == null || vehicle.Longitude == null) && _geoLocation != null)
@@ -1407,6 +1396,12 @@ namespace VehicleWeightMeasurementSystemDemo
 
                 File.WriteAllText(path, root.ToJsonString(
                     new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+                // فایل روی دیسک عوض شد؛ پیکربندی در حافظه را هم تازه کن تا
+                // تغییرات بلافاصله (بدون نیاز به Restart) خوانده شوند.
+                if (_config is IConfigurationRoot configurationRoot)
+                    configurationRoot.Reload();
+
                 return true;
             }
             catch (Exception ex)
@@ -1663,7 +1658,12 @@ namespace VehicleWeightMeasurementSystemDemo
                 return;
             }
 
-            _classificationSettings = updated;
+            _classificationSettings = _config.GetSection("VehicleClassification")
+                .Get<VehicleClassificationSettings>() ?? updated;
+
+            // سرویس ارزیابی، تنظیمات خودش را جدا نگه می‌دارد؛ بدون این خط،
+            // محدودیت‌ها/کدهای جدید تا ری‌استارت بعدی اعمال نمی‌شدند.
+            _complianceService.UpdateSettings(_classificationSettings);
 
             MessageBox.Show(this,
                 "Vehicle classification settings saved. Changes take effect for new records.",

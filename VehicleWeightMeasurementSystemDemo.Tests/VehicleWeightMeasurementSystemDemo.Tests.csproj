@@ -11,10 +11,18 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\VehicleWeightMeasurementSystemDemo\VehicleWeightMeasurementSystemDemo.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\VehicleWeightMeasurementSystemDemo\appsettings.json"
+          Link="appsettings.demo.json"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

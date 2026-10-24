@@ -13,13 +13,22 @@ namespace VehicleWeightMeasurementSystemDemo.Domain.Services
     /// </summary>
     public static class VehicleClassifier
     {
-        public static int? Classify(VehicleDto vehicle, VehicleClassificationSettings settings)
+        /// <param name="effectiveWeightKg">
+        /// Calibrated gross weight (kg) to classify by. When omitted, the raw
+        /// <see cref="VehicleDto.TotalWeight"/> is used for backward compatibility.
+        /// Production code must pass <see cref="VehicleWeightCalibration.Apply"/>'s value
+        /// so the class matches the weight that is actually stored and reported.
+        /// </param>
+        public static int? Classify(
+            VehicleDto vehicle,
+            VehicleClassificationSettings settings,
+            double? effectiveWeightKg = null)
         {
             if (vehicle == null || settings == null)
                 return null;
 
             var axleCount = vehicle.AxleCount ?? vehicle.Axles.Count;
-            var weight = vehicle.TotalWeight ?? 0;
+            var weight = effectiveWeightKg ?? vehicle.TotalWeight ?? 0;
 
             return axleCount switch
             {
