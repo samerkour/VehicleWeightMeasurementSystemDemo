@@ -745,8 +745,8 @@ namespace VehicleWeightMeasurementSystemDemo
             try
             {
                 bool plateRead = plate != null &&
-                                 !string.IsNullOrEmpty(plate.PlateNumber) &&
-                                 plate.Confidence >= (_classificationSettings?.MinConfidence ?? 0.65f);
+                                 !string.IsNullOrEmpty(plate.PlateNumber);
+                                 //&& plate.Confidence >= (_classificationSettings?.MinConfidence ?? 0.65f);
 
                 vehicle.PlateConfidence = plate?.Confidence;
                 vehicle.PlateReadStatus = plateRead ? 1 : 0;
